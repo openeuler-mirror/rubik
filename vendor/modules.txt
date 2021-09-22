@@ -1,0 +1,7 @@
+# github.com/cyphar/filepath-securejoin v0.0.0-00010101000000-000000000000 => github.com/cyphar/filepath-securejoin v0.2.2
+## explicit
+github.com/cyphar/filepath-securejoin
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/cyphar/filepath-securejoin => github.com/cyphar/filepath-securejoin v0.2.2
