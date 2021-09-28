@@ -13,9 +13,23 @@
 
 CWD=$(realpath .)
 TMP_DIR := /tmp/rubik_tmpdir
+VERSION_FILE := ./VERSION
+TEST_FILE := ./TEST
+VERSION := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$1}')
+RELEASE := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$2}')
+BUILD_TIME := $(shell date "+%Y-%m-%d")
+USAGE := $(shell [ -f $(TEST_FILE) ] && echo 'TestOnly')
+GIT_COMMIT := $(if $(shell git rev-parse --short HEAD),$(shell git rev-parse --short HEAD),$(shell cat ./git-commit | head -c 7))
 
 DEBUG_FLAGS := -gcflags="all=-N -l"
-LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) -extldflags=-ftrapv -extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
+LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
+	-X isula.org/rubik/pkg/version.GitCommit=$(GIT_COMMIT) \
+	-X isula.org/rubik/pkg/version.BuildTime=$(BUILD_TIME) \
+	-X isula.org/rubik/pkg/version.Version=$(VERSION) \
+	-X isula.org/rubik/pkg/version.Release=$(RELEASE) \
+	-X isula.org/rubik/pkg/version.Usage=$(USAGE) \
+	-extldflags=-ftrapv \
+	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
 
 export GO111MODULE=off
 
