@@ -26,6 +26,7 @@ import (
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/util"
 )
 
@@ -132,6 +133,8 @@ func setQosLevel(root, file string, target int) error {
 
 // SetQos is used for setting pod's qos level following it's cgroup path
 func (pod *PodInfo) SetQos() error {
+	ctx := pod.Ctx
+	tinylog.WithCtx(ctx).Logf("Setting level=%d for pod %s", pod.QosLevel, pod.PodID)
 	if pod.FullPath == nil {
 		return errors.Errorf("Empty cgroup path of pod %s", pod.PodID)
 	}
@@ -149,6 +152,7 @@ func (pod *PodInfo) SetQos() error {
 		}
 	}
 
+	tinylog.WithCtx(ctx).Logf("Setting level=%d for pod %s OK", pod.QosLevel, pod.PodID)
 	return nil
 }
 

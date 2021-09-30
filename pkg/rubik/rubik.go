@@ -21,8 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
+	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/workerpool"
 )
 
@@ -31,10 +33,20 @@ type Rubik struct {
 	server *http.Server
 	pool   *workerpool.WorkerPool
 	sock   *net.Listener
+	config *config.Config
 }
 
 // NewRubik creates a new rubik object
-func NewRubik() (*Rubik, error) {
+func NewRubik(cfgPath string) (*Rubik, error) {
+	cfg, err := config.NewConfig(cfgPath)
+	if err != nil {
+		return nil, errors.Errorf("load config failed: %v", err)
+	}
+
+	if err = log.InitConfig(cfg.LogDriver, cfg.LogDir, cfg.LogLevel, int64(cfg.LogSize)); err != nil {
+		return nil, errors.Errorf("init log config failed: %v", err)
+	}
+
 	sock, err := httpserver.NewSock()
 	if err != nil {
 		return nil, errors.Errorf("new sock failed: %v", err)
@@ -45,30 +57,34 @@ func NewRubik() (*Rubik, error) {
 		server: server,
 		pool:   pool,
 		sock:   sock,
+		config: cfg,
 	}, nil
 }
 
 // Serve starts http server
 func (r *Rubik) Serve() error {
+	log.Logf("Start http server %s with cfg\n%v", constant.RubikSock, r.config)
 	return r.server.Serve(*r.sock)
 }
 
-func run() int {
-	rubik, err := NewRubik()
+func run(fcfg string) int {
+	rubik, err := NewRubik(fcfg)
 	if err != nil {
 		fmt.Printf("new rubik failed: %v\n", err)
+		log.Errorf("http serve failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 
 	if err = rubik.Serve(); err != nil {
+		log.Errorf("http serve failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 	return 0
 }
 
 // Run start rubik server
-func Run() int {
-	ret := run()
+func Run(fcfg string) int {
+	ret := run(fcfg)
 
 	return ret
 }

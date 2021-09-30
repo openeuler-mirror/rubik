@@ -20,8 +20,10 @@ import (
 	"github.com/pkg/errors"
 
 	"isula.org/rubik/api"
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/qos"
+	"isula.org/rubik/pkg/tinylog"
 )
 
 type task interface {
@@ -121,11 +123,12 @@ func (task *QosTask) do() error {
 	}
 
 	for podID, req := range task.req.Pods {
-		pod, nErr := qos.NewPodInfo(task.ctx, podID, constant.DefaultCgroupRoot, req)
+		pod, nErr := qos.NewPodInfo(task.ctx, podID, config.CgroupRoot, req)
 		if nErr != nil {
 			return nErr
 		}
 		if sErr = pod.SetQos(); sErr != nil {
+			tinylog.WithCtx(task.ctx).Errorf("Set pod %v qos level error: %v", podID, sErr)
 			errFlag = true
 			continue
 		}

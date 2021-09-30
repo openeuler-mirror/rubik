@@ -23,6 +23,8 @@ import (
 const (
 	// RubikSock is path for rubik socket file
 	RubikSock = "/run/rubik/rubik.sock"
+	// ConfigFile is rubik config file
+	ConfigFile = "/var/lib/rubik/config.json"
 	// DefaultLogDir is default log dir
 	DefaultLogDir = "/var/log/rubik"
 	// ReadTimeout is timeout for http read
