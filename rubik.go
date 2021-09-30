@@ -16,9 +16,10 @@ package main
 import (
 	"os"
 
+	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/rubik"
 )
 
 func main() {
-	os.Exit(rubik.Run())
+	os.Exit(rubik.Run(constant.ConfigFile))
 }

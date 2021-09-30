@@ -24,6 +24,7 @@ import (
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/constant"
+	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/version"
 	"isula.org/rubik/pkg/workerpool"
 )
@@ -88,18 +89,25 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var reqs api.SetQosRequest
 
+	log.WithCtx(ctx).Logf("Handle HTTP root request start")
+
 	err = json.NewDecoder(r.Body).Decode(&reqs)
+	log.DropError(r.Body.Close())
 	if err != nil {
 		writeRootResponse(ctx, w, constant.ErrCodeFailed, "Decode request body failed")
+		log.WithCtx(ctx).Errorf("Decode request body failed: %v", err)
 		return
 	}
+
 	err = pool.PushTask(workerpool.NewQosTask(ctx, reqs))
 	if err != nil {
 		writeRootResponse(ctx, w, constant.ErrCodeFailed, "set qos failed")
+		log.WithCtx(ctx).Errorf("Handle HTTP root request failed: %v", err)
 		return
 	}
 
 	writeRootResponse(ctx, w, constant.DefaultSucceedCode, "")
+	log.WithCtx(ctx).Logf("Handle HTTP root request OK")
 }
 
 func ping(ctx context.Context, w http.ResponseWriter, r *http.Request) {
