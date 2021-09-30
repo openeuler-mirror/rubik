@@ -29,6 +29,7 @@ var (
 
 // Config defines the configuration for rubik
 type Config struct {
+	AutoCheck  bool   `json:"autoCheck,omitempty"`
 	LogDriver  string `json:"logDriver,omitempty"`
 	LogDir     string `json:"logDir,omitempty"`
 	LogSize    int    `json:"logSize,omitempty"`
@@ -44,6 +45,7 @@ func NewConfig(path string) (*Config, error) {
 
 	defaultLogSize := 1024
 	cfg := Config{
+		AutoCheck:  false,
 		LogDriver:  "stdio",
 		LogDir:     constant.DefaultLogDir,
 		LogSize:    defaultLogSize,
