@@ -24,6 +24,7 @@ import (
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/version"
 	"isula.org/rubik/pkg/workerpool"
 )
 
@@ -101,6 +102,39 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	writeRootResponse(ctx, w, constant.DefaultSucceedCode, "")
 }
 
+func ping(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	writeResponse(ctx, w, []byte("ok"))
+}
+
+// PingHandler is used for check if rubik is still alive or not
+func PingHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx, cancel := newContext(handleTimeout)
+	ping(ctx, w, r)
+	cancel()
+}
+
+func versionHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	msg, _ := json.Marshal(api.VersionResponse{Version: version.Version, Release: version.Release,
+		GitCommit: version.GitCommit, BuildTime: version.BuildTime, Usage: version.Usage})
+	writeResponse(ctx, w, msg)
+}
+
+// VersionHandler is used for check if rubik version
+func VersionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	ctx, cancel := newContext(handleTimeout)
+	versionHandler(ctx, w, r)
+	cancel()
+}
+
 func writeResponse(ctx context.Context, w http.ResponseWriter, data []byte) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
@@ -120,6 +154,8 @@ func setupHandler() *http.ServeMux {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", RootHandler)
+	mux.HandleFunc("/ping", PingHandler)
+	mux.HandleFunc("/version", VersionHandler)
 
 	return mux
 }

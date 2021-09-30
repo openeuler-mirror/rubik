@@ -30,3 +30,12 @@ type SetQosResponse struct {
 	ErrCode int    `json:"code"`
 	Message string `json:"msg"`
 }
+
+// VersionResponse is version response for http responser
+type VersionResponse struct {
+	Version   string `json:"Version"`
+	Release   string `json:"Release"`
+	GitCommit string `json:"Commit"`
+	BuildTime string `json:"BuildTime"`
+	Usage     string `json:"Usage,omitempty"`
+}
