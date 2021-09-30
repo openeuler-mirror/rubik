@@ -24,6 +24,7 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
+	"isula.org/rubik/pkg/sync"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/workerpool"
 )
@@ -61,6 +62,14 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 	}, nil
 }
 
+// Sync sync pods qos level
+func (r *Rubik) Sync() error {
+	if r.config.AutoCheck {
+		return sync.Sync()
+	}
+	return nil
+}
+
 // Serve starts http server
 func (r *Rubik) Serve() error {
 	log.Logf("Start http server %s with cfg\n%v", constant.RubikSock, r.config)
@@ -72,6 +81,11 @@ func run(fcfg string) int {
 	if err != nil {
 		fmt.Printf("new rubik failed: %v\n", err)
 		log.Errorf("http serve failed: %v", err)
+		return constant.ErrCodeFailed
+	}
+
+	if err = rubik.Sync(); err != nil {
+		log.Errorf("sync qos level failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 
