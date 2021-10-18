@@ -26,6 +26,7 @@ import (
 	"isula.org/rubik/pkg/httpserver"
 	"isula.org/rubik/pkg/sync"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/util"
 	"isula.org/rubik/pkg/workerpool"
 )
 
@@ -98,7 +99,14 @@ func run(fcfg string) int {
 
 // Run start rubik server
 func Run(fcfg string) int {
+	lock, err := util.CreateLockFile(constant.LockFile)
+	if err != nil {
+		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
+		return constant.ErrCodeFailed
+	}
+
 	ret := run(fcfg)
 
+	util.RemoveLockFile(lock, constant.LockFile)
 	return ret
 }
