@@ -25,6 +25,10 @@ import (
 var (
 	// CgroupRoot is cgroup mount point
 	CgroupRoot = constant.DefaultCgroupRoot
+	// ShutdownFlag is rubik shutdown flag
+	ShutdownFlag int32
+	// ShutdownChan is rubik shutdown channel
+	ShutdownChan = make(chan struct{})
 )
 
 // Config defines the configuration for rubik

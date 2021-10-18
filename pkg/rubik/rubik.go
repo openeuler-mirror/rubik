@@ -15,9 +15,15 @@
 package rubik
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -63,6 +69,39 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 	}, nil
 }
 
+// Monitor monitors shutdown signal
+func (r *Rubik) Monitor() {
+	<-config.ShutdownChan
+	r.Shutdown()
+	os.Exit(1)
+}
+
+// Shutdown waits for tasks done or timeout to shutdown rubik
+func (r *Rubik) Shutdown() {
+	poolDone := make(chan struct{})
+	go func() {
+		for {
+			if len(r.pool.TasksChan) == 0 && atomic.LoadInt32(&r.pool.WorkerBusy) == 0 {
+				close(poolDone)
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	waitTime := 15
+	select {
+	case _, ok := <-poolDone:
+		if !ok {
+			log.Infof("All tasks finished and exit")
+		}
+	case <-time.After(time.Duration(waitTime) * time.Second):
+		log.Errorf("Tasks not finished after 15 seconds, force exit")
+	}
+
+	log.DropError(r.server.Shutdown(context.Background()))
+}
+
 // Sync sync pods qos level
 func (r *Rubik) Sync() error {
 	if r.config.AutoCheck {
@@ -81,7 +120,6 @@ func run(fcfg string) int {
 	rubik, err := NewRubik(fcfg)
 	if err != nil {
 		fmt.Printf("new rubik failed: %v\n", err)
-		log.Errorf("http serve failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 
@@ -89,6 +127,9 @@ func run(fcfg string) int {
 		log.Errorf("sync qos level failed: %v", err)
 		return constant.ErrCodeFailed
 	}
+
+	go signalHandler()
+	go rubik.Monitor()
 
 	if err = rubik.Serve(); err != nil {
 		log.Errorf("http serve failed: %v", err)
@@ -109,4 +150,24 @@ func Run(fcfg string) int {
 
 	util.RemoveLockFile(lock, constant.LockFile)
 	return ret
+}
+
+func signalHandler() {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+
+	var forceCount int32 = 3
+	for sig := range signalChan {
+		if sig == syscall.SIGTERM || sig == syscall.SIGINT {
+			if atomic.AddInt32(&config.ShutdownFlag, 1) == 1 {
+				log.Infof("Signal %v received and starting exit...", sig)
+				close(config.ShutdownChan)
+			}
+
+			if atomic.LoadInt32(&config.ShutdownFlag) >= forceCount {
+				log.Infof("3 interrupts signal received, forcing rubik shutdown")
+				os.Exit(1)
+			}
+		}
+	}
 }
