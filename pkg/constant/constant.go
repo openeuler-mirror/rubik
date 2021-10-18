@@ -27,6 +27,8 @@ const (
 	ConfigFile = "/var/lib/rubik/config.json"
 	// DefaultLogDir is default log dir
 	DefaultLogDir = "/var/log/rubik"
+	// LockFile is rubik lock file
+	LockFile = "/run/rubik/rubik.lock"
 	// ReadTimeout is timeout for http read
 	ReadTimeout = 60 * time.Second
 	// WriteTimeout is timeout for http write
@@ -67,10 +69,6 @@ const (
 	MinLevel LevelType = -1
 	// MaxLevel is max level for qos level
 	MaxLevel LevelType = 0
-	// OfflineLevel is offline level for qos level
-	OfflineLevel LevelType = -1
-	// DefaultLevel is default level for qos level
-	DefaultLevel LevelType = 0
 )
 
 // Int is type casting for type LevelType
