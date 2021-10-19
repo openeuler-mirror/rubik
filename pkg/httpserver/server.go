@@ -20,9 +20,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"isula.org/rubik/api"
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/version"
@@ -83,6 +85,11 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	if atomic.LoadInt32(&config.ShutdownFlag) != 0 {
+		writeRootResponse(ctx, w, constant.ErrCodeFailed, "Server is shutdown, stop handle request")
 		return
 	}
 
