@@ -58,6 +58,9 @@ func NewPodInfo(ctx context.Context, podID string, cgmnt string, req api.PodQoS)
 		CgroupRoot: cgmnt,
 		Ctx:        ctx,
 	}
+	if err := checkQosLevel(pod.QosLevel); err != nil {
+		return nil, err
+	}
 	if err := pod.initCgroupPath(); err != nil {
 		return nil, err
 	}
@@ -100,6 +103,14 @@ func getQosLevel(root, file string) (int, error) {
 		return constant.ErrCodeFailed, err
 	}
 	return qosLevel, nil
+}
+
+func checkQosLevel(qosLevel int) error {
+	if qosLevel >= constant.MinLevel.Int() && qosLevel <= constant.MaxLevel.Int() {
+		return nil
+	}
+
+	return errors.Errorf("invalid qos level number %d, should be 0 or -1", qosLevel)
 }
 
 // setQosLevel is actual function to do the setting job
@@ -156,6 +167,38 @@ func (pod *PodInfo) SetQos() error {
 	return nil
 }
 
+// ValidateQos is used for checking pod's qos level if equal to the value it should be set up to
+func (pod *PodInfo) ValidateQos() error {
+	var (
+		cpuInfo, memInfo int
+		err              error
+	)
+	ctx := pod.Ctx
+
+	tinylog.WithCtx(ctx).Logf("Checking level=%d for pod %s", pod.QosLevel, pod.PodID)
+
+	for kind, cgPath := range pod.FullPath {
+		switch kind {
+		case "cpu":
+			if cpuInfo, err = getQosLevel(cgPath, constant.CPUCgroupFileName); err != nil {
+				return errors.Errorf("read %s for pod %q failed: %v", constant.CPUCgroupFileName, pod.PodID, err)
+			}
+		case "memory":
+			if memInfo, err = getQosLevel(cgPath, constant.MemoryCgroupFileName); err != nil {
+				return errors.Errorf("read %s for pod %q failed: %v", constant.MemoryCgroupFileName, pod.PodID, err)
+			}
+		}
+	}
+
+	if (cpuInfo != pod.QosLevel) || (memInfo != pod.QosLevel) {
+		return errors.Errorf("checking level=%d for pod %s failed", pod.QosLevel, pod.PodID)
+	}
+
+	tinylog.WithCtx(ctx).Logf("Checking level=%d for pod %s OK", pod.QosLevel, pod.PodID)
+
+	return nil
+}
+
 // initCgroupPath return pod's cgroup full path
 func (pod *PodInfo) initCgroupPath() error {
 	if pod.CgroupRoot == "" {
@@ -163,10 +206,34 @@ func (pod *PodInfo) initCgroupPath() error {
 	}
 	cgroupMap := make(map[string]string, len(SupportCgroupTypes))
 	for _, kind := range SupportCgroupTypes {
-		cgroupMap[kind] = filepath.Join(pod.CgroupRoot, kind, pod.CgroupPath)
+		if err := checkCgroupPath(pod.CgroupPath); err != nil {
+			return err
+		}
+		fullPath := filepath.Join(pod.CgroupRoot, kind, pod.CgroupPath)
+		if len(fullPath) > constant.MaxCgroupPathLen {
+			return errors.Errorf("length of cgroup path exceeds max limit %d", constant.MaxCgroupPathLen)
+		}
+		cgroupMap[kind] = fullPath
 	}
 
 	pod.FullPath = cgroupMap
+
+	return nil
+}
+
+func checkCgroupPath(path string) error {
+	pathPrefix, blacklist := "kubepods", []string{"kubepods", "kubepods/besteffort", "kubepods/burstable"}
+	cPath := filepath.Clean(path)
+
+	if !strings.HasPrefix(cPath, pathPrefix) {
+		return errors.Errorf("invalid cgroup path %v, should start with %v", path, pathPrefix)
+	}
+
+	for _, invalidPath := range blacklist {
+		if cPath == invalidPath {
+			return errors.Errorf("invalid cgroup path %v, without podID", path)
+		}
+	}
 
 	return nil
 }
