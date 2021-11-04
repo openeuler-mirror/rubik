@@ -70,6 +70,8 @@ func NewServer() (*http.Server, *workerpool.WorkerPool) {
 
 func newContext(timeout time.Duration) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	uuid := time.Now().Format("150405.999999")
+	ctx = context.WithValue(ctx, log.CtxKey(log.UUID), uuid)
 	return ctx, cancel
 }
 
@@ -134,8 +136,9 @@ func PingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func versionHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	msg, _ := json.Marshal(api.VersionResponse{Version: version.Version, Release: version.Release,
+	msg, err := json.Marshal(api.VersionResponse{Version: version.Version, Release: version.Release,
 		GitCommit: version.GitCommit, BuildTime: version.BuildTime, Usage: version.Usage})
+	log.DropError(err)
 	writeResponse(ctx, w, msg)
 }
 
@@ -152,12 +155,15 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 func writeResponse(ctx context.Context, w http.ResponseWriter, data []byte) {
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		log.WithCtx(ctx).Errorf("Write http response failed: %v", err.Error())
+	}
 }
 
 func writeRootResponse(ctx context.Context, w http.ResponseWriter, errCode int, msg string) {
 	data, err := json.Marshal(api.SetQosResponse{ErrCode: errCode, Message: msg})
 	if err != nil {
+		log.WithCtx(ctx).Errorf("encode HTTP response failed")
 	}
 	writeResponse(ctx, w, data)
 }
