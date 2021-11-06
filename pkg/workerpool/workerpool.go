@@ -114,8 +114,8 @@ func (task *QosTask) context() context.Context {
 
 func (task *QosTask) do() error {
 	var (
-		errFlag bool
-		sErr    error
+		errFlag    bool
+		sErr, vErr error
 	)
 
 	if len(task.req.Pods) > constant.MaxPodsPerRequest {
@@ -131,6 +131,10 @@ func (task *QosTask) do() error {
 			tinylog.WithCtx(task.ctx).Errorf("Set pod %v qos level error: %v", podID, sErr)
 			errFlag = true
 			continue
+		}
+		if vErr = pod.ValidateQos(); vErr != nil {
+			tinylog.WithCtx(task.ctx).Errorf("Validate pod %v qos level error: %v", podID, vErr)
+			errFlag = true
 		}
 	}
 

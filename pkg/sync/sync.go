@@ -89,8 +89,10 @@ func verifyOfflinePods(clientSet *kubernetes.Clientset) error {
 			log.Errorf("get pod %v info for sync error: %v", pod.UID, err)
 			continue
 		}
-		sErr := podQosInfo.SetQos()
-		log.Logf("pod %v qos level check error: %v, reset qos error: %v", pod.UID, err, sErr)
+		if err = podQosInfo.ValidateQos(); err != nil {
+			sErr := podQosInfo.SetQos()
+			log.Logf("pod %v qos level check error: %v, reset qos error: %v", pod.UID, err, sErr)
+		}
 	}
 
 	return nil
