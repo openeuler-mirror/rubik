@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
@@ -140,6 +141,12 @@ func run(fcfg string) int {
 
 // Run start rubik server
 func Run(fcfg string) int {
+	unix.Umask(constant.DefaultUmask)
+	if len(os.Args) > 1 {
+		fmt.Println("args not allowed")
+		return constant.ErrCodeFailed
+	}
+
 	lock, err := util.CreateLockFile(constant.LockFile)
 	if err != nil {
 		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)

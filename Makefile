@@ -48,3 +48,11 @@ dev:
 release:
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
+
+test-unit:
+	@bash ./hack/unit_test.sh
+
+cover:
+	go test -p 1 -v ./... -coverprofile=cover.out
+	go tool cover -html=cover.out -o cover.html
+	python3 -m http.server 8080
