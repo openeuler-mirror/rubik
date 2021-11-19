@@ -49,8 +49,13 @@ release:
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
 
+tests: test-unit test-integration
+
 test-unit:
 	@bash ./hack/unit_test.sh
+
+test-integration:
+	@bash ./tests/test.sh
 
 cover:
 	go test -p 1 -v ./... -coverprofile=cover.out

@@ -1,0 +1,7 @@
+{
+    "logDriver": "stdio",
+    "logDir": "",
+    "logSize": 1024,
+    "logLevel": "info",
+    "cgroupRoot": "/sys/fs/cgroup"
+}
