@@ -1,0 +1,23 @@
+package httpserver
+
+import (
+	"bufio"
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+)
+
+func Fuzz(data []byte) int {
+	r, err := http.NewRequest("GET", "/", bufio.NewReader(bytes.NewReader(data)))
+	if err != nil {
+		return -1
+	}
+	w := httptest.NewRecorder()
+	handler := setupHandler()
+	handler.ServeHTTP(w, r)
+	if status := w.Code; status != http.StatusOK {
+		return -1
+	}
+
+	return 1
+}
