@@ -49,6 +49,16 @@ release:
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
 
+check:
+	@echo "Static check start for last commit"
+	@./hack/static_check.sh last
+	@echo "Static check last commit finished"
+
+checkall:
+	@echo "Static check start for whole project"
+	@./hack/static_check.sh all
+	@echo "Static check project finished"
+
 tests: test-unit test-integration
 
 test-unit:
