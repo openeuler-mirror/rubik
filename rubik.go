@@ -18,6 +18,7 @@ import (
 
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/rubik"
+	_ "isula.org/rubik/pkg/version"
 )
 
 func main() {
