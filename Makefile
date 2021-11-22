@@ -13,6 +13,7 @@
 
 CWD=$(realpath .)
 TMP_DIR := /tmp/rubik_tmpdir
+INSTALL_DIR := /var/lib/rubik
 VERSION_FILE := ./VERSION
 TEST_FILE := ./TEST
 VERSION := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$1}')
@@ -42,12 +43,31 @@ GO_BUILD=CGO_ENABLED=1 \
 
 all: release
 
+help:
+	@echo "Usage:"
+	@echo
+	@echo "make                          # build rubik for debug"
+	@echo "make release                  # build rubik for release, open security build option"
+	@echo "make image                    # container image build"
+	@echo "make check                    # static check for latest commit"
+	@echo "make checkall                 # static check for whole project"
+	@echo "make tests                    # run all testcases within project"
+	@echo "make test-unit                # only run unit test for project"
+	@echo "make cover                    # generate cover report"
+	@echo
+
 dev:
 	$(GO_BUILD) $(DEBUG_FLAGS) -o rubik $(LD_FLAGS) rubik.go
 
 release:
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
+	@if [ -f ./hack/rubik-daemonset.yaml ]; then sed -i 's/rubik_image_name_and_tag/rubik:$(VERSION)-$(RELEASE)/g' ./hack/rubik-daemonset.yaml; fi;
+
+safe: release
+
+image: release
+	docker build -f Dockerfile -t rubik:$(VERSION)-$(RELEASE) .
 
 check:
 	@echo "Static check start for last commit"
@@ -71,3 +91,10 @@ cover:
 	go test -p 1 -v ./... -coverprofile=cover.out
 	go tool cover -html=cover.out -o cover.html
 	python3 -m http.server 8080
+
+install:
+	install -d -m 0750 $(INSTALL_DIR)
+	install -Dp -m 0550 ./rubik $(INSTALL_DIR)
+	install -Dp -m 0640 ./hack/rubik-daemonset.yaml $(INSTALL_DIR)
+	install -Dp -m 0640 ./hack/cluster-role-binding.yaml $(INSTALL_DIR)
+	install -Dp -m 0640 ./Dockerfile $(INSTALL_DIR)

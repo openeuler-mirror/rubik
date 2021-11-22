@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rubik
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rubik-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+        "autoCheck": false,
+        "logDriver": "stdio",
+        "logDir": "/var/log/rubik",
+        "logSize": 1024,
+        "logLevel": "info",
+        "cgroupRoot": "/sys/fs/cgroup"
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: rubik-agent
+  namespace: kube-system
+  labels:
+    k8s-app: rubik-agent
+spec:
+  selector:
+    matchLabels:
+      name: rubik-agent
+  template:
+    metadata:
+      namespace: kube-system
+      labels:
+        name: rubik-agent
+    spec:
+      serviceAccountName: rubik
+      containers:
+      - name: rubik-agent
+        image: rubik_image_name_and_tag
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: RUBIK_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: rubiklog
+          mountPath: /var/log/rubik
+          readOnly: false
+        - name: runrubik
+          mountPath: /run/rubik
+          readOnly: false
+        - name: sysfscgroups
+          mountPath: /sys/fs/cgroup
+          readOnly: false
+        - name: config-volume
+          mountPath: /var/lib/rubik
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: rubiklog
+        hostPath:
+          path: /var/log/rubik
+      - name: runrubik
+        hostPath:
+          path: /run/rubik
+      - name: sysfscgroups
+        hostPath:
+          path: /sys/fs/cgroup
+      - name: config-volume
+        configMap:
+          name: rubik-config
+          items:
+          - key: config.json
+            path: config.json
