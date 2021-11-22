@@ -59,6 +59,8 @@ const (
 	TaskChanCapacity = 1024
 	// WorkerNum is number of workers
 	WorkerNum = 1
+	// NodeNameEnvKey is node name environment variable key
+	NodeNameEnvKey = "RUBIK_NODE_NAME"
 )
 
 // LevelType is type definition of qos level
