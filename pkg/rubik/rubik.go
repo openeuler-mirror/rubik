@@ -27,7 +27,10 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
+	"isula.org/rubik/pkg/autoconfig"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
@@ -37,16 +40,61 @@ import (
 	"isula.org/rubik/pkg/workerpool"
 )
 
-// Rubik defines Rubik struct
-type Rubik struct {
-	server *http.Server
-	pool   *workerpool.WorkerPool
-	sock   *net.Listener
-	config *config.Config
+// rubik defines rubik struct
+type rubik struct {
+	server     *http.Server
+	pool       *workerpool.WorkerPool
+	sock       *net.Listener
+	config     *config.Config
+	kubeClient *kubernetes.Clientset
 }
 
-// NewRubik creates a new rubik object
-func NewRubik(cfgPath string) (*Rubik, error) {
+// Run start rubik server
+func Run(fcfg string) int {
+	unix.Umask(constant.DefaultUmask)
+	if len(os.Args) > 1 {
+		fmt.Println("args not allowed")
+		return constant.ErrCodeFailed
+	}
+
+	lock, err := util.CreateLockFile(constant.LockFile)
+	if err != nil {
+		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
+		return constant.ErrCodeFailed
+	}
+
+	ret := run(fcfg)
+
+	util.RemoveLockFile(lock, constant.LockFile)
+	return ret
+}
+
+func run(fcfg string) int {
+	rubik, err := newRubik(fcfg)
+	if err != nil {
+		fmt.Printf("new rubik failed: %v\n", err)
+		return constant.ErrCodeFailed
+	}
+
+	rubik.initAutoConfig()
+
+	if err = rubik.sync(); err != nil {
+		log.Errorf("sync qos level failed: %v", err)
+		return constant.ErrCodeFailed
+	}
+
+	go signalHandler()
+	go rubik.monitor()
+
+	if err = rubik.serve(); err != nil {
+		log.Errorf("http serve failed: %v", err)
+		return constant.ErrCodeFailed
+	}
+	return 0
+}
+
+// newRubik creates a new rubik object
+func newRubik(cfgPath string) (*rubik, error) {
 	cfg, err := config.NewConfig(cfgPath)
 	if err != nil {
 		return nil, errors.Errorf("load config failed: %v", err)
@@ -62,23 +110,59 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 	}
 	server, pool := httpserver.NewServer()
 
-	return &Rubik{
-		server: server,
-		pool:   pool,
-		sock:   sock,
-		config: cfg,
+	kubeCli := &kubernetes.Clientset{}
+	if cfg.AutoConfig || cfg.AutoCheck {
+		kubeCli, err = initKubeClient()
+		if err != nil {
+			return nil, errors.Errorf("new kube client failed: %v", err)
+		}
+	}
+
+	return &rubik{
+		server:     server,
+		pool:       pool,
+		sock:       sock,
+		config:     cfg,
+		kubeClient: kubeCli,
 	}, nil
 }
 
-// Monitor monitors shutdown signal
-func (r *Rubik) Monitor() {
+func initKubeClient() (*kubernetes.Clientset, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient, nil
+}
+
+func (r *rubik) initAutoConfig() {
+	if r.config.AutoConfig {
+		autoconfig.InitAutoConfig(r.kubeClient)
+	}
+}
+
+// sync sync pods qos level
+func (r *rubik) sync() error {
+	if r.config.AutoCheck {
+		return sync.Sync(r.kubeClient)
+	}
+	return nil
+}
+
+// monitor monitors shutdown signal
+func (r *rubik) monitor() {
 	<-config.ShutdownChan
-	r.Shutdown()
+	r.shutdown()
 	os.Exit(1)
 }
 
-// Shutdown waits for tasks done or timeout to shutdown rubik
-func (r *Rubik) Shutdown() {
+// shutdown waits for tasks done or timeout to shutdown rubik
+func (r *rubik) shutdown() {
 	poolDone := make(chan struct{})
 	go func() {
 		for {
@@ -103,60 +187,10 @@ func (r *Rubik) Shutdown() {
 	log.DropError(r.server.Shutdown(context.Background()))
 }
 
-// Sync sync pods qos level
-func (r *Rubik) Sync() error {
-	if r.config.AutoCheck {
-		return sync.Sync()
-	}
-	return nil
-}
-
-// Serve starts http server
-func (r *Rubik) Serve() error {
+// serve starts http server
+func (r *rubik) serve() error {
 	log.Logf("Start http server %s with cfg\n%v", constant.RubikSock, r.config)
 	return r.server.Serve(*r.sock)
-}
-
-func run(fcfg string) int {
-	rubik, err := NewRubik(fcfg)
-	if err != nil {
-		fmt.Printf("new rubik failed: %v\n", err)
-		return constant.ErrCodeFailed
-	}
-
-	if err = rubik.Sync(); err != nil {
-		log.Errorf("sync qos level failed: %v", err)
-		return constant.ErrCodeFailed
-	}
-
-	go signalHandler()
-	go rubik.Monitor()
-
-	if err = rubik.Serve(); err != nil {
-		log.Errorf("http serve failed: %v", err)
-		return constant.ErrCodeFailed
-	}
-	return 0
-}
-
-// Run start rubik server
-func Run(fcfg string) int {
-	unix.Umask(constant.DefaultUmask)
-	if len(os.Args) > 1 {
-		fmt.Println("args not allowed")
-		return constant.ErrCodeFailed
-	}
-
-	lock, err := util.CreateLockFile(constant.LockFile)
-	if err != nil {
-		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
-		return constant.ErrCodeFailed
-	}
-
-	ret := run(fcfg)
-
-	util.RemoveLockFile(lock, constant.LockFile)
-	return ret
 }
 
 func signalHandler() {

@@ -17,74 +17,36 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
-	"isula.org/rubik/api"
-	"isula.org/rubik/pkg/config"
-	"isula.org/rubik/pkg/qos"
+	"isula.org/rubik/pkg/common"
+	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
 )
 
-const (
-	defaultNodeCgroupName = "kubepods"
-	podCgroupNamePrefix   = "pod"
-	nodeNameEnvKey        = "RUBIK_NODE_NAME"
-	priorityAnnotationKey = "volcano.sh/preemptable"
-)
-
 // Sync qos setting
-func Sync() error {
+func Sync(kubeClient *kubernetes.Clientset) error {
 	log.Logf("Syncing qos level start")
 
-	clientSet, err := getClient()
-	if err != nil {
-		return err
-	}
-
-	err = verifyOfflinePods(clientSet)
-
-	log.Logf("Syncing qos level done")
-	return err
-}
-
-func getClient() (*kubernetes.Clientset, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	clientSet, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return clientSet, nil
-}
-
-func verifyOfflinePods(clientSet *kubernetes.Clientset) error {
-	node := os.Getenv(nodeNameEnvKey)
+	node := os.Getenv(constant.NodeNameEnvKey)
 	if node == "" {
-		return errors.Errorf("environment variable %s must be defined", nodeNameEnvKey)
+		return errors.Errorf("environment variable %s must be defined", constant.NodeNameEnvKey)
 	}
 
-	pods, err := clientSet.CoreV1().Pods("").List(context.Background(),
+	pods, err := kubeClient.CoreV1().Pods("").List(context.Background(),
 		metav1.ListOptions{FieldSelector: fmt.Sprintf("spec.nodeName=%s", node)})
 	if err != nil {
 		return err
 	}
 
 	for _, pod := range pods.Items {
-		if !isOffline(pod) {
+		if !common.IsOffline(pod) {
 			continue
 		}
-		podQosInfo, err := getOfflinePodStruct(pod)
+		podQosInfo, err := common.BuildOfflinePodInfo(pod)
 		if err != nil {
 			log.Errorf("get pod %v info for sync error: %v", pod.UID, err)
 			continue
@@ -95,34 +57,7 @@ func verifyOfflinePods(clientSet *kubernetes.Clientset) error {
 		}
 	}
 
+	log.Logf("Syncing qos level done")
+
 	return nil
-}
-
-func isOffline(pod corev1.Pod) bool {
-	return pod.Annotations[priorityAnnotationKey] == "true"
-}
-
-func getOfflinePodStruct(pod corev1.Pod) (*qos.PodInfo, error) {
-	var cgroupPath string
-	switch pod.Status.QOSClass {
-	case corev1.PodQOSGuaranteed:
-		cgroupPath = filepath.Join(defaultNodeCgroupName, podCgroupNamePrefix+string(pod.UID))
-	case corev1.PodQOSBurstable:
-		cgroupPath = filepath.Join(defaultNodeCgroupName, strings.ToLower(string(corev1.PodQOSBurstable)),
-			podCgroupNamePrefix+string(pod.UID))
-	case corev1.PodQOSBestEffort:
-		cgroupPath = filepath.Join(defaultNodeCgroupName, strings.ToLower(string(corev1.PodQOSBestEffort)),
-			podCgroupNamePrefix+string(pod.UID))
-	}
-
-	podQos := api.PodQoS{
-		CgroupPath: cgroupPath,
-		QosLevel:   -1,
-	}
-	podInfo, err := qos.NewPodInfo(context.Background(), string(pod.UID), config.CgroupRoot, podQos)
-	if err != nil {
-		return nil, err
-	}
-
-	return podInfo, nil
 }

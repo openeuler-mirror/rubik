@@ -30,7 +30,7 @@ import (
 	"isula.org/rubik/pkg/workerpool"
 )
 
-// TestNewRubik is NewRubik function test
+// TestNewRubik is newRubik function test
 func TestNewRubik(t *testing.T) {
 	os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
 	defer os.RemoveAll(constant.TmpTestDir)
@@ -38,7 +38,7 @@ func TestNewRubik(t *testing.T) {
 	os.Remove(tmpConfigFile)
 
 	os.MkdirAll(tmpConfigFile, constant.DefaultDirMode)
-	_, err := NewRubik(tmpConfigFile)
+	_, err := newRubik(tmpConfigFile)
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(tmpConfigFile)
 	assert.NoError(t, err)
@@ -46,7 +46,7 @@ func TestNewRubik(t *testing.T) {
 	fd, err := os.Create(tmpConfigFile)
 	assert.NoError(t, err)
 	_, err = fd.WriteString(`{
-						"autoCheck": true,
+						"autoCheck": false,
 						"logDriver": "file",
 						"logDir": "/tmp/rubik-test",
 						"logSize": 2048,
@@ -54,7 +54,7 @@ func TestNewRubik(t *testing.T) {
 						"cgroupRoot": "/tmp/rubik-test/cgroup"
 }`)
 	assert.NoError(t, err)
-	_, err = NewRubik(tmpConfigFile)
+	_, err = newRubik(tmpConfigFile)
 	assert.NoError(t, err)
 
 	os.Remove(tmpConfigFile)
@@ -64,16 +64,16 @@ func TestNewRubik(t *testing.T) {
 						"logLevel": "debugabc"
 }`)
 	assert.NoError(t, err)
-	_, err = NewRubik(tmpConfigFile)
+	_, err = newRubik(tmpConfigFile)
 	assert.Equal(t, true, err != nil)
 
 	fd.Close()
 }
 
-// TestMonitor is Monitor function test
+// TestMonitor is monitor function test
 func TestMonitor(t *testing.T) {
 	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
+	rubik := &rubik{
 		server: server,
 		pool: &workerpool.WorkerPool{
 			WorkerNum:  1,
@@ -81,14 +81,14 @@ func TestMonitor(t *testing.T) {
 		},
 	}
 
-	go rubik.Monitor()
+	go rubik.monitor()
 	close(config.ShutdownChan)
 }
 
-// TestShutdown is Shutdown function test
+// TestShutdown is shutdown function test
 func TestShutdown(t *testing.T) {
 	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
+	rubik := &rubik{
 		server: server,
 		pool: &workerpool.WorkerPool{
 			WorkerNum:  1,
@@ -96,31 +96,31 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	rubik.Shutdown()
+	rubik.shutdown()
 }
 
-// TestSync is Sync function test
+// TestSync is sync function test
 func TestSync(t *testing.T) {
-	rubik := &Rubik{
+	rubik := &rubik{
 		config: &config.Config{
 			AutoCheck: true,
 		},
 	}
 
-	err := rubik.Sync()
+	err := rubik.sync()
 	assert.Equal(t, true, err != nil)
 
 	rubik.config.AutoCheck = false
-	err = rubik.Sync()
+	err = rubik.sync()
 	assert.NoError(t, err)
 }
 
-// TestServe is Serve function test
+// TestServe is serve function test
 func TestServe(t *testing.T) {
 	sock, err := httpserver.NewSock()
 	assert.NoError(t, err)
 	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
+	rubik := &rubik{
 		server: server,
 		sock:   sock,
 		config: &config.Config{},
@@ -128,7 +128,7 @@ func TestServe(t *testing.T) {
 
 	var errC chan error
 	go func() {
-		errC <- rubik.Serve()
+		errC <- rubik.serve()
 	}()
 
 	select {
