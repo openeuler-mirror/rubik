@@ -62,7 +62,7 @@ kubectl apply -f /var/lib/rubik/rubik-daemonset.yaml
 
 通过以上方式部署的rubik将以默认配置启动，若用户需要修改rubik的配置，可通过修改rubik-daemonset.yaml文件中的config.json部分后重新部署rubik daemonset。
 
-以下介绍几个常见配置，其他配置详见docs/config.md
+以下介绍几个常见配置，其他配置详见[配置文档](./docs/config.md)
 
 ### Pod优先级自动配置
 
@@ -70,7 +70,7 @@ kubectl apply -f /var/lib/rubik/rubik-daemonset.yaml
 
 ### 依赖于kubelet的Pod优先级配置
 
-由于自动配置依赖于来自api-server pod创建事件的通知，具有一定的延迟性，无法在进程启动之前及时完成优先级的配置，导致业务性能可能存在抖动。用户可以关闭自动配置，通过修改kubelet，向rubik发送http请求，在更早的时间点调用rubik配置pod优先级，http接口具体使用方法详见./docs/http_API.md
+由于自动配置依赖于来自api-server pod创建事件的通知，具有一定的延迟性，无法在进程启动之前及时完成优先级的配置，导致业务性能可能存在抖动。用户可以关闭自动配置，通过修改kubelet，向rubik发送http请求，在更早的时间点调用rubik配置pod优先级，http接口具体使用方法详见[http接口文档](./docs/http_API.md)
 
 ### 支持自动校对Pod优先级
 
@@ -85,7 +85,7 @@ metadata:
   name: nginx
   namespace: qosexample
   annotations:
-    volcano.sh/preemptable: "true"   # volcano.sh/preemptable为true代表业务为在线业务，false代表业务为离线业务
+    volcano.sh/preemptable: "true"   # volcano.sh/preemptable为true代表业务为离线业务，false代表业务为在线业务，默认为false
 spec:
   containers:
   - name: nginx
@@ -101,7 +101,7 @@ spec:
 
 ## 注意事项
 
-约束限制详见./docs/limitation.md
+约束限制详见[约束限制文档](./docs/limitation.md)
 
 ## 如何贡献
 
