@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+# Description: This shell script is used to apply patches for the project
+# Author: rubik team
+# Create: 2021-12-27
+
+set -ex
+
+pkg=rubik
+cwd=$PWD
+src=$cwd/$pkg
+tar_file=v"$(awk -F"-" '{print $1}' < VERSION-openeuler)".tar.gz
+
+mkdir ${src} && tar -zxvf "${tar_file}" -C ${src} --strip-components 1
+if [ ! -d patch ]; then
+    tar -zxvf patch.tar.gz
+fi
+
+series=$cwd/series.conf
+while IPF= read -r line
+do
+    if [[ "$line" =~ ^patch* ]]; then
+        echo patch -p1 $cwd/$line
+        cd $src && patch -p1 < $cwd/$line
+    fi
+done <"$series"
+
+cd $cwd
+cp -rf $src/* .
+cp -f VERSION-openeuler VERSION
+rm -rf $src
