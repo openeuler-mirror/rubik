@@ -1,0 +1,34 @@
+From 83370df1083223fb14c4277e13b2ebeaa9e03352 Mon Sep 17 00:00:00 2001
+From: xiadanni <xiadanni1@huawei.com>
+Date: Mon, 27 Dec 2021 16:52:03 +0800
+Subject: [PATCH] rubik: enable GO111MODULE
+
+Signed-off-by: xiadanni <xiadanni1@huawei.com>
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 22ea08c..7cd1185 100644
+--- a/Makefile
++++ b/Makefile
+@@ -32,14 +32,14 @@ LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
+ 	-extldflags=-ftrapv \
+ 	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
+ 
+-export GO111MODULE=off
++export GO111MODULE=on
+ 
+ GO_BUILD=CGO_ENABLED=1 \
+ 	CGO_CFLAGS="-fstack-protector-strong -fPIE" \
+ 	CGO_CPPFLAGS="-fstack-protector-strong -fPIE" \
+ 	CGO_LDFLAGS_ALLOW='-Wl,-z,relro,-z,now' \
+ 	CGO_LDFLAGS="-Wl,-z,relro,-z,now -Wl,-z,noexecstack" \
+-	go build -buildmode=pie
++	go build -mod=vendor -buildmode=pie
+ 
+ all: release
+ 
+-- 
+2.27.0
+
