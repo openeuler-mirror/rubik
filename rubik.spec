@@ -1,6 +1,6 @@
 Name: rubik
 Version: 0.1.0
-Release: 1
+Release: 2
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -32,22 +32,28 @@ make release
 
 %install
 # create directory /var/lib/rubik
-install -d -m 0750 %{buildroot}%{_sharedstatedir}/%{name}
+install -d %{buildroot}%{_sharedstatedir}/%{name}
 # install rubik binary
-install -Dp -m 0550 ./rubik %{buildroot}%{_sharedstatedir}/%{name}
+install -Dp ./rubik %{buildroot}%{_sharedstatedir}/%{name}
 # install artifacts
-install -Dp -m 0640 ./hack/rubik-daemonset.yaml %{buildroot}%{_sharedstatedir}/%{name}/rubik-daemonset.yaml
-install -Dp -m 0640 ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
+install -Dp ./hack/rubik-daemonset.yaml %{buildroot}%{_sharedstatedir}/%{name}/rubik-daemonset.yaml
+install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
 
 %files
-%dir %{_sharedstatedir}/%{name}
-%{_sharedstatedir}/%{name}/rubik
-%{_sharedstatedir}/%{name}/rubik-daemonset.yaml
-%{_sharedstatedir}/%{name}/Dockerfile
+%dir %attr(750,root,root) %{_sharedstatedir}/%{name}
+%attr(550,root,root) %{_sharedstatedir}/%{name}/rubik
+%attr(640,root,root) %{_sharedstatedir}/%{name}/rubik-daemonset.yaml
+%attr(640,root,root) %{_sharedstatedir}/%{name}/Dockerfile
 
 %clean
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jan 11 2022 DCCooper <1866858@gmail.com> - 0.1.0-2
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:fix compile error
+
 * Mon Dec 27 2021 xiadanni <xiadanni1@huawei.com> - 0.1.0-1
 - Package init
