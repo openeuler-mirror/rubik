@@ -28,7 +28,7 @@ func TestSync(t *testing.T) {
 	os.Setenv(constant.NodeNameEnvKey, "")
 	clientSet := &kubernetes.Clientset{}
 
-	if err := Sync(clientSet); err != nil {
+	if err := Sync(true, clientSet); err != nil {
 		assert.Contains(t, err.Error(), "environment variable")
 	}
 }

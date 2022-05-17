@@ -7,8 +7,8 @@
 // IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 // PURPOSE.
 // See the Mulan PSL v2 for more details.
-// Author: Haomin Tsai
-// Create: 2021-09-28
+// Author: Danni Xia
+// Create: 2021-04-26
 // Description: config load
 
 package config
@@ -33,13 +33,32 @@ var (
 
 // Config defines the configuration for rubik
 type Config struct {
-	AutoConfig bool   `json:"autoConfig,omitempty"`
-	AutoCheck  bool   `json:"autoCheck,omitempty"`
-	LogDriver  string `json:"logDriver,omitempty"`
-	LogDir     string `json:"logDir,omitempty"`
-	LogSize    int    `json:"logSize,omitempty"`
-	LogLevel   string `json:"logLevel,omitempty"`
-	CgroupRoot string `json:"cgroupRoot,omitempty"`
+	AutoConfig bool        `json:"autoConfig,omitempty"`
+	AutoCheck  bool        `json:"autoCheck,omitempty"`
+	LogDriver  string      `json:"logDriver,omitempty"`
+	LogDir     string      `json:"logDir,omitempty"`
+	LogSize    int         `json:"logSize,omitempty"`
+	LogLevel   string      `json:"logLevel,omitempty"`
+	CgroupRoot string      `json:"cgroupRoot,omitempty"`
+	CacheCfg   CacheConfig `json:"cacheConfig,omitempty"`
+}
+
+// CacheConfig define cache limit related config
+type CacheConfig struct {
+	Enable            bool            `json:"enable,omitempty"`
+	DefaultLimitMode  string          `json:"defaultLimitMode,omitempty"`
+	DefaultResctrlDir string          `json:"-"`
+	AdjustInterval    int             `json:"adjustInterval,omitempty"`
+	PerfDuration      int             `json:"perfDuration,omitempty"`
+	L3Percent         MultiLvlPercent `json:"l3Percent,omitempty"`
+	MemBandPercent    MultiLvlPercent `json:"memBandPercent,omitempty"`
+}
+
+// MultiLvlPercent define multi level percentage
+type MultiLvlPercent struct {
+	Low  int `json:"low,omitempty"`
+	Mid  int `json:"mid,omitempty"`
+	High int `json:"high,omitempty"`
 }
 
 // NewConfig returns new config load from config file
@@ -48,15 +67,32 @@ func NewConfig(path string) (*Config, error) {
 		path = constant.ConfigFile
 	}
 
-	defaultLogSize := 1024
+	defaultLogSize, defaultAdInt, defaultPerfDur := 1024, 1000, 1000
+	defaultLowL3, defaultMidL3, defaultHighL3, defaultLowMB, defaultMidMB, defaultHighMB := 20, 30, 50, 10, 30, 50
 	cfg := Config{
-		AutoConfig: false,
 		AutoCheck:  false,
 		LogDriver:  "stdio",
 		LogDir:     constant.DefaultLogDir,
 		LogSize:    defaultLogSize,
 		LogLevel:   "info",
 		CgroupRoot: constant.DefaultCgroupRoot,
+		CacheCfg: CacheConfig{
+			Enable:            false,
+			DefaultLimitMode:  "static",
+			DefaultResctrlDir: "/sys/fs/resctrl",
+			AdjustInterval:    defaultAdInt,
+			PerfDuration:      defaultPerfDur,
+			L3Percent: MultiLvlPercent{
+				Low:  defaultLowL3,
+				Mid:  defaultMidL3,
+				High: defaultHighL3,
+			},
+			MemBandPercent: MultiLvlPercent{
+				Low:  defaultLowMB,
+				Mid:  defaultMidMB,
+				High: defaultHighMB,
+			},
+		},
 	}
 
 	defer func() {

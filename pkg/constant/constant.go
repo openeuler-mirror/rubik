@@ -61,6 +61,8 @@ const (
 	WorkerNum = 1
 	// NodeNameEnvKey is node name environment variable key
 	NodeNameEnvKey = "RUBIK_NODE_NAME"
+	// KubepodsCgroup is kubepods root cgroup
+	KubepodsCgroup = "kubepods"
 )
 
 // LevelType is type definition of qos level
