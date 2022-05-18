@@ -17,13 +17,26 @@ package perf
 import (
 	"encoding/binary"
 	"errors"
+	"path/filepath"
 	"runtime"
 	"time"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
+
+	"isula.org/rubik/pkg/config"
+	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
 )
+
+var (
+	hwSupport = false
+)
+
+//HwSupport tells if the os support perf hw pmu events
+func HwSupport() bool {
+	return hwSupport
+}
 
 // PerfStat is perf stat info
 type PerfStat struct {
@@ -219,4 +232,12 @@ func CgroupStat(cgpath string, dur time.Duration) (*PerfStat, error) {
 
 	stat := p.Read()
 	return &stat, nil
+}
+
+func init() {
+	_, err := CgroupStat(filepath.Join(config.CgroupRoot, "perf_event", constant.KubepodsCgroup), time.Millisecond)
+	if err == nil {
+		hwSupport = true
+	}
+	log.Infof("perf hw support = %v", hwSupport)
 }
