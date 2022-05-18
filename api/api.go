@@ -16,8 +16,9 @@ package api
 
 // PodQoS describe Pod QoS settings
 type PodQoS struct {
-	CgroupPath string `json:"CgroupPath"`
-	QosLevel   int    `json:"QosLevel"`
+	CgroupPath      string `json:"CgroupPath"`
+	QosLevel        int    `json:"QosLevel"`
+	CacheLimitLevel string `json:"CacheLimitLevel"`
 }
 
 // SetQosRequest is request get from north end

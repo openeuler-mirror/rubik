@@ -102,6 +102,21 @@ func TestConfig_String(t *testing.T) {
     "logDir": "/var/log/rubik",
     "logSize": 1024,
     "logLevel": "info",
-    "cgroupRoot": "/sys/fs/cgroup"
+    "cgroupRoot": "/sys/fs/cgroup",
+    "cacheConfig": {
+        "defaultLimitMode": "static",
+        "adjustInterval": 1000,
+        "perfDuration": 1000,
+        "l3Percent": {
+            "low": 20,
+            "mid": 30,
+            "high": 50
+        },
+        "memBandPercent": {
+            "low": 10,
+            "mid": 30,
+            "high": 50
+        }
+    }
 }`)
 }

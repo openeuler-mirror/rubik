@@ -17,7 +17,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 	"time"
 
@@ -30,7 +29,7 @@ import (
 	"isula.org/rubik/pkg/workerpool"
 )
 
-// TestNewRubik is newRubik function test
+// TestNewRubik is NewRubik function test
 func TestNewRubik(t *testing.T) {
 	os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
 	defer os.RemoveAll(constant.TmpTestDir)
@@ -38,7 +37,7 @@ func TestNewRubik(t *testing.T) {
 	os.Remove(tmpConfigFile)
 
 	os.MkdirAll(tmpConfigFile, constant.DefaultDirMode)
-	_, err := newRubik(tmpConfigFile)
+	_, err := NewRubik(tmpConfigFile)
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(tmpConfigFile)
 	assert.NoError(t, err)
@@ -54,7 +53,7 @@ func TestNewRubik(t *testing.T) {
 						"cgroupRoot": "/tmp/rubik-test/cgroup"
 }`)
 	assert.NoError(t, err)
-	_, err = newRubik(tmpConfigFile)
+	_, err = NewRubik(tmpConfigFile)
 	assert.NoError(t, err)
 
 	os.Remove(tmpConfigFile)
@@ -64,16 +63,16 @@ func TestNewRubik(t *testing.T) {
 						"logLevel": "debugabc"
 }`)
 	assert.NoError(t, err)
-	_, err = newRubik(tmpConfigFile)
+	_, err = NewRubik(tmpConfigFile)
 	assert.Equal(t, true, err != nil)
 
 	fd.Close()
 }
 
-// TestMonitor is monitor function test
+// TestMonitor is Monitor function test
 func TestMonitor(t *testing.T) {
 	server, _ := httpserver.NewServer()
-	rubik := &rubik{
+	rubik := &Rubik{
 		server: server,
 		pool: &workerpool.WorkerPool{
 			WorkerNum:  1,
@@ -81,14 +80,14 @@ func TestMonitor(t *testing.T) {
 		},
 	}
 
-	go rubik.monitor()
+	go rubik.Monitor()
 	close(config.ShutdownChan)
 }
 
-// TestShutdown is shutdown function test
+// TestShutdown is Shutdown function test
 func TestShutdown(t *testing.T) {
 	server, _ := httpserver.NewServer()
-	rubik := &rubik{
+	rubik := &Rubik{
 		server: server,
 		pool: &workerpool.WorkerPool{
 			WorkerNum:  1,
@@ -96,31 +95,27 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	rubik.shutdown()
+	rubik.Shutdown()
 }
 
-// TestSync is sync function test
+// TestSync is Sync function test
 func TestSync(t *testing.T) {
-	rubik := &rubik{
+	rubik := &Rubik{
 		config: &config.Config{
 			AutoCheck: true,
 		},
 	}
 
-	err := rubik.sync()
+	err := rubik.Sync()
 	assert.Equal(t, true, err != nil)
-
-	rubik.config.AutoCheck = false
-	err = rubik.sync()
-	assert.NoError(t, err)
 }
 
-// TestServe is serve function test
+// TestServe is Serve function test
 func TestServe(t *testing.T) {
 	sock, err := httpserver.NewSock()
 	assert.NoError(t, err)
 	server, _ := httpserver.NewServer()
-	rubik := &rubik{
+	rubik := &Rubik{
 		server: server,
 		sock:   sock,
 		config: &config.Config{},
@@ -128,7 +123,7 @@ func TestServe(t *testing.T) {
 
 	var errC chan error
 	go func() {
-		errC <- rubik.serve()
+		errC <- rubik.Serve()
 	}()
 
 	select {
@@ -149,41 +144,37 @@ var cfgA = `
 	"cgroupRoot": "/tmp/rubik-test/cgroup"
 }`
 
-// TestRun test run server
-func TestRun(t *testing.T) {
+// TestRunAbnormality test run server abnormality
+func TestRunAbnormality(t *testing.T) {
 	old := os.Args
 	defer func() {
 		os.Args = old
 	}()
-
-	fcfg := filepath.Join(constant.TmpTestDir, "config.json")
+	configFile := "config.json"
+	fcfg := filepath.Join(constant.TmpTestDir, configFile)
 	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	err = ioutil.WriteFile(fcfg, []byte(cfgA), constant.DefaultFileMode)
-	assert.NoError(t, err)
-
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	// case: argument not valid
 	os.Args = []string{"invalid", "failed"}
 	ret := Run(fcfg)
 	assert.Equal(t, constant.ErrCodeFailed, ret)
-
 	os.Args = []string{"rubik"}
-
 	// case: file is locked
 	lock, err := util.CreateLockFile(constant.LockFile)
-	Run(fcfg) // set rubik lock failed: ...
+	ret = Run(fcfg) // set rubik lock failed: ...
+	assert.Equal(t, constant.ErrCodeFailed, ret)
 	util.RemoveLockFile(lock, constant.LockFile)
-
 	// case: invalid config.json
 	err = ioutil.WriteFile(fcfg, []byte("invalid"), constant.DefaultFileMode)
-	assert.NoError(t, err)
-	Run(fcfg)
-
-	// case: config.json missing, use default config.json
-	go func() {
-		time.Sleep(time.Second)
-		err = syscall.Kill(os.Getpid(), syscall.SIGINT)
+	if err != nil {
 		assert.NoError(t, err)
-	}()
-	Run("/dev/should/not/exist")
+	}
+	ret = Run(fcfg)
+	assert.Equal(t, constant.ErrCodeFailed, ret)
 }

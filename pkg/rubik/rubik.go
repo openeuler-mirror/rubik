@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"isula.org/rubik/pkg/autoconfig"
+	"isula.org/rubik/pkg/cachelimit"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
@@ -40,8 +41,8 @@ import (
 	"isula.org/rubik/pkg/workerpool"
 )
 
-// rubik defines rubik struct
-type rubik struct {
+// Rubik defines rubik struct
+type Rubik struct {
 	server     *http.Server
 	pool       *workerpool.WorkerPool
 	sock       *net.Listener
@@ -70,7 +71,7 @@ func Run(fcfg string) int {
 }
 
 func run(fcfg string) int {
-	rubik, err := newRubik(fcfg)
+	rubik, err := NewRubik(fcfg)
 	if err != nil {
 		fmt.Printf("new rubik failed: %v\n", err)
 		return constant.ErrCodeFailed
@@ -78,23 +79,28 @@ func run(fcfg string) int {
 
 	rubik.initAutoConfig()
 
-	if err = rubik.sync(); err != nil {
+	if err = rubik.CacheLimit(); err != nil {
+		log.Errorf("cache limit init error: %v", err)
+		return constant.ErrCodeFailed
+	}
+
+	if err = rubik.Sync(); err != nil {
 		log.Errorf("sync qos level failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 
 	go signalHandler()
-	go rubik.monitor()
+	go rubik.Monitor()
 
-	if err = rubik.serve(); err != nil {
+	if err = rubik.Serve(); err != nil {
 		log.Errorf("http serve failed: %v", err)
 		return constant.ErrCodeFailed
 	}
 	return 0
 }
 
-// newRubik creates a new rubik object
-func newRubik(cfgPath string) (*rubik, error) {
+// NewRubik creates a new rubik object
+func NewRubik(cfgPath string) (*Rubik, error) {
 	cfg, err := config.NewConfig(cfgPath)
 	if err != nil {
 		return nil, errors.Errorf("load config failed: %v", err)
@@ -118,7 +124,7 @@ func newRubik(cfgPath string) (*rubik, error) {
 		}
 	}
 
-	return &rubik{
+	return &Rubik{
 		server:     server,
 		pool:       pool,
 		sock:       sock,
@@ -140,29 +146,26 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 	return kubeClient, nil
 }
 
-func (r *rubik) initAutoConfig() {
+func (r *Rubik) initAutoConfig() {
 	if r.config.AutoConfig {
 		autoconfig.InitAutoConfig(r.kubeClient)
 	}
 }
 
-// sync sync pods qos level
-func (r *rubik) sync() error {
-	if r.config.AutoCheck {
-		return sync.Sync(r.kubeClient)
-	}
-	return nil
+// Sync sync pods qos level
+func (r *Rubik) Sync() error {
+	return sync.Sync(r.config.AutoCheck, r.kubeClient)
 }
 
-// monitor monitors shutdown signal
-func (r *rubik) monitor() {
+// Monitor monitors shutdown signal
+func (r *Rubik) Monitor() {
 	<-config.ShutdownChan
-	r.shutdown()
+	r.Shutdown()
 	os.Exit(1)
 }
 
-// shutdown waits for tasks done or timeout to shutdown rubik
-func (r *rubik) shutdown() {
+// Shutdown waits for tasks done or timeout to shutdown rubik
+func (r *Rubik) Shutdown() {
 	poolDone := make(chan struct{})
 	go func() {
 		for {
@@ -187,10 +190,18 @@ func (r *rubik) shutdown() {
 	log.DropError(r.server.Shutdown(context.Background()))
 }
 
-// serve starts http server
-func (r *rubik) serve() error {
+// Serve starts http server
+func (r *Rubik) Serve() error {
 	log.Logf("Start http server %s with cfg\n%v", constant.RubikSock, r.config)
 	return r.server.Serve(*r.sock)
+}
+
+// CacheLimit init cache limit module
+func (r *Rubik) CacheLimit() error {
+	if r.config.CacheCfg.Enable {
+		return cachelimit.Init(&r.config.CacheCfg)
+	}
+	return nil
 }
 
 func signalHandler() {

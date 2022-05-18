@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"isula.org/rubik/api"
+	"isula.org/rubik/pkg/cachelimit"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/qos"
@@ -134,6 +135,21 @@ func (task *QosTask) do() error {
 		}
 		if vErr = pod.ValidateQos(); vErr != nil {
 			tinylog.WithCtx(task.ctx).Errorf("Validate pod %v qos level error: %v", podID, vErr)
+			errFlag = true
+		}
+		if !cachelimit.ClEnabled() {
+			continue
+		}
+		if req.QosLevel == constant.MaxLevel.Int() {
+			cachelimit.AddOnlinePod(podID, req.CgroupPath)
+			continue
+		}
+		podCacheInfo, err := cachelimit.NewCacheLimitPodInfo(task.ctx, podID, req)
+		if err != nil {
+			return err
+		}
+		if err = podCacheInfo.SetCacheLimit(); err != nil {
+			tinylog.WithCtx(task.ctx).Errorf("Set pod %v cache limit error: %v", podID, err)
 			errFlag = true
 		}
 	}
