@@ -14,9 +14,12 @@
 package rubik
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
@@ -177,4 +180,68 @@ func TestRunAbnormality(t *testing.T) {
 	}
 	ret = Run(fcfg)
 	assert.Equal(t, constant.ErrCodeFailed, ret)
+}
+
+// TestRun test run server
+func TestRun(t *testing.T) {
+	if os.Getenv("BE_TESTRUN") == "1" {
+		// case: config.json missing, use default config.json
+		ret := Run("/dev/should/not/exist")
+		fmt.Println(ret)
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestRun")
+	cmd.Env = append(os.Environ(), "BE_TESTRUN=1")
+	err := cmd.Start()
+	assert.NoError(t, err)
+	sleepTime := 3
+	time.Sleep(time.Duration(sleepTime) * time.Second)
+	err = cmd.Process.Signal(syscall.SIGINT)
+	assert.NoError(t, err)
+}
+
+// TestCacheLimit is CacheLimit function test
+func TestCacheLimit(t *testing.T) {
+	sock, err := httpserver.NewSock()
+	assert.NoError(t, err)
+	server, _ := httpserver.NewServer()
+	rubik := &Rubik{
+		server: server,
+		sock:   sock,
+		config: &config.Config{
+			CacheCfg: config.CacheConfig{
+				Enable:            true,
+				DefaultLimitMode:  "invalid",
+				DefaultResctrlDir: constant.TmpTestDir + "invalid",
+			},
+		},
+	}
+
+	err = rubik.CacheLimit()
+	assert.Equal(t, true, err != nil)
+	rubik.config.CacheCfg.Enable = false
+	err = rubik.CacheLimit()
+	assert.NoError(t, err)
+}
+
+// TestSmallRun test run function
+func TestSmallRun(t *testing.T) {
+	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
+	os.Remove(tmpConfigFile)
+	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
+	assert.NoError(t, err)
+	fd, err := os.Create(tmpConfigFile)
+	assert.NoError(t, err)
+	fd.WriteString(`{
+						"cacheConfig": {
+                            "enable": true,
+                            "defaultLimitMode": "invalid"
+						}
+}`)
+	assert.NoError(t, err)
+	err = fd.Close()
+	assert.NoError(t, err)
+
+	res := run(tmpConfigFile)
+	assert.Equal(t, constant.ErrCodeFailed, res)
 }
