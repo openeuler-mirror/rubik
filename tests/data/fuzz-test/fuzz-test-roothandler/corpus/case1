@@ -1,1 +1,1 @@
-{"Pods": {"pod70f2828b-3f9c-42e2-97da-01c6072af4a6": {"CgroupPath": "kubepods/besteffort/pod70f2828b-3f9c-42e2-97da-01c6072af4a6", "QoSLevel": 0 }}}
+{"Pods": {"pod70f2828b-3f9c-42e2-97da-01c6072af4a6": {"CgroupPath": "kubepods/besteffort/pod70f2828b-3f9c-42e2-97da-01c6072af4a6", "QoSLevel": 0, "CacheLimitLevel": "low"}}}

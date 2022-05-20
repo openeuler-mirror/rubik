@@ -1,0 +1,18 @@
+{
+    "cacheConfig": {
+        "enable": false,
+        "defaultLimitMode": "dynamic",
+        "adjustInterval": 1000000,
+        "perfDuration": 999999,
+        "l3Percent": {
+            "low": 20,
+            "mid": 30,
+            "high": 50
+        },
+        "memBandPercent": {
+            "low": 10,
+            "mid": 30,
+            "high": 50
+        }
+    }
+}
