@@ -26,6 +26,6 @@ test_fun() {
 }
 
 test_fun
-post_fun
+tear_down
 
 exit "$exit_flag"

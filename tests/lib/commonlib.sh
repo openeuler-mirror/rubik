@@ -15,7 +15,7 @@
 top_dir=$(git rev-parse --show-toplevel)
 exit_flag=0
 
-function pre_fun() {
+function set_up() {
     if pgrep rubik > /dev/null 2>&1; then
         echo "rubik is already running, please stop it first"
         exit 1
@@ -44,7 +44,7 @@ function pre_fun() {
     fi
 }
 
-function post_fun() {
+function tear_down() {
     if [ -n "${rubik_pid}" ]; then
         kill -15 "${rubik_pid}" > /dev/null 2>&1
     fi
@@ -52,4 +52,35 @@ function post_fun() {
 
 function clean_all() {
     rm -rf /tmp/rubik_log
+}
+
+function generate_config_file() {
+    sed -n '/config.json:/{:a;n;/---/q;p;ba}' "${top_dir}"/hack/rubik-daemonset.yaml > /var/lib/rubik/config.json
+}
+
+function env_check() {
+    ls /sys/fs/cgroup/cpu/cpu.qos_level > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "ls /sys/fs/cgroup/cpu/cpu.qos.level failed"
+        return 1
+    fi
+
+    if [ ! -f /proc/sys/vm/memcg_qos_enable ]; then
+        echo "/proc/sys/vm/memcg_qos_enable is not an ordinary file"
+        return 1
+    else
+        echo -n 1 > /proc/sys/vm/memcg_qos_enable
+    fi
+
+    ls /sys/fs/cgroup/memory/memory.qos_level > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "ls /sys/fs/cgroup/memory.qos_level failed"
+        return 1
+    fi
+
+    ls /sys/fs/resctrl/schemata > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "ls /sys/fs/resctrl/schemata failed"
+        return 1
+    fi
 }

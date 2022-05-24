@@ -25,8 +25,8 @@ test_fun() {
     fi
 }
 
-pre_fun
+set_up
 test_fun
-post_fun
+tear_down
 
 exit "$exit_flag"
