@@ -41,6 +41,7 @@ type Config struct {
 	LogLevel   string      `json:"logLevel,omitempty"`
 	CgroupRoot string      `json:"cgroupRoot,omitempty"`
 	CacheCfg   CacheConfig `json:"cacheConfig,omitempty"`
+	BlkConfig  BlkioConfig `json:"blkConfig,omitempty"`
 }
 
 // CacheConfig define cache limit related config
@@ -52,6 +53,11 @@ type CacheConfig struct {
 	PerfDuration      int             `json:"perfDuration,omitempty"`
 	L3Percent         MultiLvlPercent `json:"l3Percent,omitempty"`
 	MemBandPercent    MultiLvlPercent `json:"memBandPercent,omitempty"`
+}
+
+// BlkioConfig defines blkio related configurations.
+type BlkioConfig struct {
+	Limit bool `json:"limit,omitempty"`
 }
 
 // MultiLvlPercent define multi level percentage
@@ -92,6 +98,9 @@ func NewConfig(path string) (*Config, error) {
 				Mid:  defaultMidMB,
 				High: defaultHighMB,
 			},
+		},
+		BlkConfig: BlkioConfig{
+			Limit: false,
 		},
 	}
 

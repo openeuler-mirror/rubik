@@ -67,6 +67,8 @@ const (
 	NodeNameEnvKey = "RUBIK_NODE_NAME"
 	// PriorityAnnotationKey is annotation key to mark offline pod
 	PriorityAnnotationKey = "volcano.sh/preemptable"
+	// BlkioKey is annotation key to set blkio limit
+	BlkioKey = "isula.org/blkio-limit"
 )
 
 // LevelType is type definition of qos level

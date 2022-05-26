@@ -117,6 +117,7 @@ func TestConfig_String(t *testing.T) {
             "mid": 30,
             "high": 50
         }
-    }
+    },
+    "blkConfig": {}
 }`)
 }
