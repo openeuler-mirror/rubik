@@ -27,6 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -35,6 +36,7 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
+	"isula.org/rubik/pkg/qos"
 	"isula.org/rubik/pkg/sync"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/util"
@@ -116,39 +118,27 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 	}
 	server, pool := httpserver.NewServer()
 
-	kubeCli := &kubernetes.Clientset{}
-	if cfg.AutoConfig || cfg.AutoCheck {
-		kubeCli, err = initKubeClient()
-		if err != nil {
-			return nil, errors.Errorf("new kube client failed: %v", err)
-		}
+	r := &Rubik{
+		server: server,
+		pool:   pool,
+		sock:   sock,
+		config: cfg,
 	}
 
-	return &Rubik{
-		server:     server,
-		pool:       pool,
-		sock:       sock,
-		config:     cfg,
-		kubeClient: kubeCli,
-	}, nil
-}
-
-func initKubeClient() (*kubernetes.Clientset, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
+	if err := r.initKubeClient(); err != nil {
 		return nil, err
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
+	if err := r.initEventHandler(); err != nil {
 		return nil, err
 	}
-	return kubeClient, nil
+
+	return r, nil
 }
 
 func (r *Rubik) initAutoConfig() {
 	if r.config.AutoConfig {
-		autoconfig.InitAutoConfig(r.kubeClient)
+		autoconfig.Init(r.kubeClient)
 	}
 }
 
@@ -202,6 +192,70 @@ func (r *Rubik) CacheLimit() error {
 		return cachelimit.Init(&r.config.CacheCfg)
 	}
 	return nil
+}
+
+// initKubeClient initialize kubeClient if autoconfig is enabled
+func (r *Rubik) initKubeClient() error {
+	r.kubeClient = nil
+	if !r.config.AutoConfig {
+		return nil
+	}
+
+	conf, err := rest.InClusterConfig()
+	if err != nil {
+		return err
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	r.kubeClient = kubeClient
+	log.Infof("the kube-client is initialized successfully")
+	return nil
+}
+
+// initEventHandler initialize the event handler and set the rubik callback function corresponding to the pod event.
+func (r *Rubik) initEventHandler() error {
+	if !r.config.AutoConfig {
+		return nil
+	}
+
+	if r.kubeClient == nil {
+		return fmt.Errorf("kube-client is not initialized")
+	}
+
+	autoconfig.Backend = r
+	if err := autoconfig.Init(r.kubeClient); err != nil {
+		return err
+	}
+	log.Infof("the event-handler is initialized successfully")
+	return nil
+}
+
+// AddEvent handle add event from informer
+func (r *Rubik) AddEvent(pod *corev1.Pod) {
+	// Rubik does not process add event of pods that are not in the running state.
+	if pod.Status.Phase != corev1.PodRunning {
+		return
+	}
+	qos.SetQosLevel(pod)
+}
+
+// UpdateEvent handle update event from informer
+func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
+	// Rubik does not process updates of pods that are not in the running state
+	// if the container is not running, delete it.
+	if newPod.Status.Phase != corev1.PodRunning {
+		return
+	}
+
+	qos.UpdateQosLevel(oldPod, newPod)
+}
+
+// DeleteEvent handle update event from informer
+func (r *Rubik) DeleteEvent(pod *corev1.Pod) {
 }
 
 func signalHandler() {

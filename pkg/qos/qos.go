@@ -130,6 +130,20 @@ func checkQosLevel(qosLevel int) error {
 	return errors.Errorf("invalid qos level number %d, should be 0 or -1", qosLevel)
 }
 
+// SetQosLevel set pod qos_level
+func SetQosLevel(pod *corev1.Pod) {
+	podQosInfo, err := BuildOfflinePodInfo(pod)
+	if err != nil {
+		log.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
+		return
+	}
+	if err = podQosInfo.SetQos(); err != nil {
+		log.Errorf("auto config qos error: %v", err)
+
+		return
+	}
+}
+
 func setQosLevel(root, file string, target int) error {
 	if !util.IsDirectory(root) {
 		return errors.Errorf("Invalid cgroup path %q", root)
@@ -213,6 +227,38 @@ func (pod *PodInfo) ValidateQos() error {
 	log.WithCtx(ctx).Logf("Checking level=%d for pod %s OK", pod.QosLevel, pod.PodID)
 
 	return nil
+}
+
+// UpdateQosLevel update pod qos_level
+func UpdateQosLevel(oldPod, newPod *corev1.Pod) {
+	var (
+		judge1 = oldPod.Status.Phase == newPod.Status.Phase
+		judge2 = oldPod.Spec.NodeName == newPod.Spec.NodeName
+		judge3 = util.IsOffline(oldPod) == util.IsOffline(newPod)
+	)
+	// qos related status no difference, just return
+	if judge1 && judge2 && judge3 {
+		return
+	}
+
+	node := os.Getenv(constant.NodeNameEnvKey)
+	if node == "" {
+		log.Errorf("auto config error: environment variable %s must be defined", constant.NodeNameEnvKey)
+		return
+	}
+	if newPod.Spec.NodeName != node {
+		return
+	}
+
+	podQosInfo, err := BuildOfflinePodInfo(newPod)
+	if err != nil {
+		log.Errorf("get pod %v info for auto config error: %v", newPod.UID, err)
+		return
+	}
+	if err := podQosInfo.SetQos(); err != nil {
+		log.Errorf("auto config qos error: %v", err)
+		return
+	}
 }
 
 // initCgroupPath return pod's cgroup full path
