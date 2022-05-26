@@ -23,9 +23,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"isula.org/rubik/pkg/common"
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/qos"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/util"
 )
 
 // InitAutoConfig init qos auto config handler
@@ -52,14 +53,14 @@ func updateHandler(old, new interface{}) {
 		return
 	}
 
-	if !common.IsOffline(*newPod) || newPod.Status.Phase != "Running" {
+	if !util.IsOffline(newPod) || newPod.Status.Phase != "Running" {
 		return
 	}
 
 	var (
 		judge1 = oldPod.Status.Phase == newPod.Status.Phase
 		judge2 = oldPod.Spec.NodeName == newPod.Spec.NodeName
-		judge3 = common.IsOffline(*oldPod) == common.IsOffline(*newPod)
+		judge3 = util.IsOffline(oldPod) == util.IsOffline(newPod)
 	)
 	// qos related status no difference, just return
 	if judge1 && judge2 && judge3 {
@@ -81,12 +82,12 @@ func addHandler(obj interface{}) {
 		log.Errorf("auto config error: environment variable %s must be defined", constant.NodeNameEnvKey)
 		return
 	}
-	if (pod.Spec.NodeName != node) || !common.IsOffline(*pod) {
+	if (pod.Spec.NodeName != node) || !util.IsOffline(pod) {
 		return
 	}
 
 	if pod.Status.Phase == "Running" {
-		podQosInfo, err := common.BuildOfflinePodInfo(*pod)
+		podQosInfo, err := qos.BuildOfflinePodInfo(pod)
 		if err != nil {
 			log.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
 			return

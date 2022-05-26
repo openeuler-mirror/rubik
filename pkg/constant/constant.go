@@ -59,10 +59,14 @@ const (
 	TaskChanCapacity = 1024
 	// WorkerNum is number of workers
 	WorkerNum = 1
-	// NodeNameEnvKey is node name environment variable key
-	NodeNameEnvKey = "RUBIK_NODE_NAME"
 	// KubepodsCgroup is kubepods root cgroup
 	KubepodsCgroup = "kubepods"
+	// PodCgroupNamePrefix is pod cgroup name prefix
+	PodCgroupNamePrefix = "pod"
+	// NodeNameEnvKey is node name environment variable key
+	NodeNameEnvKey = "RUBIK_NODE_NAME"
+	// PriorityAnnotationKey is annotation key to mark offline pod
+	PriorityAnnotationKey = "volcano.sh/preemptable"
 )
 
 // LevelType is type definition of qos level

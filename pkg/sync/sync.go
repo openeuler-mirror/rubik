@@ -1,4 +1,4 @@
-// Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+// Copyright (c) Huawei Technologies Co., Ltd. 2021-2022. All rights reserved.
 // rubik licensed under the Mulan PSL v2.
 // You can use this software according to the terms and conditions of the Mulan PSL v2.
 // You may obtain a copy of Mulan PSL v2 at:
@@ -17,8 +17,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -31,21 +29,19 @@ import (
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/qos"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/util"
 )
 
 const (
-	podCgroupNamePrefix     = "pod"
-	nodeNameEnvKey          = "RUBIK_NODE_NAME"
-	priorityAnnotationKey   = "volcano.sh/preemptable"
 	cacheLimitAnnotationKey = "volcano.sh/cache-limit"
 	configHashAnnotationKey = "kubernetes.io/config.hash"
 )
 
 // Sync qos setting
 func Sync(check bool, kubeClient *kubernetes.Clientset) error {
-	node := os.Getenv(nodeNameEnvKey)
+	node := os.Getenv(constant.NodeNameEnvKey)
 	if node == "" {
-		return errors.Errorf("environment variable %s must be defined", nodeNameEnvKey)
+		return errors.Errorf("environment variable %s must be defined", constant.NodeNameEnvKey)
 	}
 	pods, err := kubeClient.CoreV1().Pods("").List(context.Background(),
 		metav1.ListOptions{FieldSelector: fmt.Sprintf("spec.nodeName=%s", node)})
@@ -59,7 +55,7 @@ func Sync(check bool, kubeClient *kubernetes.Clientset) error {
 
 func verifyPodsSetting(pods *corev1.PodList, check bool) {
 	for _, pod := range pods.Items {
-		podCgroupPath := getPodCgroupPath(pod)
+		podCgroupPath := util.GetPodCgroupPath(&pod)
 		if !isOffline(pod) {
 			if pod.Namespace != "kube-system" {
 				cachelimit.AddOnlinePod(string(pod.UID), podCgroupPath)
@@ -104,7 +100,7 @@ func getPodCacheLimitLevel(pod corev1.Pod) string {
 }
 
 func isOffline(pod corev1.Pod) bool {
-	return pod.Annotations[priorityAnnotationKey] == "true"
+	return pod.Annotations[constant.PriorityAnnotationKey] == "true"
 }
 
 func getOfflinePodQosStruct(podID, cgroupPath string) (*qos.PodInfo, error) {
@@ -132,25 +128,4 @@ func getCacheLimitPodStruct(pod corev1.Pod, cgroupPath string) (*cachelimit.PodI
 		return nil, err
 	}
 	return podInfo, nil
-}
-
-func getPodCgroupPath(pod corev1.Pod) string {
-	var cgroupPath string
-	id := string(pod.UID)
-	if configHash := pod.Annotations[configHashAnnotationKey]; configHash != "" {
-		id = configHash
-	}
-
-	switch pod.Status.QOSClass {
-	case corev1.PodQOSGuaranteed:
-		cgroupPath = filepath.Join(constant.KubepodsCgroup, podCgroupNamePrefix+id)
-	case corev1.PodQOSBurstable:
-		cgroupPath = filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBurstable)),
-			podCgroupNamePrefix+id)
-	case corev1.PodQOSBestEffort:
-		cgroupPath = filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBestEffort)),
-			podCgroupNamePrefix+id)
-	}
-
-	return cgroupPath
 }
