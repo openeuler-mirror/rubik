@@ -16,6 +16,7 @@ package httpserver
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -80,13 +81,8 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := newContext(handleTimeout)
 	defer cancel()
 
-	if r.URL.RequestURI() != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
-	if r.Method != "POST" {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	b := readBody(ctx, w, r)
+	if b == nil {
 		return
 	}
 
@@ -95,21 +91,8 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var err error
-	var reqs api.SetQosRequest
-
 	log.WithCtx(ctx).Logf("Handle HTTP root request start")
-
-	err = json.NewDecoder(r.Body).Decode(&reqs)
-	log.DropError(r.Body.Close())
-	if err != nil {
-		writeRootResponse(ctx, w, constant.ErrCodeFailed, "Decode request body failed")
-		log.WithCtx(ctx).Errorf("Decode request body failed: %v", err)
-		return
-	}
-
-	err = pool.PushTask(workerpool.NewQosTask(ctx, reqs))
-	if err != nil {
+	if err := pool.PushTask(workerpool.NewQosTask(ctx, b)); err != nil {
 		writeRootResponse(ctx, w, constant.ErrCodeFailed, "set qos failed")
 		log.WithCtx(ctx).Errorf("Handle HTTP root request failed: %v", err)
 		return
@@ -117,6 +100,46 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 
 	writeRootResponse(ctx, w, constant.DefaultSucceedCode, "")
 	log.WithCtx(ctx).Logf("Handle HTTP root request OK")
+}
+
+func readBody(ctx context.Context, w http.ResponseWriter, r *http.Request) []byte {
+	if r.URL.RequestURI() != "/" {
+		http.NotFound(w, r)
+		return nil
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return nil
+	}
+
+	maxLength := int64(1024 * 1024) // 1M
+	if r.ContentLength > maxLength {
+		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+		return nil
+	}
+
+	if r.ContentLength <= 0 {
+		http.Error(w, http.StatusText(http.StatusLengthRequired), http.StatusLengthRequired)
+		return nil
+	}
+
+	b := make([]byte, r.ContentLength+1)
+	n, err := r.Body.Read(b)
+	defer r.Body.Close()
+	if err != nil && err != io.EOF {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		log.WithCtx(ctx).Errorf("Read request body error: %v", err)
+		return nil
+	}
+
+	if n != int(r.ContentLength) {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		log.WithCtx(ctx).Errorf("Invalid request content length %v, actual length %v", r.ContentLength, n)
+		return nil
+	}
+
+	return b[:n]
 }
 
 func ping(ctx context.Context, w http.ResponseWriter, r *http.Request) {

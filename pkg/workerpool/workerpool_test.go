@@ -15,86 +15,86 @@ package workerpool
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"isula.org/rubik/api"
+	"isula.org/rubik/pkg/cachelimit"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 )
 
-func testTaskDoPre() error {
+func testTaskDoPre() (*config.Config, error) {
 	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
 	os.Remove(tmpConfigFile)
 	if err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
-		return err
+		return nil, err
 	}
 	fd, err := os.Create(tmpConfigFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if _, err = fd.WriteString(`{
 						"cgroupRoot": "/tmp/rubik-test"
 }`); err != nil {
-		return err
+		return nil, err
 	}
 	if err = fd.Close(); err != nil {
-		return err
+		return nil, err
 	}
-	if _, err = config.NewConfig(tmpConfigFile); err != nil {
-		return err
+	cfg, err := config.NewConfig(tmpConfigFile)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return cfg, nil
 }
 
 // TestTask_Do is task do function test
 func TestTask_Do(t *testing.T) {
 	defer os.RemoveAll(constant.TmpTestDir)
 	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
-	err := testTaskDoPre()
+	_, err := testTaskDoPre()
 	assert.NoError(t, err)
-	pods := make(map[string]api.PodQoS, 1)
-	pods["abc"] = api.PodQoS{CgroupPath: "kubepods/abc/abc/abc", QosLevel: 1}
-	task := &QosTask{req: &api.SetQosRequest{Pods: pods}, err: make(chan error, 1), ctx: context.Background()}
+
+	data := `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc/abc", "QoSLevel": 1}}}`
+	task := &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
 	err = task.do()
 	assert.Contains(t, err.Error(), "qos level number")
-	podsNum := 2
-	pods = make(map[string]api.PodQoS, podsNum)
-	pods["abc"] = api.PodQoS{CgroupPath: "kubepods/abc/abc/abc", QosLevel: 0}
-	pods["abc2"] = api.PodQoS{CgroupPath: "kubepods/abc2/abc2/abc2", QosLevel: -1}
-	task = &QosTask{req: &api.SetQosRequest{Pods: pods}, err: make(chan error, 1), ctx: context.Background()}
+	data = `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc/abc", "QoSLevel": 0},"podabc2": {"CgroupP` +
+		`ath": "kubepods/abc/abc/abc2", "QoSLevel": 0}}}`
+	task = &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
 	for _, podID := range []string{"abc", "abc2"} {
-		err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", pods[podID].CgroupPath))
+		err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc/"+podID))
 		assert.NoError(t, err)
-		err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "memory", pods[podID].CgroupPath))
+		err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc/"+podID))
 		assert.NoError(t, err)
 	}
-	err = task.do()
 	if err := task.do(); err != nil {
 		assert.Contains(t, err.Error(), "set qos level error")
 	}
 	for _, podID := range []string{"abc", "abc2"} {
-		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "cpu", pods[podID].CgroupPath), constant.DefaultDirMode)
-		assert.NoError(t, err)
-		_, err = os.Create(filepath.Join(constant.TmpTestDir, "cpu", pods[podID].CgroupPath, "cpu.qos_level"))
-		assert.NoError(t, err)
-		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "memory", pods[podID].CgroupPath),
+		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc/"+podID),
 			constant.DefaultDirMode)
 		assert.NoError(t, err)
-		_, err = os.Create(filepath.Join(constant.TmpTestDir, "memory", pods[podID].CgroupPath, "memory.qos_level"))
+		_, err = os.Create(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc/"+podID, "cpu.qos_level"))
+		assert.NoError(t, err)
+		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc/"+podID),
+			constant.DefaultDirMode)
+		assert.NoError(t, err)
+		_, err = os.Create(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc/"+podID,
+			"memory.qos_level"))
 		assert.NoError(t, err)
 	}
 	defer func() {
 		for _, podID := range []string{"abc", "abc2"} {
-			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", pods[podID].CgroupPath))
+			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc/"+podID))
 			assert.NoError(t, err)
-			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "memory", pods[podID].CgroupPath))
+			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc/"+podID))
 			assert.NoError(t, err)
 		}
 	}()
@@ -106,17 +106,8 @@ func TestTask_Do(t *testing.T) {
 
 // TestNewQosTask is NewQosTask function test
 func TestNewQosTask(t *testing.T) {
-	podQos := api.PodQoS{
-		CgroupPath: "/tmp/abc",
-		QosLevel:   0,
-	}
-	pods := make(map[string]api.PodQoS, 1)
-	pods["abc"] = podQos
-	reqs := api.SetQosRequest{
-		Pods: pods,
-	}
-	newTask := NewQosTask(context.Background(), reqs)
-	assert.Equal(t, newTask.req.Pods["abc"].CgroupPath, "/tmp/abc")
+	data := `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc/abc", "QoSLevel": 1}}}`
+	newTask := NewQosTask(context.Background(), []byte(data))
 
 	taskErr := errors.New("task error")
 	newTask.error() <- taskErr
@@ -126,24 +117,14 @@ func TestNewQosTask(t *testing.T) {
 
 // test_rubik_pods_number_exceed_max_0001
 func TestTask_Do_ExceedMaxPods(t *testing.T) {
-	pods := make(map[string]api.PodQoS, constant.MaxPodsPerRequest+1)
+	data := `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc", "QoSLevel": -1, "CacheLimitLevel": "low"}`
 	for i := 0; i < (constant.MaxPodsPerRequest + 1); i++ {
-		pods[strconv.Itoa(i)] = api.PodQoS{
-			CgroupPath: "kubepods/abc/abc/abc",
-			QosLevel:   0,
-		}
+		data += fmt.Sprintf(`, "podabc%v": {"CgroupPath": "kubepods/a", "QoSLevel": 0, "CacheLimitLevel": "low"}`, i)
 	}
-
-	task := &QosTask{
-		req: &api.SetQosRequest{
-			Pods: pods,
-		},
-		err: make(chan error, 1),
-		ctx: context.Background(),
-	}
-
+	data += `}}`
+	task := &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
 	err := task.do()
-	assert.Equal(t, true, err != nil)
+	assert.Contains(t, err.Error(), "could not exceed")
 }
 
 type mockTask struct {
@@ -204,4 +185,53 @@ func TestWaitTaskTimeout(t *testing.T) {
 	mt := &mockTask{err: make(chan error, 1), ctx: ctx}
 	err := pool.PushTask(mt)
 	assert.Contains(t, err.Error(), "timeout")
+}
+
+// TestTaskDoCacheLimit test do cache limit
+func TestTaskDoCacheLimit(t *testing.T) {
+	defer os.RemoveAll(constant.TmpTestDir)
+	cfg, err := testTaskDoPre()
+	assert.NoError(t, err)
+
+	data := `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc", "QoSLevel": -1, "CacheLimitLevel": "low"},` +
+		`"podabc2": {"CgroupPath": "kubepods/abc/abc2", "QoSLevel": 0, "CacheLimitLevel": "low"}}}`
+	task := &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
+	for _, podID := range []string{"abc", "abc2"} {
+		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc"+podID),
+			constant.DefaultDirMode)
+		assert.NoError(t, err)
+		_, err = os.Create(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc"+podID, "cpu.qos_level"))
+		assert.NoError(t, err)
+		err = os.MkdirAll(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc"+podID),
+			constant.DefaultDirMode)
+		assert.NoError(t, err)
+		_, err = os.Create(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc"+podID, "memory.qos_level"))
+		assert.NoError(t, err)
+	}
+	defer func() {
+		for _, podID := range []string{"abc", "abc2"} {
+			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", "kubepods/abc/abc"+podID))
+			assert.NoError(t, err)
+			err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "memory", "kubepods/abc/abc"+podID))
+			assert.NoError(t, err)
+		}
+	}()
+
+	cachelimit.Init(&cfg.CacheCfg)
+	err = task.do()
+	assert.Equal(t, true, err != nil)
+	assert.Equal(t, task.ctx, task.context())
+	data = `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc/abc", "QoSLevel": -1, "CacheLimitLevel": "invalid"},` +
+		`"podabc2": {"CgroupPath": "kubepods/abc/abc2", "QoSLevel": 0, "CacheLimitLevel": "low"}}}`
+	task = &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
+	err = task.do()
+	assert.Equal(t, true, err != nil)
+}
+
+// TestTaskDoDecodeFail test decode fail
+func TestTaskDoDecodeFail(t *testing.T) {
+	data := `{"Pods": {"podabc": {"CgroupPath": "kubepods/abc, "QoSLevel": 1}}}`
+	task := &QosTask{req: []byte(data), err: make(chan error, 1), ctx: context.Background()}
+	err := task.do()
+	assert.Contains(t, err.Error(), "unmarshal request body failed")
 }

@@ -97,11 +97,31 @@ func TestRootHandler(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			r.ContentLength = int64(len(tt.data))
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, r)
 			assert.Equal(t, tt.wantErr, w.Code != http.StatusOK)
 		})
 	}
+}
+
+// TestRootHandlerInvalidLength test invalid length
+func TestRootHandlerInvalidRequest(t *testing.T) {
+	handler := setupHandler()
+	data := []byte("abc")
+	r, err := http.NewRequest("POST", "/", bufio.NewReader(bytes.NewReader(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.ContentLength = int64(len(data) + 1)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	r.ContentLength = int64(len(data) - 1)
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 // TestRootHandler is PingHandler function test
