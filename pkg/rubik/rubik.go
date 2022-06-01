@@ -86,7 +86,6 @@ func run(fcfg string) int {
 
 	if err = rubik.Sync(); err != nil {
 		log.Errorf("sync qos level failed: %v", err)
-		return constant.ErrCodeFailed
 	}
 
 	go signalHandler()
