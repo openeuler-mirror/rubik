@@ -15,6 +15,7 @@ package workerpool
 
 import (
 	"context"
+	"encoding/json"
 	"sync/atomic"
 
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ type task interface {
 
 // QosTask defines qos task
 type QosTask struct {
-	req *api.SetQosRequest
+	req []byte
 	err chan error
 	ctx context.Context
 }
@@ -101,8 +102,8 @@ func (pool *WorkerPool) PushTask(newTask task) error {
 }
 
 // NewQosTask creates a new QosTask
-func NewQosTask(ctx context.Context, reqs api.SetQosRequest) *QosTask {
-	return &QosTask{req: &reqs, err: make(chan error, 1), ctx: ctx}
+func NewQosTask(ctx context.Context, reqs []byte) *QosTask {
+	return &QosTask{req: reqs, err: make(chan error, 1), ctx: ctx}
 }
 
 func (task *QosTask) error() chan error {
@@ -117,13 +118,19 @@ func (task *QosTask) do() error {
 	var (
 		errFlag    bool
 		sErr, vErr error
+		reqs       api.SetQosRequest
 	)
 
-	if len(task.req.Pods) > constant.MaxPodsPerRequest {
+	err := json.Unmarshal(task.req, &reqs)
+	if err != nil {
+		return errors.Errorf("unmarshal request body failed: %v", err)
+	}
+
+	if len(reqs.Pods) > constant.MaxPodsPerRequest {
 		return errors.Errorf("pods number could not exceed %d per http request", constant.MaxPodsPerRequest)
 	}
 
-	for podID, req := range task.req.Pods {
+	for podID, req := range reqs.Pods {
 		pod, nErr := qos.NewPodInfo(task.ctx, podID, config.CgroupRoot, req)
 		if nErr != nil {
 			return nErr
