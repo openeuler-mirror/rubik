@@ -33,7 +33,7 @@ var (
 	hwSupport = false
 )
 
-//HwSupport tells if the os support perf hw pmu events
+// HwSupport tell if the os support perf hw pmu events.
 func HwSupport() bool {
 	return hwSupport
 }
@@ -44,31 +44,68 @@ type PerfStat struct {
 	CpuCycles       uint64
 	CacheMisses     uint64
 	CacheReferences uint64
+	LLCAccess       uint64
+	LLCMiss         uint64
 }
 
 type cgEvent struct {
 	cgfd   int
 	cpu    int
-	fds    map[uint64]int
+	fds    map[string]int
 	leader int
+}
+
+type eventConfig struct {
+	config    uint64
+	eType     uint32
+	eventName string
+}
+
+func getEventConfig() []eventConfig {
+	return []eventConfig{
+		{
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_INSTRUCTIONS,
+			eventName: "instructions",
+		},
+		{
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CPU_CYCLES,
+			eventName: "cycles",
+		},
+		{
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CACHE_REFERENCES,
+			eventName: "cachereferences",
+		},
+		{
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CACHE_MISSES,
+			eventName: "cachemiss",
+		},
+		{
+			eType:     unix.PERF_TYPE_HW_CACHE,
+			config:    unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<8 | unix.PERF_COUNT_HW_CACHE_RESULT_MISS<<16,
+			eventName: "llcmiss",
+		},
+		{
+			eType:     unix.PERF_TYPE_HW_CACHE,
+			config:    unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<8 | unix.PERF_COUNT_HW_CACHE_RESULT_ACCESS<<16,
+			eventName: "llcaccess",
+		},
+	}
 }
 
 func newEvent(cgfd, cpu int) (*cgEvent, error) {
 	e := cgEvent{
 		cgfd:   cgfd,
 		cpu:    cpu,
-		fds:    make(map[uint64]int),
+		fds:    make(map[string]int),
 		leader: -1,
 	}
 
-	configList := []uint64{
-		unix.PERF_COUNT_HW_INSTRUCTIONS,
-		unix.PERF_COUNT_HW_CPU_CYCLES,
-		unix.PERF_COUNT_HW_CACHE_REFERENCES,
-		unix.PERF_COUNT_HW_CACHE_MISSES,
-	}
-	for _, config := range configList {
-		if err := e.openHardware(config); err != nil {
+	for _, ec := range getEventConfig() {
+		if err := e.openHardware(ec); err != nil {
 			return nil, err
 		}
 	}
@@ -76,22 +113,22 @@ func newEvent(cgfd, cpu int) (*cgEvent, error) {
 	return &e, nil
 }
 
-func (e *cgEvent) openHardware(config uint64) error {
+func (e *cgEvent) openHardware(ec eventConfig) error {
 	attr := unix.PerfEventAttr{
-		Type:   unix.PERF_TYPE_HARDWARE,
-		Config: config,
+		Type:   ec.eType,
+		Config: ec.config,
 	}
 
 	fd, err := unix.PerfEventOpen(&attr, e.cgfd, e.cpu, e.leader, unix.PERF_FLAG_PID_CGROUP|unix.PERF_FLAG_FD_CLOEXEC)
 	if err != nil {
-		log.Errorf("perf open for config:0x%x cpu:%d failed: %v", config, e.cpu, err)
+		log.Errorf("perf open for event:%s cpu:%d failed: %v", ec.eventName, e.cpu, err)
 		return err
 	}
 
 	if e.leader == -1 {
 		e.leader = fd
 	}
-	e.fds[config] = fd
+	e.fds[ec.eventName] = fd
 	return nil
 }
 
@@ -112,11 +149,11 @@ func (e *cgEvent) stop() error {
 	return nil
 }
 
-func (e *cgEvent) read(config uint64) uint64 {
+func (e *cgEvent) read(eventName string) uint64 {
 	var val uint64
 
 	p := make([]byte, 64)
-	num, err := unix.Read(e.fds[config], p)
+	num, err := unix.Read(e.fds[eventName], p)
 	if err != nil {
 		log.Errorf("read perf data failed %v", err)
 		return 0
@@ -193,10 +230,12 @@ func (p *perf) Stop() error {
 func (p *perf) Read() PerfStat {
 	var stat PerfStat
 	for _, e := range p.Events {
-		stat.Instructions += e.read(unix.PERF_COUNT_HW_INSTRUCTIONS)
-		stat.CpuCycles += e.read(unix.PERF_COUNT_HW_CPU_CYCLES)
-		stat.CacheReferences += e.read(unix.PERF_COUNT_HW_CACHE_REFERENCES)
-		stat.CacheMisses += e.read(unix.PERF_COUNT_HW_CACHE_MISSES)
+		stat.Instructions += e.read("instructions")
+		stat.CpuCycles += e.read("cycles")
+		stat.CacheReferences += e.read("cachereferences")
+		stat.CacheMisses += e.read("cachemiss")
+		stat.LLCMiss += e.read("llcmiss")
+		stat.LLCAccess += e.read("llcaccess")
 	}
 	return stat
 }

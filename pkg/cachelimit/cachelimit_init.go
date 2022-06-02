@@ -80,8 +80,8 @@ func Init(cfg *config.CacheConfig) error {
 	if !isHostPidns("/proc/self/ns/pid") {
 		return errors.New("share pid namespace with host is needed for cache limit")
 	}
-	if err := perfSupport(); err != nil {
-		return err
+	if !perf.HwSupport() {
+		return errors.New("hardware event perf not supported")
 	}
 	if err := checkCacheCfg(cfg); err != nil {
 		return err
@@ -109,12 +109,6 @@ func isHostPidns(path string) bool {
 	}
 	hostPidInode := "4026531836"
 	return strings.Trim(ns, "pid:[]") == hostPidInode
-}
-
-func perfSupport() error {
-	_, err := perf.CgroupStat(filepath.Join(config.CgroupRoot, perfEvent, constant.KubepodsCgroup),
-		time.Millisecond)
-	return err
 }
 
 func checkCacheCfg(cfg *config.CacheConfig) error {
@@ -275,14 +269,14 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 	limiter := newCacheLimitSet(cfg.DefaultResctrlDir, dynamicLevel, l3PercentDynamic, mbPercentDynamic)
 
 	for _, p := range onlinePods.clone() {
-		cacheMiss := p.getPodCacheMiss(config.CgroupRoot, cfg.PerfDuration)
-		if cacheMiss >= missMax {
+		cacheMiss, LLCMiss := p.getPodCacheMiss(config.CgroupRoot, cfg.PerfDuration)
+		if cacheMiss >= missMax || LLCMiss >= missMax {
 			if err := limiter.flush(cfg, stepLess); err != nil {
 				log.Errorf(err.Error())
 			}
 			return
 		}
-		if cacheMiss >= missMin {
+		if cacheMiss >= missMin || LLCMiss >= missMin {
 			needMore = false
 		}
 	}
@@ -304,19 +298,20 @@ func dynamicExist() bool {
 	return false
 }
 
-func (p *PodInfo) getPodCacheMiss(cgroupRoot string, perfDu int) int {
+func (p *PodInfo) getPodCacheMiss(cgroupRoot string, perfDu int) (int, int) {
 	cgroupPath := filepath.Join(cgroupRoot, perfEvent, p.cgroupPath)
 	if !util.PathExist(cgroupPath) {
 		onlinePods.Del(p.podID)
-		return 0
+		return 0, 0
 	}
 
 	stat, err := perf.CgroupStat(cgroupPath, time.Duration(perfDu)*time.Millisecond)
 	if err != nil {
-		return 0
+		return 0, 0
 	}
 
-	return int(100.0 * float64(stat.CacheMisses) / (1.0 + float64(stat.CacheReferences)))
+	return int(100.0 * float64(stat.CacheMisses) / (1.0 + float64(stat.CacheReferences))),
+		int(100.0 * float64(stat.LLCMiss) / (1.0 + float64(stat.LLCAccess)))
 }
 
 // ClEnabled return if cache limit is enabled
