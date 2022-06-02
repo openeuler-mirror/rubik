@@ -61,6 +61,7 @@ spec:
         name: rubik-agent
     spec:
       serviceAccountName: rubik
+      hostPID: true
       containers:
       - name: rubik-agent
         image: rubik_image_name_and_tag
@@ -70,6 +71,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
         resources:
           limits:
             memory: 200Mi
@@ -83,8 +88,8 @@ spec:
         - name: runrubik
           mountPath: /run/rubik
           readOnly: false
-        - name: sysfscgroups
-          mountPath: /sys/fs/cgroup
+        - name: sysfs
+          mountPath: /sys/fs
           readOnly: false
         - name: config-volume
           mountPath: /var/lib/rubik
@@ -96,9 +101,9 @@ spec:
       - name: runrubik
         hostPath:
           path: /run/rubik
-      - name: sysfscgroups
+      - name: sysfs
         hostPath:
-          path: /sys/fs/cgroup
+          path: /sys/fs
       - name: config-volume
         configMap:
           name: rubik-config

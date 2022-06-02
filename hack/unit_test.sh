@@ -28,5 +28,3 @@ for path in ${go_list}; do
     fi
     tail -n 1 "${test_log}"
 done
-
-rm -rf "${test_log}"
