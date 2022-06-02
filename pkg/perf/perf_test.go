@@ -29,7 +29,7 @@ import (
 
 // TestCgroupStat testcase
 func TestCgroupStat(t *testing.T) {
-	if !hwSupport {
+	if !HwSupport() {
 		t.Skipf("%s only run on physical machine", t.Name())
 	}
 	testCGRoot := filepath.Join(config.CgroupRoot, "perf_event", t.Name())
