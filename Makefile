@@ -13,7 +13,6 @@
 
 CWD=$(realpath .)
 TMP_DIR := /tmp/rubik_tmpdir
-INSTALL_DIR := /var/lib/rubik
 VERSION_FILE := ./VERSION
 TEST_FILE := ./TEST
 VERSION := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$1}')
@@ -57,9 +56,11 @@ help:
 	@echo
 
 dev:
+	mkdir -p $(TMP_DIR)
 	$(GO_BUILD) $(DEBUG_FLAGS) -o rubik $(LD_FLAGS) rubik.go
 
 release:
+	mkdir -p $(TMP_DIR)
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
 	@if [ -f ./hack/rubik-daemonset.yaml ]; then sed -i 's/rubik_image_name_and_tag/rubik:$(VERSION)-$(RELEASE)/g' ./hack/rubik-daemonset.yaml; fi;
