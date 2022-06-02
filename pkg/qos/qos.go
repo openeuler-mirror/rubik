@@ -22,11 +22,14 @@ import (
 	"strings"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/pkg/errors"
 
 	"isula.org/rubik/api"
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
-	"isula.org/rubik/pkg/tinylog"
+	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/util"
 )
 
@@ -66,6 +69,20 @@ func NewPodInfo(ctx context.Context, podID string, cgmnt string, req api.PodQoS)
 	}
 
 	return &pod, nil
+}
+
+// BuildOfflinePodInfo build offline pod information
+func BuildOfflinePodInfo(pod *corev1.Pod) (*PodInfo, error) {
+	podQos := api.PodQoS{
+		CgroupPath: util.GetPodCgroupPath(pod),
+		QosLevel:   -1,
+	}
+	podInfo, err := NewPodInfo(context.Background(), string(pod.UID), config.CgroupRoot, podQos)
+	if err != nil {
+		return nil, err
+	}
+
+	return podInfo, nil
 }
 
 func getQosLevel(root, file string) (int, error) {
@@ -113,7 +130,20 @@ func checkQosLevel(qosLevel int) error {
 	return errors.Errorf("invalid qos level number %d, should be 0 or -1", qosLevel)
 }
 
-// setQosLevel is actual function to do the setting job
+// SetQosLevel set pod qos_level
+func SetQosLevel(pod *corev1.Pod) {
+	podQosInfo, err := BuildOfflinePodInfo(pod)
+	if err != nil {
+		log.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
+		return
+	}
+	if err = podQosInfo.SetQos(); err != nil {
+		log.Errorf("auto config qos error: %v", err)
+
+		return
+	}
+}
+
 func setQosLevel(root, file string, target int) error {
 	if !util.IsDirectory(root) {
 		return errors.Errorf("Invalid cgroup path %q", root)
@@ -145,7 +175,7 @@ func setQosLevel(root, file string, target int) error {
 // SetQos is used for setting pod's qos level following it's cgroup path
 func (pod *PodInfo) SetQos() error {
 	ctx := pod.Ctx
-	tinylog.WithCtx(ctx).Logf("Setting level=%d for pod %s", pod.QosLevel, pod.PodID)
+	log.WithCtx(ctx).Logf("Setting level=%d for pod %s", pod.QosLevel, pod.PodID)
 	if pod.FullPath == nil {
 		return errors.Errorf("Empty cgroup path of pod %s", pod.PodID)
 	}
@@ -163,7 +193,7 @@ func (pod *PodInfo) SetQos() error {
 		}
 	}
 
-	tinylog.WithCtx(ctx).Logf("Setting level=%d for pod %s OK", pod.QosLevel, pod.PodID)
+	log.WithCtx(ctx).Logf("Setting level=%d for pod %s OK", pod.QosLevel, pod.PodID)
 	return nil
 }
 
@@ -175,7 +205,7 @@ func (pod *PodInfo) ValidateQos() error {
 	)
 	ctx := pod.Ctx
 
-	tinylog.WithCtx(ctx).Logf("Checking level=%d for pod %s", pod.QosLevel, pod.PodID)
+	log.WithCtx(ctx).Logf("Checking level=%d for pod %s", pod.QosLevel, pod.PodID)
 
 	for kind, cgPath := range pod.FullPath {
 		switch kind {
@@ -194,9 +224,41 @@ func (pod *PodInfo) ValidateQos() error {
 		return errors.Errorf("checking level=%d for pod %s failed", pod.QosLevel, pod.PodID)
 	}
 
-	tinylog.WithCtx(ctx).Logf("Checking level=%d for pod %s OK", pod.QosLevel, pod.PodID)
+	log.WithCtx(ctx).Logf("Checking level=%d for pod %s OK", pod.QosLevel, pod.PodID)
 
 	return nil
+}
+
+// UpdateQosLevel update pod qos_level
+func UpdateQosLevel(oldPod, newPod *corev1.Pod) {
+	var (
+		judge1 = oldPod.Status.Phase == newPod.Status.Phase
+		judge2 = oldPod.Spec.NodeName == newPod.Spec.NodeName
+		judge3 = util.IsOffline(oldPod) == util.IsOffline(newPod)
+	)
+	// qos related status no difference, just return
+	if judge1 && judge2 && judge3 {
+		return
+	}
+
+	node := os.Getenv(constant.NodeNameEnvKey)
+	if node == "" {
+		log.Errorf("auto config error: environment variable %s must be defined", constant.NodeNameEnvKey)
+		return
+	}
+	if newPod.Spec.NodeName != node {
+		return
+	}
+
+	podQosInfo, err := BuildOfflinePodInfo(newPod)
+	if err != nil {
+		log.Errorf("get pod %v info for auto config error: %v", newPod.UID, err)
+		return
+	}
+	if err := podQosInfo.SetQos(); err != nil {
+		log.Errorf("auto config qos error: %v", err)
+		return
+	}
 }
 
 // initCgroupPath return pod's cgroup full path

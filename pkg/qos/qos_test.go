@@ -27,6 +27,8 @@ import (
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/constant"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type getQosTestArgs struct {
@@ -432,4 +434,40 @@ func TestPodInfo_SetQos(t *testing.T) {
 	pod.QosLevel = -1
 	err = pod.ValidateQos()
 	assert.Equal(t, true, err != nil)
+}
+
+func TestBuildOfflinePodInfo(t *testing.T) {
+	pod := corev1.Pod{
+		TypeMeta: v1.TypeMeta{},
+		ObjectMeta: v1.ObjectMeta{
+			UID: "podabc",
+		},
+		Spec: corev1.PodSpec{},
+		Status: corev1.PodStatus{
+			QOSClass: corev1.PodQOSGuaranteed,
+		},
+	}
+
+	podQosInfo, err := BuildOfflinePodInfo(&pod)
+	assert.NoError(t, err)
+	assert.Equal(t, podQosInfo.PodID, string(pod.UID))
+	assert.Equal(t, podQosInfo.CgroupPath, "kubepods/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["cpu"], "/sys/fs/cgroup/cpu/kubepods/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["memory"], "/sys/fs/cgroup/memory/kubepods/podpodabc")
+
+	pod.Status.QOSClass = corev1.PodQOSBurstable
+	podQosInfo, err = BuildOfflinePodInfo(&pod)
+	assert.NoError(t, err)
+	assert.Equal(t, podQosInfo.PodID, string(pod.UID))
+	assert.Equal(t, podQosInfo.CgroupPath, "kubepods/burstable/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["cpu"], "/sys/fs/cgroup/cpu/kubepods/burstable/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["memory"], "/sys/fs/cgroup/memory/kubepods/burstable/podpodabc")
+
+	pod.Status.QOSClass = corev1.PodQOSBestEffort
+	podQosInfo, err = BuildOfflinePodInfo(&pod)
+	assert.NoError(t, err)
+	assert.Equal(t, podQosInfo.PodID, string(pod.UID))
+	assert.Equal(t, podQosInfo.CgroupPath, "kubepods/besteffort/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["cpu"], "/sys/fs/cgroup/cpu/kubepods/besteffort/podpodabc")
+	assert.Equal(t, podQosInfo.FullPath["memory"], "/sys/fs/cgroup/memory/kubepods/besteffort/podpodabc")
 }
