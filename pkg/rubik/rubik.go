@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"isula.org/rubik/pkg/autoconfig"
+	"isula.org/rubik/pkg/blkio"
 	"isula.org/rubik/pkg/cachelimit"
 	"isula.org/rubik/pkg/checkpoint"
 	"isula.org/rubik/pkg/config"
@@ -277,6 +278,9 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	}
 	r.cpm.AddPod(pod)
 	qos.SetQosLevel(pod)
+	if r.config.BlkConfig.Limit {
+		blkio.SetBlkio(pod)
+	}
 }
 
 // UpdateEvent handle update event from informer
@@ -293,8 +297,14 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 	// after the Rubik is started, the pod adding events are transferred through the update handler of Kubernetes.
 	if !r.cpm.PodExist(newPod.UID) {
 		r.cpm.AddPod(newPod)
+		if r.config.BlkConfig.Limit {
+			blkio.SetBlkio(newPod)
+		}
 	} else {
 		r.cpm.UpdatePod(newPod)
+		if r.config.BlkConfig.Limit {
+			blkio.WriteBlkio(oldPod, newPod)
+		}
 	}
 }
 

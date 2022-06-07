@@ -16,6 +16,7 @@ package util
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"isula.org/rubik/pkg/constant"
 )
@@ -23,6 +24,20 @@ import (
 const (
 	fileMaxSize = 10 * 1024 * 1024 // 10MB
 )
+
+// CreateFile create full path including dir and file.
+func CreateFile(path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), constant.DefaultDirMode); err != nil {
+		return err
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
+}
 
 // IsDirectory returns true if the file exists and it is a dir
 func IsDirectory(path string) bool {
