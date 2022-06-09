@@ -16,12 +16,12 @@ package perf
 
 import (
 	"encoding/binary"
-	"errors"
 	"path/filepath"
 	"runtime"
 	"time"
 	"unsafe"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
 	"isula.org/rubik/pkg/config"
@@ -122,8 +122,7 @@ func (e *cgEvent) openHardware(ec eventConfig) error {
 
 	fd, err := unix.PerfEventOpen(&attr, e.cgfd, e.cpu, e.leader, unix.PERF_FLAG_PID_CGROUP|unix.PERF_FLAG_FD_CLOEXEC)
 	if err != nil {
-		log.Errorf("perf open for event:%s cpu:%d failed: %v", ec.eventName, e.cpu, err)
-		return err
+		return errors.Errorf("perf open for event:%s cpu:%d failed: %v", ec.eventName, e.cpu, err)
 	}
 
 	if e.leader == -1 {
@@ -204,6 +203,10 @@ func newPerf(cgpath string) (*perf, error) {
 		return nil, errors.New("new perf event for all cpus failed")
 	}
 
+	if len(p.Events) != runtime.NumCPU() {
+		log.Errorf("new perf event for part of cpus failed")
+	}
+
 	return &p, nil
 }
 
@@ -259,18 +262,15 @@ func CgroupStat(cgpath string, dur time.Duration) (*PerfStat, error) {
 	}()
 
 	if err != nil {
-		log.Errorf("perf init failed: %v", err)
-		return nil, err
+		return nil, errors.Errorf("perf init failed: %v", err)
 	}
 
 	if err := p.Start(); err != nil {
-		log.Errorf("perf start failed: %v", err)
-		return nil, err
+		return nil, errors.Errorf("perf start failed: %v", err)
 	}
 	time.Sleep(dur)
 	if err := p.Stop(); err != nil {
-		log.Errorf("perf stop failed: %v", err)
-		return nil, err
+		return nil, errors.Errorf("perf stop failed: %v", err)
 	}
 
 	stat := p.Read()
@@ -282,5 +282,4 @@ func init() {
 	if err == nil {
 		hwSupport = true
 	}
-	log.Infof("perf hw support = %v", hwSupport)
 }

@@ -16,9 +16,9 @@ package main
 import (
 	"os"
 
+	_ "isula.org/rubik/pkg/version"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/rubik"
-	_ "isula.org/rubik/pkg/version"
 )
 
 func main() {
