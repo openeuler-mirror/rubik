@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-errors/errors"
+
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
@@ -124,22 +126,49 @@ func readBody(ctx context.Context, w http.ResponseWriter, r *http.Request) []byt
 		return nil
 	}
 
-	b := make([]byte, r.ContentLength+1)
-	n, err := r.Body.Read(b)
-	defer r.Body.Close()
-	if err != nil && err != io.EOF {
+	resb, err := safeRead(r.Body, int(r.ContentLength))
+	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		log.WithCtx(ctx).Errorf("Read request body error: %v", err)
 		return nil
 	}
 
-	if n != int(r.ContentLength) {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		log.WithCtx(ctx).Errorf("Invalid request content length %v, actual length %v", r.ContentLength, n)
-		return nil
+	return resb
+}
+
+func safeRead(body io.ReadCloser, size int) ([]byte, error) {
+	var (
+		resb []byte
+		m, n int
+		err  error
+	)
+
+	for {
+		const minRead = 512
+		b := make([]byte, minRead)
+		m, err = body.Read(b)
+		n += m
+		if n > size {
+			break
+		}
+		resb = append(resb, b[:m]...)
+		if err != nil || err == io.EOF {
+			break
+		}
+	}
+	defer body.Close()
+
+	if err != nil && err != io.EOF {
+		return nil, err
+	}
+	if n > size {
+		return nil, errors.Errorf("request content actual length %v larger than defined length %v", n, size)
+	}
+	if n < size {
+		return nil, errors.Errorf("request content actual length %v shorter than defined length %v", n, size)
 	}
 
-	return b[:n]
+	return resb, nil
 }
 
 func ping(ctx context.Context, w http.ResponseWriter, r *http.Request) {
