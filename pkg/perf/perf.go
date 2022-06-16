@@ -106,6 +106,7 @@ func newEvent(cgfd, cpu int) (*cgEvent, error) {
 
 	for _, ec := range getEventConfig() {
 		if err := e.openHardware(ec); err != nil {
+			e.destroy()
 			return nil, err
 		}
 	}
@@ -245,19 +246,22 @@ func (p *perf) Destroy() {
 	for _, e := range p.Events {
 		e.destroy()
 	}
+	unix.Close(p.Cgfd)
 }
 
 // CgroupStat report perf stat for cgroup
 func CgroupStat(cgpath string, dur time.Duration) (*PerfStat, error) {
 	p, err := newPerf(cgpath)
+	defer func() {
+		if p != nil {
+			p.Destroy()
+		}
+	}()
+
 	if err != nil {
 		log.Errorf("perf init failed: %v", err)
 		return nil, err
 	}
-
-	defer func() {
-		p.Destroy()
-	}()
 
 	if err := p.Start(); err != nil {
 		log.Errorf("perf start failed: %v", err)
