@@ -16,7 +16,14 @@ package typedef
 import (
 	"crypto/rand"
 	"math/big"
+	"strconv"
 )
+
+// FormatInt64 convert the int 64 type to a string
+func FormatInt64(n int64) string {
+	const base = 10
+	return strconv.FormatInt(n, base)
+}
 
 // RandInt provide safe rand int in range [0, max)
 func RandInt(max int) int {

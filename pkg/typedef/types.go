@@ -65,7 +65,7 @@ type PodInfo struct {
 	CgroupPath string                    `json:"cgroupPath"`
 
 	// Service Information
-	Offline  bool   `json:"offline"`
+	Offline bool `json:"offline"`
 }
 
 // Clone return deepcopy object

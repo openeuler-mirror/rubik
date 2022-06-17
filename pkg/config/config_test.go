@@ -118,6 +118,10 @@ func TestConfig_String(t *testing.T) {
             "high": 50
         }
     },
-    "blkConfig": {}
+    "blkConfig": {},
+    "memConfig": {
+        "strategy": "none",
+        "checkInterval": 5
+    }
 }`)
 }

@@ -148,6 +148,13 @@ func mergeFilters(pi *typedef.PodInfo, filters []filter) bool {
 	return true
 }
 
+// ListOfflineContainers filtering offline containers
+func (cm *Manager) ListOfflineContainers() map[string]*typedef.ContainerInfo {
+	return cm.listContainersWithFilters(func(pi *typedef.PodInfo) bool {
+		return pi.Offline
+	})
+}
+
 // ListAllContainers returns all containers copies
 func (cm *Manager) ListAllContainers() map[string]*typedef.ContainerInfo {
 	return cm.listContainersWithFilters()
