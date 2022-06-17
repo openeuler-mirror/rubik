@@ -39,6 +39,7 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
+	"isula.org/rubik/pkg/perf"
 	"isula.org/rubik/pkg/qos"
 	"isula.org/rubik/pkg/sync"
 	log "isula.org/rubik/pkg/tinylog"
@@ -85,6 +86,7 @@ func run(fcfg string) int {
 
 	rubik.initAutoConfig()
 
+	log.Infof("perf hw support = %v", perf.HwSupport())
 	if err = rubik.CacheLimit(); err != nil {
 		log.Errorf("cache limit init error: %v", err)
 		return constant.ErrCodeFailed
