@@ -52,7 +52,7 @@ func (f *dynLevel) run() {
 	f.updateStatus()
 	log.Logf("memory manager updates status with memory free: %v, memory total: %v", f.memInfo.free, f.memInfo.total)
 	f.reclaim()
-	log.Logf("memory manager reclaims done and pressure level is %v", f.st.pressureLevel)
+	log.Logf("memory manager reclaims done and pressure level is %s", &f.st)
 }
 
 func (f *dynLevel) updateStatus() {

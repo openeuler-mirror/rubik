@@ -182,6 +182,7 @@ func updatePodInfoNoLock(pi *typedef.PodInfo, pod *corev1.Pod) {
 		containerdPrefix = "containerd://"
 	)
 	pi.Name = pod.Name
+	pi.Offline = util.IsOffline(pod)
 
 	nameID := make(map[string]string, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {

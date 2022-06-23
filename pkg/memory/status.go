@@ -76,6 +76,25 @@ func (s *status) transitionStatus(freePercentage float64) {
 	s.pressureLevel = getLevelInPressure(freePercentage)
 }
 
+func (s *status) String() string {
+	switch s.pressureLevel {
+	case normal:
+		return "normal"
+	case relieve:
+		return "relieve"
+	case low:
+		return "low"
+	case mid:
+		return "mid"
+	case high:
+		return "high"
+	case critical:
+		return "critical"
+	default:
+		return "unknown"
+	}
+}
+
 func getLevelInPressure(freePercentage float64) levelInt {
 	var pressureLevel levelInt
 	if freePercentage <= criticalPressure {
