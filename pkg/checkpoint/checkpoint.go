@@ -148,6 +148,13 @@ func mergeFilters(pi *typedef.PodInfo, filters []filter) bool {
 	return true
 }
 
+// ListOfflineContainers filtering offline containers
+func (cm *Manager) ListOfflineContainers() map[string]*typedef.ContainerInfo {
+	return cm.listContainersWithFilters(func(pi *typedef.PodInfo) bool {
+		return pi.Offline
+	})
+}
+
 // ListAllContainers returns all containers copies
 func (cm *Manager) ListAllContainers() map[string]*typedef.ContainerInfo {
 	return cm.listContainersWithFilters()
@@ -175,6 +182,7 @@ func updatePodInfoNoLock(pi *typedef.PodInfo, pod *corev1.Pod) {
 		containerdPrefix = "containerd://"
 	)
 	pi.Name = pod.Name
+	pi.Offline = util.IsOffline(pod)
 
 	nameID := make(map[string]string, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {

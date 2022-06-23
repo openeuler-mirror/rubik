@@ -39,6 +39,7 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/httpserver"
+	"isula.org/rubik/pkg/memory"
 	"isula.org/rubik/pkg/perf"
 	"isula.org/rubik/pkg/qos"
 	"isula.org/rubik/pkg/sync"
@@ -55,6 +56,7 @@ type Rubik struct {
 	config     *config.Config
 	kubeClient *kubernetes.Clientset
 	cpm        *checkpoint.Manager
+	mm         *memory.MemoryManager
 }
 
 // Run start rubik server
@@ -85,6 +87,9 @@ func run(fcfg string) int {
 	}
 
 	rubik.initAutoConfig()
+	if rubik.mm != nil {
+		rubik.mm.Run()
+	}
 
 	log.Infof("perf hw support = %v", perf.HwSupport())
 	if err = rubik.CacheLimit(); err != nil {
@@ -139,6 +144,10 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 	}
 
 	if err := r.initCheckpoint(); err != nil {
+		return nil, err
+	}
+
+	if err := r.initMemoryManager(); err != nil {
 		return nil, err
 	}
 
@@ -240,6 +249,17 @@ func (r *Rubik) initEventHandler() error {
 		return err
 	}
 	log.Infof("the event-handler is initialized successfully")
+	return nil
+}
+
+func (r *Rubik) initMemoryManager() error {
+	mm, err := memory.NewMemoryManager(r.cpm, r.config.MemConfig)
+	if err != nil {
+		return err
+	}
+
+	r.mm = mm
+	log.Infof("init memory manager ok")
 	return nil
 }
 

@@ -33,15 +33,16 @@ var (
 
 // Config defines the configuration for rubik
 type Config struct {
-	AutoConfig bool        `json:"autoConfig,omitempty"`
-	AutoCheck  bool        `json:"autoCheck,omitempty"`
-	LogDriver  string      `json:"logDriver,omitempty"`
-	LogDir     string      `json:"logDir,omitempty"`
-	LogSize    int         `json:"logSize,omitempty"`
-	LogLevel   string      `json:"logLevel,omitempty"`
-	CgroupRoot string      `json:"cgroupRoot,omitempty"`
-	CacheCfg   CacheConfig `json:"cacheConfig,omitempty"`
-	BlkConfig  BlkioConfig `json:"blkConfig,omitempty"`
+	AutoConfig bool         `json:"autoConfig,omitempty"`
+	AutoCheck  bool         `json:"autoCheck,omitempty"`
+	LogDriver  string       `json:"logDriver,omitempty"`
+	LogDir     string       `json:"logDir,omitempty"`
+	LogSize    int          `json:"logSize,omitempty"`
+	LogLevel   string       `json:"logLevel,omitempty"`
+	CgroupRoot string       `json:"cgroupRoot,omitempty"`
+	CacheCfg   CacheConfig  `json:"cacheConfig,omitempty"`
+	BlkConfig  BlkioConfig  `json:"blkConfig,omitempty"`
+	MemConfig  MemoryConfig `json:"memConfig,omitempty"`
 }
 
 // CacheConfig define cache limit related config
@@ -65,6 +66,11 @@ type MultiLvlPercent struct {
 	Low  int `json:"low,omitempty"`
 	Mid  int `json:"mid,omitempty"`
 	High int `json:"high,omitempty"`
+}
+
+type MemoryConfig struct {
+	Strategy      string `json:"strategy,omitempty"`
+	CheckInterval int    `json:"checkInterval,omitempty"`
 }
 
 // NewConfig returns new config load from config file
@@ -101,6 +107,10 @@ func NewConfig(path string) (*Config, error) {
 		},
 		BlkConfig: BlkioConfig{
 			Limit: false,
+		},
+		MemConfig: MemoryConfig{
+			Strategy:      constant.DefaultMemStrategy,
+			CheckInterval: constant.DefaultMemCheckInterval,
 		},
 	}
 

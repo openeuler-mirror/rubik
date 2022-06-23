@@ -69,6 +69,12 @@ const (
 	PriorityAnnotationKey = "volcano.sh/preemptable"
 	// BlkioKey is annotation key to set blkio limit
 	BlkioKey = "isula.org/blkio-limit"
+	// DefaultMemCheckInterval indicates the default memory check interval 5s.
+	DefaultMemCheckInterval = 5
+	// DefaultMaxMemCheckInterval indicates the default max memory check interval 30s.
+	DefaultMaxMemCheckInterval = 30
+	// DefaultMemStrategy indicates the default memory strategy.
+	DefaultMemStrategy = "none"
 )
 
 // LevelType is type definition of qos level
