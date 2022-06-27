@@ -30,7 +30,30 @@ Rubik启动时会解析配置文件，配置文件的路径固定为 `/var/lib/r
     "logDir": "/var/log/rubik",
     "logSize": 1024,
     "logLevel": "info",
-    "cgroupRoot": "/sys/fs/cgroup"
+    "cgroupRoot": "/sys/fs/cgroup",
+    "cacheConfig": {
+        "enable": false,
+        "defaultLimitMode": "static",
+        "adjustInterval": 1000,
+        "perfDuration": 1000,
+        "l3Percent": {
+            "low": 20,
+            "mid": 30,
+            "high": 50
+        },
+        "memBandPercent": {
+            "low": 10,
+            "mid": 30,
+            "high": 50
+        }
+    },
+    "blkConfig": {
+        "limit": false
+    },
+    "memConfig": {
+        "strategy": "none",
+        "checkInterval": 5
+   }
 }
 ```
 
