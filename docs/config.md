@@ -37,7 +37,7 @@ Rubik启动时会解析配置文件，配置文件的路径固定为 `/var/lib/r
 常用配置项说明：
 
 | 配置键[=默认值]           | 类型   | 描述                                                | 示例值               |
-| ------------------------- | ------ | --------------------------------------------------- | -------------------- |
+|---------------------------|--------|-----------------------------------------------------|----------------------|
 | autoConfig=false          | bool   | 自动配置开关，自动配置即自行拉取Pod信息并配置给系统 | false, true          |
 | autoCheck=false           | bool   | 自动检查开关，自动纠正因故障等原因导致的错误配置    | false, true          |
 | logDriver=stdio           | string | 日志驱动，支持标准输出和文件                        | stdio, file          |
@@ -46,22 +46,19 @@ Rubik启动时会解析配置文件，配置文件的路径固定为 `/var/lib/r
 | logLevel=info             | string | 日志级别                                            | debug, info, error   |
 | cgroupRoot=/sys/fs/cgroup | string | 系统cgroup挂载点路径                                | /sys/fs/cgroup       |
 | cacheConfig               | map    | 动态控制CPU高速缓存模块（dynCache）的相关配置       |                      |
-| enable=false              | bool   | dynCache功能启用开关                                | false, true          |
-| defaultLimitMode=static   | string | dynCache控制模式                                    | static, dynamic      |
-| adjustInterval=1000       | int    | dynCache动态控制间隔时间，单位ms                    | [10, 10000]          |
-| perfDuration=1000         | int    | dynCache性能perf执行时长，单位ms                    | [10, 10000]          |
-| l3Percent                 | map    | dynCache控制中L3各级别对应水位（%）                 |                      |
-| low=20                    | int    | L3低水位组控制线                                    | [1, 100]             |
-| mid=30                    | int    | L3中水位组控制线                                    | [1, 100]             |
-| high=50                   | int    | L3高水位组控制线                                    | [1, 100]             |
-| memBandPercent            | map    | dynCache控制中MB各级别对应水位（%）                 |                      |
-| low=10                    | int    | MB低水位组控制线                                    | [1, 100]             |
-| mid=30                    | int    | MB中水位组控制线                                    | [1, 100]             |
-| high=50                   | int    | MB高水位组控制线                                    | [1, 100]             |
+| .enable=false             | bool   | dynCache功能启用开关                                | false, true          |
+| .defaultLimitMode=static  | string | dynCache控制模式                                    | static, dynamic      |
+| .adjustInterval=1000      | int    | dynCache动态控制间隔时间，单位ms                    | [10, 10000]          |
+| .perfDuration=1000        | int    | dynCache性能perf执行时长，单位ms                    | [10, 10000]          |
+| .l3Percent                | map    | dynCache控制中L3各级别对应水位（%）                 |                      |
+| ..low=20                  | int    | L3低水位组控制线                                    | [10, 100]            |
+| ..mid=30                  | int    | L3中水位组控制线                                    | [low, 100]           |
+| ..high=50                 | int    | L3高水位组控制线                                    | [mid, 100]           |
+| .memBandPercent           | map    | dynCache控制中MB各级别对应水位（%）                 |                      |
+| ..low=10                  | int    | MB低水位组控制线                                    | [10, 100]            |
+| ..mid=30                  | int    | MB中水位组控制线                                    | [low, 100]           |
+| ..high=50                 | int    | MB高水位组控制线                                    | [mid, 100]           |
 | blkioConfig               | map    | IO控制模块相关配置                                  |                      |
-| limit=false               | bool   | IO控制模块使能开关                                  |                      |
+| .limit=false              | bool   | IO控制模块使能开关                                  |                      |
 | memConfig                 | map    | 内存控制模块相关配置                                |                      |
-| strategy=none             | string | 内存动态分级回收控制策略                            | none, dynlevel, fssr |
-
-
-
+| .strategy=none            | string | 内存动态分级回收控制策略                            | none, dynlevel, fssr |
