@@ -1,0 +1,8 @@
+/rubik
+/.gopath
+/cover.*
+.idea
+vendor
+.html
+.out
+.vscode
