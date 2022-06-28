@@ -12,41 +12,41 @@
 # Create: 2022-05-19
 # Description: rubik cachelimit 0002
 
+set -x
 top_dir=$(git rev-parse --show-toplevel)
 source "$top_dir"/tests/lib/commonlib.sh
-cg=kubepods/podrubiktestpod
 
-function test_pod_not_exist() {
-    result=$(curl -s -H "Accept: application/json" -H "Content-type: application/json" -X POST --data '{"Pods": {"podrubiktestpodnotexist": {"CgroupPath": "kubepods/podrubiktestpodnotexist","QosLevel": -1,"CacheLimitLevel": "max"}}}' --unix-socket /run/rubik/rubik.sock http://localhost/)
-    if ! echo $result | grep "set qos failed"; then
+function pre_fun() {
+    kernel_check CACHE
+    if [ $? -ne 0 ]; then
+        echo "Kernel not supported, skip test"
+        exit "${SKIP_FLAG}"
+    fi
+    run_rubik
+}
+
+# pod not exist
+function test_fun() {
+    local pod_name=podrubiktestpod
+    local cgroup_path=kubepods/podrubiktestpod
+    json_data=$(gen_single_pod_json ${pod_name} ${cgroup_path})
+    result=$(rubik_qos "${json_data}")
+    if ! echo "$result" | grep "set qos failed"; then
         ((exit_flag++))
     fi
-}
-
-function generate_config() {
-    generate_config_file
-    sed -i 's/\"enable\": false/\"enable\": true/' /var/lib/rubik/config.json
-}
-
-function clean() {
     rmdir /sys/fs/resctrl/rubik_*
-    rm -f /var/lib/rubik/config.json
 }
 
-env_check
-if [ $? -ne 0 ]; then
-    echo "Kernel not supported, skip test"
-    exit 0
-fi
-generate_config
-set_up
-test_pod_not_exist > /dev/null
-tear_down
-clean
+function post_fun() {
+    clean_all
+    if [[ $exit_flag -eq 0 ]]; then
+        echo "PASS"
+    else
+        echo "FAILED"
+    fi
+    exit "$exit_flag"
+}
 
-if [[ $exit_flag -eq 0 ]]; then
-    echo "PASS"
-else
-    echo "FAILED"
-fi
-exit "$exit_flag"
+pre_fun
+test_fun
+post_fun

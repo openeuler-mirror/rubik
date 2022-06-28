@@ -15,8 +15,12 @@
 top_dir=$(git rev-parse --show-toplevel)
 source "$top_dir"/tests/lib/commonlib.sh
 
+pre_fun() {
+    run_rubik
+}
+
 test_fun() {
-    result=$(curl -s --unix-socket /run/rubik/rubik.sock http://localhost/ping)
+    result=$(rubik_ping)
     if [[ $? -eq 0 ]] && [[ ${result} =~ "ok" ]]; then
         echo "PASS"
     else
@@ -25,8 +29,11 @@ test_fun() {
     fi
 }
 
-set_up
-test_fun
-tear_down
+post_fun() {
+    clean_all
+    exit "$exit_flag"
+}
 
-exit "$exit_flag"
+pre_fun
+test_fun
+post_fun

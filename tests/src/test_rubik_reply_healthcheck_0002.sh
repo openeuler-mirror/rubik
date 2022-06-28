@@ -12,11 +12,17 @@
 # Create: 2021-05-15
 # Description: rubik reply healthcheck 0002
 
+set -x
 top_dir=$(git rev-parse --show-toplevel)
 source "$top_dir"/tests/lib/commonlib.sh
 
+pre_fun() {
+    # empty, so no rubik working
+    continue
+}
+
 test_fun() {
-    result=$(curl -s --unix-socket /run/rubik/rubik.sock http://localhost/ping)
+    result=$(rubik_ping)
     if [[ $? -ne 0 ]]; then
         echo "PASS"
     else
@@ -25,7 +31,11 @@ test_fun() {
     fi
 }
 
-test_fun
-tear_down
+post_fun() {
+    clean_all
+    exit "$exit_flag"
+}
 
-exit "$exit_flag"
+pre_fun
+test_fun
+post_fun

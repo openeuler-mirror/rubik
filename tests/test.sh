@@ -18,9 +18,9 @@ top_dir=$(git rev-parse --show-toplevel)
 function fuzz() {
     failed=0
     while IFS= read -r testfile; do
-        printf "%-45s" "test $(basename "$testfile"): " | tee -a ${top_dir}/tests/fuzz.log
-        bash "$testfile" "$1" | tee -a ${top_dir}/tests/fuzz.log
-        if [ $PIPESTATUS -ne 0 ]; then
+        printf "%-45s" "test $(basename "$testfile"): " | tee -a "${top_dir}"/tests/fuzz.log
+        bash "$testfile" "$1" | tee -a "${top_dir}"/tests/fuzz.log
+        if [ "$PIPESTATUS" -ne 0 ]; then
             failed=1
         fi
         # delete tmp files to avoid "no space left" problem
@@ -34,9 +34,19 @@ function normal() {
     source "${top_dir}"/tests/lib/commonlib.sh
     failed=0
     while IFS= read -r testfile; do
-        printf "%-45s" "$(basename "$testfile"): "
-        if ! bash "$testfile"; then
+        filename=$(basename "$testfile")
+        DATE=$(date "+%Y%m%d%H%M%S")
+        export LOGFILE=${RUBIK_TEST_ROOT}/${filename}.${DATE}.log
+        printf "%-45s" "$filename: "
+        bash -x "$testfile" > "${LOGFILE}" 2>&1
+        result=$?
+        if [ $result -eq "${SKIP_FLAG}" ]; then
+            echo -e "\033[33m SKIP \033[0m"
+        elif [ $result -ne 0 ]; then
+            echo -e "\033[31m FAIL \033[0m"
             failed=1
+        else
+            echo -e "\033[32m PASS \033[0m"
         fi
     done < <(find "$top_dir"/tests/src -maxdepth 1 -name "test_*" -type f -print | sort)
     if [[ ${failed} -ne 0 ]]; then
