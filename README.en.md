@@ -1,36 +1,54 @@
 # rubik
 
-#### Description
-rubik is a QoS manager agent for online/offline workload colocation
+## Description
 
-#### Software Architecture
-Software architecture description
+The current global cloud infrastructure service expenditure is huge. However, the average CPU utilization of data center user clusters is very low, which is a huge waste of resources. Therefore, improving the utilization of data center resources is an important issue that needs to be solved urgently.
 
-#### Installation
+Deployment of various types of services togather can significantly improve the utilization of cluster resources, but it also brings the problem of co-peaking, this issue can lead to partial service quality of service (QoS) compromise. How to ensure that the application's QoS is not damaged after improving the utilization of resources is a key technical challenge.
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+To this end, we propose the Rubik resource utilization improvement solution, Rubik literally means Rubik's Cube, The Rubik’s Cube was invented in 1974 by Ernõ Rubik, a Hungarian architecture professor. In our solution, Rubik symbolizes being able to manage servers in an orderly manner.
 
-#### Instructions
+Rubik currently supports the following features:
+- pod's CPU priority configure.
+- pod's memory priority configure.
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## Build
 
-#### Contribution
+Pull the source code:
+```sh
+git clone https://gitee.com/openeuler/rubik.git
+```
 
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+Enter the source code directory to compile:
+```sh
+cd rubik
+make
+```
+
+Make rubik image:
+```sh
+make image
+```
+
+Install the relevant deployment files on the system:
+```sh
+sudo make install
+```
+## Deployment
+
+### Prepare environment
+
+- kernel: openeuler 21.09+
+- kubernetes: 1.17.0+
+- enable memory qos: `echo 1 > /proc/sys/vm/memcg_qos_enable`
 
 
-#### Gitee Feature
+### Deploy rubik as daemonset
 
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+```sh
+kubectl apply -f /var/lib/rubik/rubik-daemonset.yaml
+```
+
+## Copyright
+
+Mulan PSL v2

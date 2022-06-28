@@ -2,16 +2,20 @@
 
 ## 概述
 
-服务器资源利用率低一直是业界公认的难题，随着云原生技术的发展，将在线离线业务混合部署成为了当下提高资源利用率的有效手段。rubik容器调度在业务混合部署的场景下，根据QoS分级，对资源进行合理调度，从而实现在保障在线业务的服务体验情况下，大幅提升资源利用率。
+当前全球云基础设施服务支出费用庞大，然而数据中心用户集群的平均CPU利用率却很低，存在巨大的资源浪费。因此，提升数据中心资源利用率是当前急需解决的一个重要问题。
 
-rubik当前支持如下特性：
+将多种类型业务混合部署能够显著提升集群资源利用率，但也带来了共峰问题，该问题会导致部分业务服务质量（QoS）受损。如何在提升资源利用率之后，保障业务QoS不受损是技术上的关键挑战。
+
+为此我们提出了Rubik资源利用率提升解决方案，Rubik字面意思为魔方，魔方由Rubik在1974年发明，故Rubik既是人名也指代魔方，在我们的解决方案中，Rubik象征着能够将服务器管理的有条不紊。
+
+Rubik当前支持如下特性：
 
 - pod CPU优先级的配置
 - pod memory优先级的配置
 
 ## 编译
 
-拉取源代码： 
+拉取源代码：
 
 ```sh
 git clone https://gitee.com/openeuler/rubik.git
@@ -40,15 +44,9 @@ sudo make install
 
 ### 环境准备
 
-内核：rubik混合调度依赖内核的定制修改，需使用openeuler 21.09以上版本内核。
-
-kubernetes：rubik是以DaemonSet的方式进行部署运行的，所以需要准备一个kubernetes的集群环境，建议使用1.17.0以上版本。
-
-若用户想要开启内存优先级特性，需要通过设置/proc/sys/vm/memcg_qos_enable开关，有效值为0和1，其中0为默认值表示关闭特性，1表示开启特性。
-
-```bash
-sudo echo 1 > /proc/sys/vm/memcg_qos_enable
-```
+- kernel: openeuler 21.09+
+- kubernetes: 1.17.0+
+- enable memory qos: `echo 1 > /proc/sys/vm/memcg_qos_enable`
 
 ### rubik daemonset部署
 
