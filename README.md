@@ -10,8 +10,11 @@
 
 Rubik当前支持如下特性：
 
-- pod CPU优先级的配置
-- pod memory优先级的配置
+- [pod CPU优先级配置](./docs/modules.md/#pod-cpu优先级)
+- [pod memory优先级配置](./docs/modules.md#pod-内存优先级)
+- [pod 访存带宽和LLC限制](./docs/modules.md#dyncache-访存带宽和llc限制)
+- [pod blkio配置](./docs/modules.md/#blkio)
+- [pod memory cgroup分级](./docs/modules.md/#memory)
 
 ## 编译
 
