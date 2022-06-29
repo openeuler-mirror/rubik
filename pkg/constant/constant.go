@@ -68,7 +68,7 @@ const (
 	// PriorityAnnotationKey is annotation key to mark offline pod
 	PriorityAnnotationKey = "volcano.sh/preemptable"
 	// BlkioKey is annotation key to set blkio limit
-	BlkioKey = "isula.org/blkio-limit"
+	BlkioKey = "volcano.sh/blkio-limit"
 	// DefaultMemCheckInterval indicates the default memory check interval 5s.
 	DefaultMemCheckInterval = 5
 	// DefaultMaxMemCheckInterval indicates the default max memory check interval 30s.
