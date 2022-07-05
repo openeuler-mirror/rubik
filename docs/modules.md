@@ -10,7 +10,7 @@ rubik支持业务CPU优先级配置，针对在离线业务混合部署的场景
 
 ### CPU优先级内核接口
 
-- /sys/fs/cgroup/cpu目录下容器的cgroup中，如`/sys/fs/cgroup/blkio/kubepods/burstable/<PodUID>/<container-longid>`目录
+- /sys/fs/cgroup/cpu目录下容器的cgroup中，如`/sys/fs/cgroup/cpu/kubepods/burstable/<PodUID>/<container-longid>`目录
   - cpu.qos_level：开启CPU优先级配置，默认值为0， 有效值为0和-1。
     - 0：标识为在线业务
     - -1：标识为离线业务
@@ -43,7 +43,7 @@ rubik支持业务memory优先级配置，针对在离线业务混合部署的场
   - 0：表示关闭特性
   - 1：表示开启特性。
 
-- /sys/fs/cgroup/memory目录下容器的cgroup中，如`/sys/fs/cgroup/blkio/kubepods/burstable/<PodUID>/<container-longid>`目录
+- /sys/fs/cgroup/memory目录下容器的cgroup中，如`/sys/fs/cgroup/memory/kubepods/burstable/<PodUID>/<container-longid>`目录
   - memory.qos_level：开启内存优先级配置，默认值为0，有效值为0和-1。
     - 0：标识为在线业务
     - -1：标识为离线业务
