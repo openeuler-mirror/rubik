@@ -12,13 +12,19 @@
 # Create: 2021-05-15
 # Description: rubik reply healthcheck 0001
 
+set -x
 top_dir=$(git rev-parse --show-toplevel)
 source "$top_dir"/tests/lib/commonlib.sh
 
+pre_fun() {
+    prepare_rubik
+    run_rubik
+}
+
 test_fun() {
-    result=$(curl -s --unix-socket /run/rubik/rubik.sock http://localhost/version)
+    result=$(rubik_version)
     if [[ $? -eq 0 ]]; then
-        field_number=$(echo ${result} | grep -iE "version|release|commit|buildtime" -o | wc -l)
+        field_number=$(echo "${result}" | grep -iE "version|release|commit|buildtime" -o | wc -l)
         if [[ $field_number -eq 4 ]]; then
             echo "PASS"
         else
@@ -31,8 +37,11 @@ test_fun() {
     fi
 }
 
-set_up
-test_fun
-tear_down
+post_fun() {
+    clean_all
+    exit "$exit_flag"
+}
 
-exit "$exit_flag"
+pre_fun
+test_fun
+post_fun

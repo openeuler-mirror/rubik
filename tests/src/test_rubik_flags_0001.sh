@@ -12,6 +12,7 @@
 # Create: 2021-05-30
 # Description: rubik flag check 0001
 
+set -x
 top_dir=$(git rev-parse --show-toplevel)
 source "$top_dir"/tests/lib/commonlib.sh
 
