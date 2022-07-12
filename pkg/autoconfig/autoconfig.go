@@ -29,8 +29,9 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
-	"isula.org/rubik/pkg/util"
 )
+
+const invalidErr = "Auto config error: invalid pod type"
 
 // EventHandler is used to process pod events pushed by Kubernetes APIServer.
 type EventHandler interface {
@@ -67,51 +68,33 @@ func Init(kubeClient *kubernetes.Clientset) error {
 	return nil
 }
 
-func updateHandler(old, new interface{}) {
-	oldPod, ok1 := old.(*corev1.Pod)
-	newPod, ok2 := new.(*corev1.Pod)
-	if !ok1 || !ok2 {
-		log.Errorf("auto config error: invalid pod type")
-		return
-	}
-
-	if !util.IsOffline(newPod) || newPod.Status.Phase != "Running" {
-		return
-	}
-
-	Backend.UpdateEvent(oldPod, newPod)
-}
-
 func addHandler(obj interface{}) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
-		log.Errorf("auto config error: invalid pod type")
-		return
-	}
-
-	if !util.IsOffline(pod) || !isPodOnCurrentNode(pod) {
+		log.Errorf(invalidErr)
 		return
 	}
 
 	Backend.AddEvent(pod)
 }
 
+func updateHandler(old, new interface{}) {
+	oldPod, ok1 := old.(*corev1.Pod)
+	newPod, ok2 := new.(*corev1.Pod)
+	if !ok1 || !ok2 {
+		log.Errorf(invalidErr)
+		return
+	}
+
+	Backend.UpdateEvent(oldPod, newPod)
+}
+
 func deleteHandler(obj interface{}) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
-		log.Errorf("invalid pod type")
+		log.Errorf(invalidErr)
 		return
 	}
 
 	Backend.DeleteEvent(pod)
-}
-
-func isPodOnCurrentNode(pod *corev1.Pod) bool {
-	currentNode := os.Getenv(constant.NodeNameEnvKey)
-	if currentNode == "" {
-		log.Errorf("auto config error: environment variable %s must be defined", constant.NodeNameEnvKey)
-		return false
-	}
-
-	return pod.Spec.NodeName == currentNode
 }
