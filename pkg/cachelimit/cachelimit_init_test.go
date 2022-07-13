@@ -28,18 +28,17 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/perf"
+	"isula.org/rubik/pkg/try"
 )
 
 // TestGetNUMANum testcase
 func TestGetNUMANum(t *testing.T) {
-	threeNodeDir := filepath.Join(constant.TmpTestDir, t.Name())
+	threeNodeDir := try.GenTestDir().String()
 	for i := 0; i < 3; i++ {
 		nodeDir := filepath.Join(threeNodeDir, fmt.Sprintf("node%d", i))
-		err := os.MkdirAll(nodeDir, constant.DefaultDirMode)
-		assert.NoError(t, err)
+		try.MkdirAll(nodeDir, constant.DefaultDirMode)
 	}
-	defer os.RemoveAll(constant.TmpTestDir)
-	defer os.RemoveAll(threeNodeDir)
+
 	type args struct {
 		path string
 	}
@@ -83,63 +82,46 @@ func TestGetNUMANum(t *testing.T) {
 
 // TestGetBinaryMask testcase
 func TestGetBinaryMask(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	file7ff := filepath.Join(constant.TmpTestDir, "7ff")
-	file3ff := filepath.Join(constant.TmpTestDir, "3ff")
-	fileNotHex := filepath.Join(constant.TmpTestDir, "notHex")
-	type args struct {
-		path string
-	}
+	file7ff := filepath.Join(try.GenTestDir().String(), "7ff")
+	file3ff := filepath.Join(try.GenTestDir().String(), "3ff")
+	fileNotHex := filepath.Join(try.GenTestDir().String(), "nohex")
+
 	tests := []struct {
-		preHook  func(t *testing.T)
-		postHook func(t *testing.T)
-		name     string
-		args     args
-		want     int
-		wantErr  bool
+		preHook func(t *testing.T)
+		name    string
+		path    string
+		want    int
+		wantErr bool
 	}{
 		{
 			name:    "TC-7ff",
-			args:    args{path: file7ff},
+			path:    file7ff,
 			want:    11,
 			wantErr: false,
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(file7ff, []byte("7ff"), constant.DefaultFileMode)
-				assert.NoError(t, err)
-			},
-			postHook: func(t *testing.T) {
-				assert.NoError(t, os.RemoveAll(file7ff))
+				try.WriteFile(file7ff, []byte("7ff"), constant.DefaultFileMode)
 			},
 		},
 		{
 			name:    "TC-3ff",
-			args:    args{path: file3ff},
+			path:    file3ff,
 			want:    10,
 			wantErr: false,
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(file3ff, []byte("3ff"), constant.DefaultFileMode)
-				assert.NoError(t, err)
-			},
-			postHook: func(t *testing.T) {
-				assert.NoError(t, os.RemoveAll(file3ff))
+				try.WriteFile(file3ff, []byte("3ff"), constant.DefaultFileMode)
 			},
 		},
 		{
 			name:    "TC-not hex format",
-			args:    args{path: fileNotHex},
+			path:    fileNotHex,
 			wantErr: true,
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(fileNotHex, []byte("ghi"), constant.DefaultFileMode)
-				assert.NoError(t, err)
-			},
-			postHook: func(t *testing.T) {
-				assert.NoError(t, os.RemoveAll(fileNotHex))
+				try.WriteFile(fileNotHex, []byte("ghi"), constant.DefaultFileMode)
 			},
 		},
 		{
 			name:    "TC-file not exist",
-			args:    args{path: "/file/not/exist"},
+			path:    "/file/not/exist",
 			wantErr: true,
 		},
 	}
@@ -148,9 +130,9 @@ func TestGetBinaryMask(t *testing.T) {
 			if tt.preHook != nil {
 				tt.preHook(t)
 			}
-			got, err := getBinaryMask(tt.args.path)
+			got, err := getBinaryMask(tt.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getBinaryMask() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getBinaryMask() error = %v, wantErr %v, file = %v", err, tt.wantErr, tt.path)
 				return
 			}
 			if err == nil {
@@ -158,18 +140,13 @@ func TestGetBinaryMask(t *testing.T) {
 					t.Errorf("getBinaryMask() = %v, want %v", got, tt.want)
 				}
 			}
-			if tt.postHook != nil {
-				tt.postHook(t)
-			}
 		})
 	}
 }
 
 // TestCalcLimitedCacheValue testcase
 func TestCalcLimitedCacheValue(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	testFile := filepath.Join(constant.TmpTestDir, "testFile")
+	testFile := filepath.Join(try.GenTestDir().String(), "testFile")
 	type fields struct {
 		level     string
 		L3Percent int
@@ -196,8 +173,7 @@ func TestCalcLimitedCacheValue(t *testing.T) {
 				MbPercent: 10,
 			},
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(testFile, []byte("7ff"), constant.DefaultFileMode)
-				assert.NoError(t, err)
+				try.WriteFile(testFile, []byte("7ff"), constant.DefaultFileMode)
 			},
 		},
 		{
@@ -209,8 +185,7 @@ func TestCalcLimitedCacheValue(t *testing.T) {
 				MbPercent: 10,
 			},
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(testFile, []byte("fffff"), constant.DefaultFileMode)
-				assert.NoError(t, err)
+				try.WriteFile(testFile, []byte("fffff"), constant.DefaultFileMode)
 			},
 		},
 		{
@@ -221,8 +196,7 @@ func TestCalcLimitedCacheValue(t *testing.T) {
 				L3Percent: 10,
 			},
 			preHook: func(t *testing.T) {
-				err := ioutil.WriteFile(testFile, []byte("ff"), constant.DefaultFileMode)
-				assert.NoError(t, err)
+				try.WriteFile(testFile, []byte("ff"), constant.DefaultFileMode)
 			},
 		},
 	}
@@ -253,9 +227,7 @@ func TestCalcLimitedCacheValue(t *testing.T) {
 
 // TestWriteResctrlSchemata testcase
 func TestWriteResctrlSchemata(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	testFolder := filepath.Join(constant.TmpTestDir, t.Name())
+	testFolder := try.GenTestDir().String()
 	assert.NoError(t, setMaskFile(t, testFolder, "3ff"))
 	type fields struct {
 		level     string
@@ -473,9 +445,7 @@ func setMaskFile(t *testing.T, resctrlDir string, data string) error {
 
 // TestInitCacheLimitDir testcase
 func TestInitCacheLimitDir(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	resctrlDir := filepath.Join(constant.TmpTestDir, t.Name())
+	resctrlDir := try.GenTestDir().String()
 	type args struct {
 		cfg config.CacheConfig
 	}
@@ -518,10 +488,7 @@ func TestInitCacheLimitDir(t *testing.T) {
 
 // TestSetClDir testcase
 func TestSetClDir(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	testRoot := filepath.Join(constant.TmpTestDir, t.Name())
-	assert.NoError(t, os.MkdirAll(testRoot, constant.DefaultDirMode))
+	testRoot := try.GenTestDir().String()
 	_, err := os.Create(filepath.Join(testRoot, "test"))
 	assert.NoError(t, err)
 	type fields struct {
@@ -571,13 +538,9 @@ func TestSetClDir(t *testing.T) {
 
 // TestCheckResctrlExist testcase
 func TestCheckResctrlExist(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	resctrlDir := filepath.Join(constant.TmpTestDir, t.Name())
-	resctrlDirNoSchemataFile := filepath.Join(constant.TmpTestDir, "resctrlDirNoSchemataFile")
+	resctrlDir := try.GenTestDir().String()
+	resctrlDirNoSchemataFile := try.GenTestDir().String()
 	schemataPath := filepath.Join(resctrlDir, schemataFile)
-	assert.NoError(t, os.MkdirAll(resctrlDir, constant.DefaultDirMode))
-	assert.NoError(t, os.MkdirAll(resctrlDirNoSchemataFile, constant.DefaultDirMode))
 	_, err := os.Create(schemataPath)
 	assert.NoError(t, err)
 	type args struct {
@@ -620,10 +583,7 @@ func TestCheckResctrlExist(t *testing.T) {
 
 // TestDoFlush testcase
 func TestAdjustCacheLimit(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	resctrlDir := filepath.Join(constant.TmpTestDir, t.Name())
-	assert.NoError(t, os.MkdirAll(resctrlDir, constant.DefaultDirMode))
+	resctrlDir := try.GenTestDir().String()
 	assert.NoError(t, setMaskFile(t, resctrlDir, "3ff"))
 
 	type fields struct {
@@ -712,12 +672,12 @@ func TestGetPodCacheMiss(t *testing.T) {
 				containers:      make(map[string]struct{}),
 			},
 			preHook: func(t *testing.T) {
-				assert.NoError(t, os.MkdirAll(testCGRoot, constant.DefaultDirMode))
-				ioutil.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
+				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
-				ioutil.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
-				assert.NoError(t, os.Remove(testCGRoot))
+				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.RemoveAll(testCGRoot)
 			},
 			args: args{cgroupRoot: config.CgroupRoot, perfDu: 1},
 		},
@@ -755,15 +715,12 @@ func TestGetPodCacheMiss(t *testing.T) {
 }
 
 func TestStartDynamic(t *testing.T) {
-	if perf.HwSupport() {
+	if !perf.HwSupport() {
 		t.Skipf("%s only run on physical machine", t.Name())
 	}
 	initCacheLimitPod()
 	startDynamic(&config.CacheConfig{}, 0, 0)
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	resctrlDir := filepath.Join(constant.TmpTestDir, t.Name())
-	assert.NoError(t, os.MkdirAll(resctrlDir, constant.DefaultDirMode))
+	resctrlDir := try.GenTestDir().String()
 	testCGRoot := filepath.Join(config.CgroupRoot, "perf_event", t.Name())
 	assert.NoError(t, setMaskFile(t, resctrlDir, "3ff"))
 	cacheLimitPods.Add(&PodInfo{
@@ -813,12 +770,12 @@ func TestStartDynamic(t *testing.T) {
 					cacheLimitLevel: lowLevel,
 					containers:      make(map[string]struct{}),
 				})
-				assert.NoError(t, os.MkdirAll(testCGRoot, constant.DefaultDirMode))
-				ioutil.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
+				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
-				ioutil.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
-				assert.NoError(t, os.Remove(testCGRoot))
+				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.RemoveAll(testCGRoot)
 			},
 		},
 		{
@@ -854,12 +811,12 @@ func TestStartDynamic(t *testing.T) {
 					cacheLimitLevel: lowLevel,
 					containers:      make(map[string]struct{}),
 				})
-				assert.NoError(t, os.MkdirAll(testCGRoot, constant.DefaultDirMode))
-				ioutil.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
+				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
-				ioutil.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
-				assert.NoError(t, os.Remove(testCGRoot))
+				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.RemoveAll(testCGRoot)
 			},
 		},
 		{
@@ -895,12 +852,12 @@ func TestStartDynamic(t *testing.T) {
 					cacheLimitLevel: lowLevel,
 					containers:      make(map[string]struct{}),
 				})
-				assert.NoError(t, os.MkdirAll(testCGRoot, constant.DefaultDirMode))
-				ioutil.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
+				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
-				ioutil.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
-				assert.NoError(t, os.Remove(testCGRoot))
+				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
+				try.RemoveAll(testCGRoot)
 			},
 		},
 	}
@@ -977,10 +934,7 @@ func TestIsHostPidns(t *testing.T) {
 
 // TestInit test Init
 func TestInit(t *testing.T) {
-	assert.NoError(t, os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode))
-	defer os.RemoveAll(constant.TmpTestDir)
-	resctrlDir := filepath.Join(constant.TmpTestDir, t.Name())
-	assert.NoError(t, os.MkdirAll(resctrlDir, constant.DefaultDirMode))
+	resctrlDir := try.GenTestDir().String()
 	schemataPath := filepath.Join(resctrlDir, schemataFile)
 	_, err := os.Create(schemataPath)
 	assert.NoError(t, err)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/try"
 
 	"github.com/stretchr/testify/assert"
 	"isula.org/rubik/api"
@@ -54,8 +55,8 @@ func (podList *podMap) getPodInfo(podID string) *PodInfo {
 	return &pod
 }
 
-// TestCheckCacheLimitLevel testcase
-func TestCheckCacheLimitLevel(t *testing.T) {
+// TestLevelValid testcase
+func TestLevelValid(t *testing.T) {
 	type args struct {
 		level string
 	}
@@ -195,34 +196,23 @@ func TestWriteTasksToResctrl(t *testing.T) {
 	cacheLimitPods.Add(pod)
 	assert.NoError(t, err)
 
-	testDir := filepath.Join(constant.TmpTestDir, "cltest")
-	err = os.MkdirAll(testDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer func() {
-		err = os.RemoveAll(testDir)
-		assert.NoError(t, err)
-	}()
-
+	testDir := try.GenTestDir().String()
 	pid, procsFile, container := "12345", "cgroup.procs", "container1"
 	podCPUCgroupPath := filepath.Join(testDir, "cpu", pod.cgroupPath)
-	err = os.MkdirAll(filepath.Join(podCPUCgroupPath, container), constant.DefaultDirMode)
-	assert.NoError(t, err)
+	try.MkdirAll(filepath.Join(podCPUCgroupPath, container), constant.DefaultDirMode)
 	err = pod.writeTasksToResctrl(testDir, testDir)
 	// pod cgroup.procs not exist, return error
 	assert.Equal(t, true, err != nil)
 	_, err = os.Create(filepath.Join(podCPUCgroupPath, procsFile))
 	assert.NoError(t, err)
-	err = ioutil.WriteFile(filepath.Join(podCPUCgroupPath, container, procsFile), []byte(pid),
-		constant.DefaultFileMode)
-	assert.NoError(t, err)
+	try.WriteFile(filepath.Join(podCPUCgroupPath, container, procsFile), []byte(pid), constant.DefaultFileMode)
 
 	err = pod.writeTasksToResctrl(testDir, testDir)
 	// resctrl tasks file not exist, return error
 	assert.Equal(t, true, err != nil)
 
 	resctrlSubDir, taskFile := dirPrefix+pod.cacheLimitLevel, "tasks"
-	err = os.MkdirAll(filepath.Join(testDir, resctrlSubDir), constant.DefaultDirMode)
-	assert.NoError(t, err)
+	try.MkdirAll(filepath.Join(testDir, resctrlSubDir), constant.DefaultDirMode)
 	err = pod.writeTasksToResctrl(testDir, testDir)
 	// write success
 	assert.NoError(t, err)
