@@ -25,23 +25,17 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/try"
 )
 
 // test_rubik_set_logdriver_0001
 func TestInitConfigLogDriver(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
-
-	logDir := filepath.Join(constant.TmpTestDir, "log")
-	err = os.MkdirAll(logDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
+	logDir := try.GenTestDir().String()
 	logFilePath := filepath.Join(logDir, "rubik.log")
 
 	// case: rubik.log already exist.
-	err = ioutil.WriteFile(logFilePath, []byte(""), constant.DefaultFileMode)
-	assert.NoError(t, err)
-	err = InitConfig("file", logDir, "", logSize)
+	try.WriteFile(logFilePath, []byte(""), constant.DefaultFileMode)
+	err := InitConfig("file", logDir, "", logSize)
 	assert.NoError(t, err)
 
 	err = os.RemoveAll(logDir)
@@ -79,17 +73,11 @@ func TestInitConfigLogDriver(t *testing.T) {
 
 // test_rubik_set_logdir_0001
 func TestInitConfigLogDir(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
-
-	logDir := filepath.Join(constant.TmpTestDir, "log")
+	logDir := try.GenTestDir().String()
 	logFilePath := filepath.Join(logDir, "rubik.log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
 
 	// LogDir valid
-	err = InitConfig("file", logDir, "", logSize)
+	err := InitConfig("file", logDir, "", logSize)
 	assert.NoError(t, err)
 	logString := "Test InitConfig with logDir valid"
 	Logf(logString)
@@ -151,19 +139,14 @@ func createLogTC() []logTC {
 
 // test_rubik_set_loglevel_0001
 func TestInitConfigLogLevel(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
-	logDir := filepath.Join(constant.TmpTestDir, "log")
+	logDir := try.GenTestDir().String()
 	logFilePath := filepath.Join(logDir, "rubik.log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
 
 	debugLogSting, infoLogSting, errorLogSting, logLogString := "Test InitConfig debug log",
 		"Test InitConfig info log", "Test InitConfig error log", "Test InitConfig log log"
 	for _, tt := range createLogTC() {
 		t.Run(tt.name, func(t *testing.T) {
-			err = InitConfig("file", logDir, tt.logLevel, logSize)
+			err := InitConfig("file", logDir, tt.logLevel, logSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InitConfig() = %v, want %v", err, tt.wantErr)
 			} else if tt.wantErr == false {
@@ -200,15 +183,9 @@ func TestInitConfigLogLevel(t *testing.T) {
 
 // test_rubik_set_logsize_0001
 func TestInitConfigLogSize(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-
-	logDir := filepath.Join(constant.TmpTestDir, "log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
-
+	logDir := try.GenTestDir().String()
 	// LogSize invalid
-	err = InitConfig("file", logDir, "", logSizeMin-1)
+	err := InitConfig("file", logDir, "", logSizeMin-1)
 	assert.Equal(t, true, err != nil)
 	err = InitConfig("file", logDir, "", logSizeMax+1)
 	assert.Equal(t, true, err != nil)
@@ -238,16 +215,10 @@ func TestInitConfigLogSize(t *testing.T) {
 
 // TestLogStack is Stackf function test
 func TestLogStack(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
-
-	logDir := filepath.Join(constant.TmpTestDir, "log")
+	logDir := try.GenTestDir().String()
 	logFilePath := filepath.Join(logDir, "rubik.log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
 
-	err = InitConfig("file", logDir, "", logSize)
+	err := InitConfig("file", logDir, "", logSize)
 	assert.NoError(t, err)
 	Stackf("test stack log")
 	b, err := ioutil.ReadFile(logFilePath)
@@ -261,16 +232,10 @@ func TestLogStack(t *testing.T) {
 
 // TestDropError is DropError function test
 func TestDropError(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
-
-	logDir := filepath.Join(constant.TmpTestDir, "log")
+	logDir := try.GenTestDir().String()
 	logFilePath := filepath.Join(logDir, "rubik.log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
 
-	err = InitConfig("file", logDir, "", logSize)
+	err := InitConfig("file", logDir, "", logSize)
 	assert.NoError(t, err)
 	DropError()
 	dropError := "test drop error"
@@ -282,21 +247,11 @@ func TestDropError(t *testing.T) {
 
 // TestLogOthers is log other tests
 func TestLogOthers(t *testing.T) {
-	err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
-	assert.NoError(t, err)
-	defer os.RemoveAll(constant.TmpTestDir)
+	logDir := filepath.Join(try.GenTestDir().String(), "regular-file")
+	try.WriteFile(logDir, []byte{}, constant.DefaultFileMode)
 
-	logDir := filepath.Join(constant.TmpTestDir, "log")
-	err = os.RemoveAll(logDir)
-	assert.NoError(t, err)
-
-	f, err := os.Create(logDir)
-	assert.NoError(t, err)
-	f.Chmod(constant.DefaultFileMode)
-	f.Close()
-	err = makeLogDir(logDir)
+	err := makeLogDir(logDir)
 	assert.Equal(t, true, err != nil)
-	os.Remove(logDir)
 
 	level1 := 3
 	s := logLevelToString(level1)
