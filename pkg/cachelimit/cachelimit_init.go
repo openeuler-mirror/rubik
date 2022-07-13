@@ -130,6 +130,12 @@ func checkCacheCfg(cfg *config.CacheConfig) error {
 			return errors.Errorf("cache limit percentage %d out of range [%d,%d]", per, minPercent, maxPercent)
 		}
 	}
+	if cfg.L3Percent.Low > cfg.L3Percent.Mid || cfg.L3Percent.Mid > cfg.L3Percent.High {
+		return errors.Errorf("cache limit config L3Percent does not satisfy constraint low<=mid<=high")
+	}
+	if cfg.MemBandPercent.Low > cfg.MemBandPercent.Mid || cfg.MemBandPercent.Mid > cfg.MemBandPercent.High {
+		return errors.Errorf("cache limit config MemBandPercent does not satisfy constraint low<=mid<=high")
+	}
 
 	return nil
 }
