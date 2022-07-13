@@ -139,6 +139,21 @@ func (cm *Manager) listContainersWithFilters(filters ...filter) map[string]*type
 	return cc
 }
 
+// listPodsWithFilters filters and returns deep copy objects of all pod
+func (cm *Manager) listPodsWithFilters(filters ...filter) map[string]*typedef.PodInfo {
+	cm.Lock()
+	defer cm.Unlock()
+	pc := make(map[string]*typedef.PodInfo, 0)
+
+	for _, pod := range cm.Checkpoint.Pods {
+		if !mergeFilters(pod, filters) {
+			continue
+		}
+		pc[pod.UID] = pod.Clone()
+	}
+	return pc
+}
+
 func mergeFilters(pi *typedef.PodInfo, filters []filter) bool {
 	for _, f := range filters {
 		if !f(pi) {
@@ -158,6 +173,11 @@ func (cm *Manager) ListOfflineContainers() map[string]*typedef.ContainerInfo {
 // ListAllContainers returns all containers copies
 func (cm *Manager) ListAllContainers() map[string]*typedef.ContainerInfo {
 	return cm.listContainersWithFilters()
+}
+
+// ListAllPods returns all pods copies
+func (cm *Manager) ListAllPods() map[string]*typedef.PodInfo {
+	return cm.listPodsWithFilters()
 }
 
 // NewPodInfo create PodInfo
