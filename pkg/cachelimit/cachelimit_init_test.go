@@ -405,6 +405,46 @@ func TestCheckCacheCfg(t *testing.T) {
 			wantErr: true,
 			wantMsg: strconv.Itoa(minPercent),
 		},
+		{
+			name: "TC-invalid l3 percent low value larger than mid value",
+			args: args{cfg: config.CacheConfig{
+				DefaultLimitMode: staticMode,
+				AdjustInterval:   maxAdjustInterval/2 + 1,
+				PerfDuration:     maxPerfDur/2 + 1,
+				L3Percent: config.MultiLvlPercent{
+					Low:  minPercent + 2,
+					Mid:  minPercent + 1,
+					High: minPercent + 1,
+				},
+				MemBandPercent: config.MultiLvlPercent{
+					Low:  minPercent,
+					Mid:  minPercent + 1,
+					High: minPercent + 2,
+				},
+			}},
+			wantErr: true,
+			wantMsg: "low<=mid<=high",
+		},
+		{
+			name: "TC-invalid memband percent mid value larger than high value",
+			args: args{cfg: config.CacheConfig{
+				DefaultLimitMode: staticMode,
+				AdjustInterval:   maxAdjustInterval/2 + 1,
+				PerfDuration:     maxPerfDur/2 + 1,
+				L3Percent: config.MultiLvlPercent{
+					Low:  minPercent,
+					Mid:  minPercent + 1,
+					High: minPercent + 2,
+				},
+				MemBandPercent: config.MultiLvlPercent{
+					Low:  minPercent,
+					Mid:  maxPercent/2 + 1,
+					High: maxPercent / 2,
+				},
+			}},
+			wantErr: true,
+			wantMsg: "low<=mid<=high",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
