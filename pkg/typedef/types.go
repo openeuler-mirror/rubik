@@ -44,7 +44,7 @@ func NewContainerInfo(container corev1.Container, podID, conID, cgroupRoot, podC
 
 // CgroupPath return full cgroup path
 func (ci *ContainerInfo) CgroupPath(subsys string) string {
-	if ci == nil {
+	if ci == nil || ci.Name == "" {
 		return ""
 	}
 	return filepath.Join(ci.CgroupRoot, subsys, ci.CgroupAddr)
@@ -81,5 +81,9 @@ func (pi *PodInfo) Clone() *PodInfo {
 
 // AddContainerInfo store container info to checkpoint
 func (pi *PodInfo) AddContainerInfo(containerInfo *ContainerInfo) {
+	// key should not be empty
+	if containerInfo.Name == "" {
+		return
+	}
 	pi.Containers[containerInfo.Name] = containerInfo
 }
