@@ -299,7 +299,11 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 		return
 	}
 	r.cpm.AddPod(pod)
-	qos.SetQosLevel(pod)
+	if r.cpm.Checkpoint.Pods[string(pod.UID)].Offline {
+		if err := qos.SetQosLevel(pod); err != nil {
+			log.Errorf("Auto config error: %v", err)
+		}
+	}
 	if r.config.BlkConfig.Limit {
 		blkio.SetBlkio(pod)
 	}

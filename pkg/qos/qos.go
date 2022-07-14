@@ -131,17 +131,19 @@ func checkQosLevel(qosLevel int) error {
 }
 
 // SetQosLevel set pod qos_level
-func SetQosLevel(pod *corev1.Pod) {
+func SetQosLevel(pod *corev1.Pod) error {
 	podQosInfo, err := BuildOfflinePodInfo(pod)
 	if err != nil {
-		log.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
-		return
+		return errors.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
 	}
 	if err = podQosInfo.SetQos(); err != nil {
-		log.Errorf("auto config qos error: %v", err)
-
-		return
+		return errors.Errorf("set qos for pod %v error: %v", pod.UID, err)
 	}
+	if err = podQosInfo.ValidateQos(); err != nil {
+		return errors.Errorf("validate qos for pod %v error: %v", pod.UID, err)
+	}
+
+	return nil
 }
 
 func setQosLevel(root, file string, target int) error {
