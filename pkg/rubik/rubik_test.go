@@ -27,9 +27,7 @@ import (
 
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
-	"isula.org/rubik/pkg/httpserver"
 	"isula.org/rubik/pkg/util"
-	"isula.org/rubik/pkg/workerpool"
 )
 
 // TestNewRubik is NewRubik function test
@@ -72,35 +70,6 @@ func TestNewRubik(t *testing.T) {
 	fd.Close()
 }
 
-// TestMonitor is Monitor function test
-func TestMonitor(t *testing.T) {
-	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
-		server: server,
-		pool: &workerpool.WorkerPool{
-			WorkerNum:  1,
-			WorkerBusy: 1,
-		},
-	}
-
-	go rubik.Monitor()
-	close(config.ShutdownChan)
-}
-
-// TestShutdown is Shutdown function test
-func TestShutdown(t *testing.T) {
-	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
-		server: server,
-		pool: &workerpool.WorkerPool{
-			WorkerNum:  1,
-			WorkerBusy: 0,
-		},
-	}
-
-	rubik.Shutdown()
-}
-
 // TestSync is Sync function test
 func TestSync(t *testing.T) {
 	rubik := &Rubik{
@@ -111,30 +80,6 @@ func TestSync(t *testing.T) {
 
 	err := rubik.Sync()
 	assert.Equal(t, true, err != nil)
-}
-
-// TestServe is Serve function test
-func TestServe(t *testing.T) {
-	sock, err := httpserver.NewSock()
-	assert.NoError(t, err)
-	server, _ := httpserver.NewServer()
-	rubik := &Rubik{
-		server: server,
-		sock:   sock,
-		config: &config.Config{},
-	}
-
-	var errC chan error
-	go func() {
-		errC <- rubik.Serve()
-	}()
-
-	select {
-	case err = <-errC:
-	case <-time.After(time.Second):
-		err = nil
-	}
-	assert.NoError(t, err)
 }
 
 var cfgA = `
@@ -202,12 +147,7 @@ func TestRun(t *testing.T) {
 
 // TestCacheLimit is CacheLimit function test
 func TestCacheLimit(t *testing.T) {
-	sock, err := httpserver.NewSock()
-	assert.NoError(t, err)
-	server, _ := httpserver.NewServer()
 	rubik := &Rubik{
-		server: server,
-		sock:   sock,
 		config: &config.Config{
 			CacheCfg: config.CacheConfig{
 				Enable:            true,
@@ -217,7 +157,7 @@ func TestCacheLimit(t *testing.T) {
 		},
 	}
 
-	err = rubik.CacheLimit()
+	err := rubik.CacheLimit()
 	assert.Equal(t, true, err != nil)
 	rubik.config.CacheCfg.Enable = false
 	err = rubik.CacheLimit()
