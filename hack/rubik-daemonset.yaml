@@ -56,7 +56,7 @@ data:
                 "mid": 30,
                 "high": 50
             }
-}
+        }
     }
 ---
 apiVersion: apps/v1
