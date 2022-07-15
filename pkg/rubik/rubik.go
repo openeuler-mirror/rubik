@@ -66,23 +66,30 @@ func NewRubik(cfgPath string) (*Rubik, error) {
 		config: cfg,
 	}
 
-	if err := r.initKubeClient(); err != nil {
-		return nil, err
-	}
-
-	if err := r.initEventHandler(); err != nil {
-		return nil, err
-	}
-
-	if err := r.initCheckpoint(); err != nil {
-		return nil, err
-	}
-
-	if err := r.initMemoryManager(); err != nil {
+	if err := r.initComponents(); err != nil {
 		return nil, err
 	}
 
 	return r, nil
+}
+
+func (r *Rubik) initComponents() error {
+	if err := r.initKubeClient(); err != nil {
+		return err
+	}
+
+	if err := r.initCheckpoint(); err != nil {
+		return err
+	}
+
+	if err := r.initEventHandler(); err != nil {
+		return err
+	}
+
+	if err := r.initMemoryManager(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Monitor monitors shutdown signal
