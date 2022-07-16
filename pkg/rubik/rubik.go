@@ -49,6 +49,7 @@ type Rubik struct {
 	kubeClient *kubernetes.Clientset
 	cpm        *checkpoint.Manager
 	mm         *memory.MemoryManager
+	nodeName   string
 }
 
 // NewRubik creates a new rubik object
@@ -89,6 +90,7 @@ func (r *Rubik) initComponents() error {
 	if err := r.initMemoryManager(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -100,7 +102,7 @@ func (r *Rubik) Monitor() {
 
 // Sync sync pods qos level
 func (r *Rubik) Sync() error {
-	return sync.Sync(r.config.AutoCheck, r.kubeClient)
+	return sync.Sync(r.config.AutoCheck, r.cpm.ListAllPods())
 }
 
 // CacheLimit init cache limit module
@@ -113,11 +115,6 @@ func (r *Rubik) CacheLimit() error {
 
 // initKubeClient initialize kubeClient if autoconfig is enabled
 func (r *Rubik) initKubeClient() error {
-	r.kubeClient = nil
-	if !r.config.AutoConfig {
-		return nil
-	}
-
 	conf, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -135,18 +132,15 @@ func (r *Rubik) initKubeClient() error {
 
 // initEventHandler initialize the event handler and set the rubik callback function corresponding to the pod event.
 func (r *Rubik) initEventHandler() error {
-	if !r.config.AutoConfig {
-		return nil
-	}
-
 	if r.kubeClient == nil {
 		return fmt.Errorf("kube-client is not initialized")
 	}
 
 	autoconfig.Backend = r
-	if err := autoconfig.Init(r.kubeClient); err != nil {
+	if err := autoconfig.Init(r.kubeClient, r.nodeName); err != nil {
 		return err
 	}
+
 	log.Infof("the event-handler is initialized successfully")
 	return nil
 }
@@ -163,29 +157,25 @@ func (r *Rubik) initMemoryManager() error {
 }
 
 func (r *Rubik) initCheckpoint() error {
-	r.cpm = nil
-	if !r.config.AutoConfig {
-		log.Infof("the autoconfig must be enabled for checkpoint")
-		return nil
-	}
 	if r.kubeClient == nil {
-		return fmt.Errorf("kube-client not initialized")
+		return fmt.Errorf("kube-client is not initialized")
 	}
 
 	cpm := checkpoint.NewManager()
-
 	node := os.Getenv(constant.NodeNameEnvKey)
 	if node == "" {
 		return fmt.Errorf("missing %s", constant.NodeNameEnvKey)
 	}
+
+	r.nodeName = node
 	const specNodeNameFormat = "spec.nodeName=%s"
 	pods, err := r.kubeClient.CoreV1().Pods("").List(context.Background(),
 		metav1.ListOptions{FieldSelector: fmt.Sprintf(specNodeNameFormat, node)})
 	if err != nil {
 		return err
 	}
-
 	cpm.SyncFromCluster(pods.Items)
+
 	r.cpm = cpm
 	log.Infof("the checkpoint is initialized successfully")
 	return nil
@@ -260,7 +250,7 @@ func run(fcfg string) int {
 	}
 
 	go signalHandler()
-	go rubik.Monitor()
+	rubik.Monitor()
 
 	return 0
 }

@@ -187,6 +187,7 @@ func NewPodInfo(pod *corev1.Pod) *typedef.PodInfo {
 		UID:        string(pod.UID),
 		Containers: make(map[string]*typedef.ContainerInfo, 0),
 		CgroupPath: util.GetPodCgroupPath(pod),
+		Namespace:  pod.Namespace,
 	}
 	updatePodInfoNoLock(pi, pod)
 	return pi
@@ -203,6 +204,7 @@ func updatePodInfoNoLock(pi *typedef.PodInfo, pod *corev1.Pod) {
 	)
 	pi.Name = pod.Name
 	pi.Offline = util.IsOffline(pod)
+	pi.CacheLimitLevel = util.GetPodCacheLimit(pod)
 
 	nameID := make(map[string]string, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {

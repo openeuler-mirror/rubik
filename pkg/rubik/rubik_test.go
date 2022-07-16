@@ -58,7 +58,7 @@ func TestNewRubik(t *testing.T) {
 						"logLevel": "debug",
 						"cgroupRoot": "/tmp/rubik-test/cgroup"
 }`)
-	assert.NoError(t, err)
+	assert.Equal(t, true, strings.Contains(err.Error(), "must be defined"))
 
 	err = reCreateConfigFile(tmpConfigFile, `{
 						"logLevel": "debugabc"
@@ -97,18 +97,6 @@ func reCreateConfigFile(path, content string) error {
 	}
 
 	return nil
-}
-
-// TestSync is Sync function test
-func TestSync(t *testing.T) {
-	rubik := &Rubik{
-		config: &config.Config{
-			AutoCheck: true,
-		},
-	}
-
-	err := rubik.Sync()
-	assert.Equal(t, true, err != nil)
 }
 
 var cfgA = `
@@ -224,20 +212,20 @@ func TestInitKubeClient(t *testing.T) {
 
 // TestInitEventHandler test initEventHandler
 func TestInitEventHandler(t *testing.T) {
-	r := &Rubik{config: &config.Config{AutoConfig: true}}
+	r := &Rubik{config: &config.Config{AutoConfig: true}, nodeName: "nodeName"}
 	err := r.initEventHandler()
 	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client is not initialized"))
 
 	r.kubeClient = &kubernetes.Clientset{}
 	err = r.initEventHandler()
-	assert.Equal(t, true, strings.Contains(err.Error(), "must be defined"))
+	assert.NoError(t, err)
 }
 
 // TestInitCheckpoint test initCheckpoint
 func TestInitCheckpoint(t *testing.T) {
 	r := &Rubik{config: &config.Config{AutoConfig: true}}
 	err := r.initCheckpoint()
-	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client not initialized"))
+	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client is not initialized"))
 
 	r.kubeClient = &kubernetes.Clientset{}
 	err = r.initCheckpoint()
@@ -246,8 +234,10 @@ func TestInitCheckpoint(t *testing.T) {
 
 // TestAddUpdateDelEvent test Event
 func TestAddUpdateDelEvent(t *testing.T) {
-	r, err := NewRubik("")
+	cfg, err := config.NewConfig("")
 	assert.NoError(t, err)
+	r := &Rubik{config: cfg}
+
 	cpm := checkpoint.NewManager()
 	r.cpm = cpm
 	oldPod := &corev1.Pod{

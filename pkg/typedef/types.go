@@ -63,9 +63,11 @@ type PodInfo struct {
 	Name       string                    `json:"name"`
 	UID        string                    `json:"uid"`
 	CgroupPath string                    `json:"cgroupPath"`
+	Namespace  string                    `json:"namespace"`
 
 	// Service Information
-	Offline bool `json:"offline"`
+	Offline         bool   `json:"offline"`
+	CacheLimitLevel string `json:"cacheLimitLevel,omitempty"`
 }
 
 // Clone return deepcopy object

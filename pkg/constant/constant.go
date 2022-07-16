@@ -67,6 +67,8 @@ const (
 	NodeNameEnvKey = "RUBIK_NODE_NAME"
 	// PriorityAnnotationKey is annotation key to mark offline pod
 	PriorityAnnotationKey = "volcano.sh/preemptable"
+	// CacheLimitAnnotationKey is annotation key to set L3/Mb resctrl group
+	CacheLimitAnnotationKey = "volcano.sh/cache-limit"
 	// BlkioKey is annotation key to set blkio limit
 	BlkioKey = "volcano.sh/blkio-limit"
 	// DefaultMemCheckInterval indicates the default memory check interval 5s.

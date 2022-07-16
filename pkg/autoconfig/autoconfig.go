@@ -15,8 +15,6 @@
 package autoconfig
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -27,7 +25,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"isula.org/rubik/pkg/config"
-	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
 )
 
@@ -44,15 +41,11 @@ type EventHandler interface {
 var Backend EventHandler
 
 // Init initializes the callback function for the pod event.
-func Init(kubeClient *kubernetes.Clientset) error {
+func Init(kubeClient *kubernetes.Clientset, nodeName string) error {
 	const (
 		reSyncTime        = 30
 		specNodeNameField = "spec.nodeName"
 	)
-	nodeName := os.Getenv(constant.NodeNameEnvKey)
-	if nodeName == "" {
-		return fmt.Errorf("environment variable %s must be defined", constant.NodeNameEnvKey)
-	}
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(kubeClient,
 		time.Duration(reSyncTime)*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
