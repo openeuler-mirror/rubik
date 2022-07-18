@@ -87,8 +87,10 @@ func (r *Rubik) initComponents() error {
 		return err
 	}
 
-	if err := r.initMemoryManager(); err != nil {
-		return err
+	if r.config.MemCfg.Enable {
+		if err := r.initMemoryManager(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -146,7 +148,7 @@ func (r *Rubik) initEventHandler() error {
 }
 
 func (r *Rubik) initMemoryManager() error {
-	mm, err := memory.NewMemoryManager(r.cpm, r.config.MemConfig)
+	mm, err := memory.NewMemoryManager(r.cpm, r.config.MemCfg)
 	if err != nil {
 		return err
 	}
@@ -193,7 +195,7 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 			log.Errorf("Auto config error: %v", err)
 		}
 	}
-	if r.config.BlkConfig.Limit {
+	if r.config.BlkioCfg.Enable {
 		blkio.SetBlkio(pod)
 	}
 }
@@ -212,12 +214,12 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 	// after the Rubik is started, the pod adding events are transferred through the update handler of Kubernetes.
 	if !r.cpm.PodExist(newPod.UID) {
 		r.cpm.AddPod(newPod)
-		if r.config.BlkConfig.Limit {
+		if r.config.BlkioCfg.Enable {
 			blkio.SetBlkio(newPod)
 		}
 	} else {
 		r.cpm.UpdatePod(newPod)
-		if r.config.BlkConfig.Limit {
+		if r.config.BlkioCfg.Enable{
 			blkio.WriteBlkio(oldPod, newPod)
 		}
 	}
