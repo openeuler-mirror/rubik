@@ -33,7 +33,6 @@ var (
 
 // Config defines the configuration for rubik
 type Config struct {
-	AutoConfig bool         `json:"autoConfig,omitempty"`
 	AutoCheck  bool         `json:"autoCheck,omitempty"`
 	LogDriver  string       `json:"logDriver,omitempty"`
 	LogDir     string       `json:"logDir,omitempty"`
@@ -41,8 +40,8 @@ type Config struct {
 	LogLevel   string       `json:"logLevel,omitempty"`
 	CgroupRoot string       `json:"cgroupRoot,omitempty"`
 	CacheCfg   CacheConfig  `json:"cacheConfig,omitempty"`
-	BlkConfig  BlkioConfig  `json:"blkConfig,omitempty"`
-	MemConfig  MemoryConfig `json:"memConfig,omitempty"`
+	BlkioCfg   BlkioConfig  `json:"blkioConfig,omitempty"`
+	MemCfg     MemoryConfig `json:"memoryConfig,omitempty"`
 }
 
 // CacheConfig define cache limit related config
@@ -58,7 +57,7 @@ type CacheConfig struct {
 
 // BlkioConfig defines blkio related configurations.
 type BlkioConfig struct {
-	Limit bool `json:"limit,omitempty"`
+	Enable bool `json:"enable,omitempty"`
 }
 
 // MultiLvlPercent define multi level percentage
@@ -69,6 +68,7 @@ type MultiLvlPercent struct {
 }
 
 type MemoryConfig struct {
+	Enable        bool   `json:"enable,omitempty"`
 	Strategy      string `json:"strategy,omitempty"`
 	CheckInterval int    `json:"checkInterval,omitempty"`
 }
@@ -82,7 +82,6 @@ func NewConfig(path string) (*Config, error) {
 	defaultLogSize, defaultAdInt, defaultPerfDur := 1024, 1000, 1000
 	defaultLowL3, defaultMidL3, defaultHighL3, defaultLowMB, defaultMidMB, defaultHighMB := 20, 30, 50, 10, 30, 50
 	cfg := Config{
-		AutoCheck:  false,
 		LogDriver:  "stdio",
 		LogDir:     constant.DefaultLogDir,
 		LogSize:    defaultLogSize,
@@ -105,10 +104,11 @@ func NewConfig(path string) (*Config, error) {
 				High: defaultHighMB,
 			},
 		},
-		BlkConfig: BlkioConfig{
-			Limit: false,
+		BlkioCfg: BlkioConfig{
+			Enable: false,
 		},
-		MemConfig: MemoryConfig{
+		MemCfg: MemoryConfig{
+			Enable:        false,
 			Strategy:      constant.DefaultMemStrategy,
 			CheckInterval: constant.DefaultMemCheckInterval,
 		},

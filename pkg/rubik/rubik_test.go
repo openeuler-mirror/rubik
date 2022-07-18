@@ -64,17 +64,6 @@ func TestNewRubik(t *testing.T) {
 						"logLevel": "debugabc"
 }`)
 	assert.Equal(t, true, err != nil)
-
-	err = reCreateConfigFile(tmpConfigFile, `{
-						"autoConfig": true
-}`)
-	assert.Equal(t, true, strings.Contains(err.Error(), "must be defined"))
-
-	err = reCreateConfigFile(tmpConfigFile, `{
-						"autoConfig": true
-}`)
-	assert.Equal(t, true, strings.Contains(err.Error(), "must be defined"))
-
 }
 
 func reCreateConfigFile(path, content string) error {
@@ -205,14 +194,14 @@ func TestSmallRun(t *testing.T) {
 
 // TestInitKubeClient test initKubeClient
 func TestInitKubeClient(t *testing.T) {
-	r := &Rubik{config: &config.Config{AutoConfig: true}}
+	r := &Rubik{}
 	err := r.initKubeClient()
 	assert.Equal(t, true, strings.Contains(err.Error(), "must be defined"))
 }
 
 // TestInitEventHandler test initEventHandler
 func TestInitEventHandler(t *testing.T) {
-	r := &Rubik{config: &config.Config{AutoConfig: true}, nodeName: "nodeName"}
+	r := &Rubik{}
 	err := r.initEventHandler()
 	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client is not initialized"))
 
@@ -223,7 +212,7 @@ func TestInitEventHandler(t *testing.T) {
 
 // TestInitCheckpoint test initCheckpoint
 func TestInitCheckpoint(t *testing.T) {
-	r := &Rubik{config: &config.Config{AutoConfig: true}}
+	r := &Rubik{}
 	err := r.initCheckpoint()
 	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client is not initialized"))
 
