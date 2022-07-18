@@ -15,50 +15,21 @@ package sync
 
 import (
 	"context"
-	"fmt"
-	"os"
-
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/cachelimit"
 	"isula.org/rubik/pkg/config"
-	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/qos"
 	log "isula.org/rubik/pkg/tinylog"
-	"isula.org/rubik/pkg/util"
-)
-
-const (
-	cacheLimitAnnotationKey = "volcano.sh/cache-limit"
-	configHashAnnotationKey = "kubernetes.io/config.hash"
+	"isula.org/rubik/pkg/typedef"
 )
 
 // Sync qos setting
-func Sync(check bool, kubeClient *kubernetes.Clientset) error {
-	node := os.Getenv(constant.NodeNameEnvKey)
-	if node == "" {
-		return errors.Errorf("environment variable %s must be defined", constant.NodeNameEnvKey)
-	}
-	pods, err := kubeClient.CoreV1().Pods("").List(context.Background(),
-		metav1.ListOptions{FieldSelector: fmt.Sprintf("spec.nodeName=%s", node)})
-	if err != nil {
-		return err
-	}
-
-	verifyPodsSetting(pods, check)
-	return nil
-}
-
-func verifyPodsSetting(pods *corev1.PodList, check bool) {
-	for _, pod := range pods.Items {
-		podCgroupPath := util.GetPodCgroupPath(&pod)
-		if !isOffline(pod) {
+func Sync(check bool, pods map[string]*typedef.PodInfo) error {
+	for _, pod := range pods {
+		if !pod.Offline {
 			if pod.Namespace != "kube-system" {
-				cachelimit.AddOnlinePod(string(pod.UID), podCgroupPath)
+				cachelimit.AddOnlinePod(pod.UID, pod.CgroupPath)
 			}
 			continue
 		}
@@ -66,11 +37,13 @@ func verifyPodsSetting(pods *corev1.PodList, check bool) {
 		if !check {
 			continue
 		}
-		syncQos(string(pod.UID), podCgroupPath)
+		syncQos(pod.UID, pod.CgroupPath)
 		if cachelimit.ClEnabled() {
-			syncCache(pod, podCgroupPath)
+			syncCache(pod)
 		}
 	}
+
+	return nil
 }
 
 func syncQos(podID, cgPath string) {
@@ -84,8 +57,8 @@ func syncQos(podID, cgPath string) {
 	}
 }
 
-func syncCache(pod corev1.Pod, cgPath string) {
-	podCacheInfo, err := getCacheLimitPodStruct(pod, cgPath)
+func syncCache(pod *typedef.PodInfo) {
+	podCacheInfo, err := getCacheLimitPodStruct(pod)
 	if err != nil {
 		log.Errorf("get pod %v cache limit info error: %v", pod.UID, err)
 		return
@@ -93,14 +66,6 @@ func syncCache(pod corev1.Pod, cgPath string) {
 	if err = podCacheInfo.SetCacheLimit(); err != nil {
 		log.Errorf("sync pod %v cache limit error: %v", pod.UID, err)
 	}
-}
-
-func getPodCacheLimitLevel(pod corev1.Pod) string {
-	return pod.Annotations[cacheLimitAnnotationKey]
-}
-
-func isOffline(pod corev1.Pod) bool {
-	return pod.Annotations[constant.PriorityAnnotationKey] == "true"
 }
 
 func getOfflinePodQosStruct(podID, cgroupPath string) (*qos.PodInfo, error) {
@@ -116,14 +81,14 @@ func getOfflinePodQosStruct(podID, cgroupPath string) (*qos.PodInfo, error) {
 	return podInfo, nil
 }
 
-func getCacheLimitPodStruct(pod corev1.Pod, cgroupPath string) (*cachelimit.PodInfo, error) {
+func getCacheLimitPodStruct(pod *typedef.PodInfo) (*cachelimit.PodInfo, error) {
 	podQos := api.PodQoS{
-		CgroupPath:      cgroupPath,
+		CgroupPath:      pod.CgroupPath,
 		QosLevel:        -1,
-		CacheLimitLevel: getPodCacheLimitLevel(pod),
+		CacheLimitLevel: pod.CacheLimitLevel,
 	}
 
-	podInfo, err := cachelimit.NewCacheLimitPodInfo(context.Background(), string(pod.UID), podQos)
+	podInfo, err := cachelimit.NewCacheLimitPodInfo(context.Background(), pod.UID, podQos)
 	if err != nil {
 		return nil, err
 	}

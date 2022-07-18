@@ -14,7 +14,6 @@
 package autoconfig
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,8 +24,8 @@ import (
 // TestInit test Init
 func TestInit(t *testing.T) {
 	kb := &kubernetes.Clientset{}
-	err := Init(kb)
-	assert.Equal(t, true, strings.Contains(err.Error(), "environment variable"))
+	err := Init(kb, "nodeName")
+	assert.NoError(t, err)
 }
 
 // TestAddUpdateDelHandler test Handler

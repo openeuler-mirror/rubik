@@ -31,6 +31,10 @@ func IsOffline(pod *corev1.Pod) bool {
 	return pod.Annotations[constant.PriorityAnnotationKey] == "true"
 }
 
+func GetPodCacheLimit(pod *corev1.Pod) string {
+	return pod.Annotations[constant.CacheLimitAnnotationKey]
+}
+
 // GetPodCgroupPath returns cgroup path of pod
 func GetPodCgroupPath(pod *corev1.Pod) string {
 	var cgroupPath string
