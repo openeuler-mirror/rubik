@@ -38,10 +38,8 @@ sudo make install
 
 ### Prepare environment
 
-- kernel: openeuler 21.09+
+- OS: openeuler 21.09/22.03/22.09+
 - kubernetes: 1.17.0+
-- enable memory qos: `echo 1 > /proc/sys/vm/memcg_qos_enable`
-
 
 ### Deploy rubik as daemonset
 

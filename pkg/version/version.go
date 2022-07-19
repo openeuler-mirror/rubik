@@ -29,8 +29,6 @@ var (
 	GitCommit string
 	// BuildTime represents build time
 	BuildTime string
-	// Usage represents usage for this release
-	Usage string
 )
 
 func init() {

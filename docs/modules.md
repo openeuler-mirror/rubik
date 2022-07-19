@@ -36,6 +36,7 @@ rubik支持业务memory优先级配置，针对在离线业务混合部署的场
 **前置条件**：
 
 - 建议内核版本openEuler-22.03+。内核支持针对cgroup的memory优先级配置，memory子系统存在接口memory.qos_level。
+- 开启内存优先级支持: `echo 1 > /proc/sys/vm/memcg_qos_enable`
 
 ### 内存优先级内核接口
 
