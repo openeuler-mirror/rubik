@@ -22,7 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/config"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/typedef"
 	"isula.org/rubik/pkg/util"
@@ -36,15 +35,17 @@ type Checkpoint struct {
 // Manager manage checkpoint
 type Manager struct {
 	Checkpoint *Checkpoint
+	CgroupRoot string
 	sync.Mutex
 }
 
 // NewManager create manager
-func NewManager() *Manager {
+func NewManager(cgroupRoot string) *Manager {
 	return &Manager{
 		Checkpoint: &Checkpoint{
 			Pods: make(map[string]*typedef.PodInfo, 0),
 		},
+		CgroupRoot: cgroupRoot,
 	}
 }
 
@@ -62,7 +63,7 @@ func (cm *Manager) AddPod(pod *corev1.Pod) {
 		return
 	}
 	log.Debugf("add pod %v", string(pod.UID))
-	cm.Checkpoint.Pods[string(pod.UID)] = NewPodInfo(pod)
+	cm.Checkpoint.Pods[string(pod.UID)] = NewPodInfo(pod, cm.CgroupRoot)
 }
 
 // GetPod returns pod info from pod ID
@@ -114,7 +115,7 @@ func (cm *Manager) SyncFromCluster(items []corev1.Pod) {
 			continue
 		}
 		log.Debugf("add pod %v", string(pod.UID))
-		cm.Checkpoint.Pods[string(pod.UID)] = NewPodInfo(&pod)
+		cm.Checkpoint.Pods[string(pod.UID)] = NewPodInfo(&pod, cm.CgroupRoot)
 	}
 }
 
@@ -181,13 +182,14 @@ func (cm *Manager) ListAllPods() map[string]*typedef.PodInfo {
 }
 
 // NewPodInfo create PodInfo
-func NewPodInfo(pod *corev1.Pod) *typedef.PodInfo {
+func NewPodInfo(pod *corev1.Pod, cgroupRoot string) *typedef.PodInfo {
 	pi := &typedef.PodInfo{
 		Name:       pod.Name,
 		UID:        string(pod.UID),
 		Containers: make(map[string]*typedef.ContainerInfo, 0),
 		CgroupPath: util.GetPodCgroupPath(pod),
 		Namespace:  pod.Namespace,
+		CgroupRoot: cgroupRoot,
 	}
 	updatePodInfoNoLock(pi, pod)
 	return pi
@@ -226,7 +228,7 @@ func updatePodInfoNoLock(pi *typedef.PodInfo, pod *corev1.Pod) {
 		if !ok {
 			log.Debugf("add new container %v", c.Name)
 			pi.AddContainerInfo(typedef.NewContainerInfo(c, string(pod.UID), nameID[c.Name],
-				config.CgroupRoot, pi.CgroupPath))
+				pi.CgroupRoot, pi.CgroupPath))
 			continue
 		}
 		// The container name remains unchanged, and other information about the container is updated.

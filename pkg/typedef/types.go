@@ -64,6 +64,7 @@ type PodInfo struct {
 	UID        string                    `json:"uid"`
 	CgroupPath string                    `json:"cgroupPath"`
 	Namespace  string                    `json:"namespace"`
+	CgroupRoot string                    `json:"cgroupRoot"`
 
 	// Service Information
 	Offline         bool   `json:"offline"`

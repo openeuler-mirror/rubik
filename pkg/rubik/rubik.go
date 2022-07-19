@@ -163,7 +163,7 @@ func (r *Rubik) initCheckpoint() error {
 		return fmt.Errorf("kube-client is not initialized")
 	}
 
-	cpm := checkpoint.NewManager()
+	cpm := checkpoint.NewManager(r.config.CgroupRoot)
 	node := os.Getenv(constant.NodeNameEnvKey)
 	if node == "" {
 		return fmt.Errorf("missing %s", constant.NodeNameEnvKey)
@@ -190,11 +190,12 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 		return
 	}
 	r.cpm.AddPod(pod)
-	if r.cpm.Checkpoint.Pods[string(pod.UID)].Offline {
-		if err := qos.SetQosLevel(pod); err != nil {
-			log.Errorf("Auto config error: %v", err)
-		}
+
+	cpmPod := r.cpm.GetPod(pod.UID)
+	if err := qos.SetQosLevel(cpmPod); err != nil {
+		log.Errorf("AddEvent handle error: %v", err)
 	}
+
 	if r.config.BlkioCfg.Enable {
 		blkio.SetBlkio(pod)
 	}
@@ -209,8 +210,6 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 		return
 	}
 
-	qos.UpdateQosLevel(oldPod, newPod)
-
 	// after the Rubik is started, the pod adding events are transferred through the update handler of Kubernetes.
 	if !r.cpm.PodExist(newPod.UID) {
 		r.cpm.AddPod(newPod)
@@ -219,9 +218,14 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 		}
 	} else {
 		r.cpm.UpdatePod(newPod)
-		if r.config.BlkioCfg.Enable{
+		if r.config.BlkioCfg.Enable {
 			blkio.WriteBlkio(oldPod, newPod)
 		}
+	}
+
+	cpmPod := r.cpm.GetPod(newPod.UID)
+	if err := qos.UpdateQosLevel(cpmPod); err != nil {
+		log.Errorf("UpdateEvent handle error: %v", err)
 	}
 }
 
@@ -251,6 +255,7 @@ func run(fcfg string) int {
 		log.Errorf("sync qos level failed: %v", err)
 	}
 
+	log.Logf("Start rubik with cfg\n%v", rubik.config)
 	go signalHandler()
 	rubik.Monitor()
 
