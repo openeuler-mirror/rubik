@@ -14,7 +14,6 @@
 package qos
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,125 +21,70 @@ import (
 	"strings"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/pkg/errors"
 
-	"isula.org/rubik/api"
-	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/typedef"
 	"isula.org/rubik/pkg/util"
 )
 
-var (
-	// SupportCgroupTypes are supported cgroup types for qos setting
-	SupportCgroupTypes = []string{"cpu", "memory"}
-)
-
-// PodInfo is struct of each pod's info
-type PodInfo struct {
-	api.PodQoS
-	PodID      string
-	CgroupRoot string
-	FullPath   map[string]string
-	Ctx        context.Context
-}
-
-// NewPodInfo is constructor of struct PodInfo
-func NewPodInfo(ctx context.Context, podID string, cgmnt string, req api.PodQoS) (*PodInfo, error) {
-	if len(podID) > constant.MaxPodIDLen {
-		return nil, errors.Errorf("Pod id too long")
-	}
-	pod := PodInfo{
-		PodQoS: api.PodQoS{
-			CgroupPath: req.CgroupPath,
-			QosLevel:   req.QosLevel,
-		},
-		PodID:      podID,
-		CgroupRoot: cgmnt,
-		Ctx:        ctx,
-	}
-	if err := checkQosLevel(pod.QosLevel); err != nil {
-		return nil, err
-	}
-	if err := pod.initCgroupPath(); err != nil {
-		return nil, err
-	}
-
-	return &pod, nil
-}
-
-// BuildOfflinePodInfo build offline pod information
-func BuildOfflinePodInfo(pod *corev1.Pod) (*PodInfo, error) {
-	podQos := api.PodQoS{
-		CgroupPath: util.GetPodCgroupPath(pod),
-		QosLevel:   -1,
-	}
-	podInfo, err := NewPodInfo(context.Background(), string(pod.UID), config.CgroupRoot, podQos)
-	if err != nil {
-		return nil, err
-	}
-
-	return podInfo, nil
-}
-
-func getQosLevel(root, file string) (int, error) {
-	var (
-		qosLevel int
-		rootQos  []byte
-		err      error
-	)
-
-	rootQos, err = util.ReadSmallFile(filepath.Join(root, file)) // nolint
-	if err != nil {
-		return constant.ErrCodeFailed, errors.Errorf("Getting root qos level failed: %v", err)
-	}
-	// walk through all sub paths
-	if err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
-		if f != nil && f.IsDir() {
-			cgFilePath, err := securejoin.SecureJoin(path, file)
-			if err != nil {
-				return errors.Errorf("Join path failed: %v", err)
-			}
-			data, err := util.ReadSmallFile(filepath.Clean(cgFilePath))
-			if err != nil {
-				return errors.Errorf("Getting qos level failed: %v", err)
-			}
-			if strings.Compare(string(data), string(rootQos)) != 0 {
-				return errors.Errorf("Qos differs")
-			}
-		}
-		return nil
-	}); err != nil {
-		return constant.ErrCodeFailed, err
-	}
-	qosLevel, err = strconv.Atoi(strings.TrimSpace(string(rootQos)))
-	if err != nil {
-		return constant.ErrCodeFailed, err
-	}
-	return qosLevel, nil
-}
-
-func checkQosLevel(qosLevel int) error {
-	if qosLevel >= constant.MinLevel.Int() && qosLevel <= constant.MaxLevel.Int() {
-		return nil
-	}
-
-	return errors.Errorf("invalid qos level number %d, should be 0 or -1", qosLevel)
-}
+// SupportCgroupTypes are supported cgroup types for qos setting
+var SupportCgroupTypes = []string{"cpu", "memory"}
 
 // SetQosLevel set pod qos_level
-func SetQosLevel(pod *corev1.Pod) error {
-	podQosInfo, err := BuildOfflinePodInfo(pod)
+func SetQosLevel(pod *typedef.PodInfo) error {
+	if err := setQos(pod); err != nil {
+		return errors.Errorf("set qos for pod %s(%s) error: %v", pod.Name, pod.UID, err)
+	}
+	if err := validateQos(pod); err != nil {
+		return errors.Errorf("validate qos for pod %s(%s) error: %v", pod.Name, pod.UID, err)
+	}
+
+	log.Logf("Set pod %s(UID=%s, offline=%v) qos level OK", pod.Name, pod.UID, pod.Offline)
+	return nil
+}
+
+func UpdateQosLevel(pod *typedef.PodInfo) error {
+	if err := validateQos(pod); err != nil {
+		log.Logf("Checking pod %s(%s) value failed: %v, reset it", err, pod.Name, pod.UID)
+		if err := setQos(pod); err != nil {
+			return errors.Errorf("set qos for pod %s(%s) error: %v", pod.Name, pod.UID, err)
+		}
+	}
+
+	return nil
+}
+
+// setQos is used for setting pod's qos level following it's cgroup path
+func setQos(pod *typedef.PodInfo) error {
+	if len(pod.UID) > constant.MaxPodIDLen {
+		return errors.Errorf("Pod id too long")
+	}
+
+	// default qos_level is online, no need to set online pod qos_level
+	if !pod.Offline {
+		log.Logf("Set level=%v for pod %s(%s)", constant.MaxLevel, pod.Name, pod.UID)
+		return nil
+	}
+	log.Logf("Set level=%v for pod %s(%s)", constant.MinLevel, pod.Name, pod.UID)
+
+	cgroupMap, err := initCgroupPath(pod.CgroupRoot, pod.CgroupPath)
 	if err != nil {
-		return errors.Errorf("get pod %v info for auto config error: %v", pod.UID, err)
+		return err
 	}
-	if err = podQosInfo.SetQos(); err != nil {
-		return errors.Errorf("set qos for pod %v error: %v", pod.UID, err)
-	}
-	if err = podQosInfo.ValidateQos(); err != nil {
-		return errors.Errorf("validate qos for pod %v error: %v", pod.UID, err)
+
+	for kind, cgPath := range cgroupMap {
+		switch kind {
+		case "cpu":
+			if err := setQosLevel(cgPath, constant.CPUCgroupFileName, int(constant.MinLevel)); err != nil {
+				return err
+			}
+		case "memory":
+			if err := setQosLevel(cgPath, constant.MemoryCgroupFileName, int(constant.MinLevel)); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -174,115 +118,100 @@ func setQosLevel(root, file string, target int) error {
 	return nil
 }
 
-// SetQos is used for setting pod's qos level following it's cgroup path
-func (pod *PodInfo) SetQos() error {
-	ctx := pod.Ctx
-	log.WithCtx(ctx).Logf("Setting level=%d for pod %s", pod.QosLevel, pod.PodID)
-	if pod.FullPath == nil {
-		return errors.Errorf("Empty cgroup path of pod %s", pod.PodID)
-	}
-
-	for kind, cgPath := range pod.FullPath {
-		switch kind {
-		case "cpu":
-			if err := setQosLevel(cgPath, constant.CPUCgroupFileName, pod.QosLevel); err != nil {
-				return err
-			}
-		case "memory":
-			if err := setQosLevel(cgPath, constant.MemoryCgroupFileName, pod.QosLevel); err != nil {
-				return err
-			}
-		}
-	}
-
-	log.WithCtx(ctx).Logf("Setting level=%d for pod %s OK", pod.QosLevel, pod.PodID)
-	return nil
-}
-
-// ValidateQos is used for checking pod's qos level if equal to the value it should be set up to
-func (pod *PodInfo) ValidateQos() error {
+// validateQos is used for checking pod's qos level if equal to the value it should be set up to
+func validateQos(pod *typedef.PodInfo) error {
 	var (
 		cpuInfo, memInfo int
 		err              error
+		qosLevel         int
 	)
-	ctx := pod.Ctx
 
-	log.WithCtx(ctx).Logf("Checking level=%d for pod %s", pod.QosLevel, pod.PodID)
+	if !pod.Offline {
+		qosLevel = int(constant.MaxLevel)
+	} else {
+		qosLevel = int(constant.MinLevel)
+	}
 
-	for kind, cgPath := range pod.FullPath {
+	cgroupMap, err := initCgroupPath(pod.CgroupRoot, pod.CgroupPath)
+	if err != nil {
+		return err
+	}
+	for kind, cgPath := range cgroupMap {
 		switch kind {
 		case "cpu":
 			if cpuInfo, err = getQosLevel(cgPath, constant.CPUCgroupFileName); err != nil {
-				return errors.Errorf("read %s for pod %q failed: %v", constant.CPUCgroupFileName, pod.PodID, err)
+				return errors.Errorf("read %s failed: %v", constant.CPUCgroupFileName, err)
 			}
 		case "memory":
 			if memInfo, err = getQosLevel(cgPath, constant.MemoryCgroupFileName); err != nil {
-				return errors.Errorf("read %s for pod %q failed: %v", constant.MemoryCgroupFileName, pod.PodID, err)
+				return errors.Errorf("read %s failed: %v", constant.MemoryCgroupFileName, err)
 			}
 		}
 	}
 
-	if (cpuInfo != pod.QosLevel) || (memInfo != pod.QosLevel) {
-		return errors.Errorf("checking level=%d for pod %s failed", pod.QosLevel, pod.PodID)
+	if (cpuInfo != qosLevel) || (memInfo != qosLevel) {
+		return errors.Errorf("check level failed")
 	}
-
-	log.WithCtx(ctx).Logf("Checking level=%d for pod %s OK", pod.QosLevel, pod.PodID)
 
 	return nil
 }
 
-// UpdateQosLevel update pod qos_level
-func UpdateQosLevel(oldPod, newPod *corev1.Pod) {
+func getQosLevel(root, file string) (int, error) {
 	var (
-		judge1 = oldPod.Status.Phase == newPod.Status.Phase
-		judge2 = oldPod.Spec.NodeName == newPod.Spec.NodeName
-		judge3 = util.IsOffline(oldPod) == util.IsOffline(newPod)
+		qosLevel int
+		rootQos  []byte
+		err      error
 	)
-	// qos related status no difference, just return
-	if judge1 && judge2 && judge3 {
-		return
-	}
 
-	node := os.Getenv(constant.NodeNameEnvKey)
-	if node == "" {
-		log.Errorf("auto config error: environment variable %s must be defined", constant.NodeNameEnvKey)
-		return
-	}
-	if newPod.Spec.NodeName != node {
-		return
-	}
-
-	podQosInfo, err := BuildOfflinePodInfo(newPod)
+	rootQos, err = util.ReadSmallFile(filepath.Join(root, file)) // nolint
 	if err != nil {
-		log.Errorf("get pod %v info for auto config error: %v", newPod.UID, err)
-		return
+		return constant.ErrCodeFailed, errors.Errorf("get root qos level failed: %v", err)
 	}
-	if err := podQosInfo.SetQos(); err != nil {
-		log.Errorf("auto config qos error: %v", err)
-		return
+	// walk through all sub paths
+	if err = filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
+		if f != nil && f.IsDir() {
+			cgFilePath, err := securejoin.SecureJoin(path, file)
+			if err != nil {
+				return errors.Errorf("join path failed: %v", err)
+			}
+			data, err := util.ReadSmallFile(filepath.Clean(cgFilePath))
+			if err != nil {
+				return errors.Errorf("get qos level failed: %v", err)
+			}
+			if strings.Compare(string(data), string(rootQos)) != 0 {
+				return errors.Errorf("qos differs")
+			}
+		}
+		return nil
+	}); err != nil {
+		return constant.ErrCodeFailed, err
 	}
+	qosLevel, err = strconv.Atoi(strings.TrimSpace(string(rootQos)))
+	if err != nil {
+		return constant.ErrCodeFailed, err
+	}
+
+	return qosLevel, nil
 }
 
 // initCgroupPath return pod's cgroup full path
-func (pod *PodInfo) initCgroupPath() error {
-	if pod.CgroupRoot == "" {
-		pod.CgroupRoot = constant.DefaultCgroupRoot
+func initCgroupPath(cgroupRoot, cgroupPath string) (map[string]string, error) {
+	if cgroupRoot == "" {
+		cgroupRoot = constant.DefaultCgroupRoot
 	}
 	cgroupMap := make(map[string]string, len(SupportCgroupTypes))
 	for _, kind := range SupportCgroupTypes {
-		if err := checkCgroupPath(pod.CgroupPath); err != nil {
-			return err
+		if err := checkCgroupPath(cgroupPath); err != nil {
+			return nil, err
 		}
-		fullPath := filepath.Join(pod.CgroupRoot, kind, pod.CgroupPath)
+		fullPath := filepath.Join(cgroupRoot, kind, cgroupPath)
 		if len(fullPath) > constant.MaxCgroupPathLen {
-			return errors.Errorf("length of cgroup path exceeds max limit %d", constant.MaxCgroupPathLen)
+			return nil, errors.Errorf("length of cgroup path exceeds max limit %d", constant.MaxCgroupPathLen)
 		}
 		cgroupMap[kind] = fullPath
 	}
 
-	pod.FullPath = cgroupMap
-
-	return nil
+	return cgroupMap, nil
 }
 
 func checkCgroupPath(path string) error {

@@ -22,9 +22,7 @@ import (
 	"isula.org/rubik/pkg/constant"
 )
 
-const (
-	configHashAnnotationKey = "kubernetes.io/config.hash"
-)
+const configHashAnnotationKey = "kubernetes.io/config.hash"
 
 // IsOffline judges whether pod is offline pod
 func IsOffline(pod *corev1.Pod) bool {

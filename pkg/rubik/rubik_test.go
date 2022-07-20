@@ -212,7 +212,7 @@ func TestInitEventHandler(t *testing.T) {
 
 // TestInitCheckpoint test initCheckpoint
 func TestInitCheckpoint(t *testing.T) {
-	r := &Rubik{}
+	r := &Rubik{config: &config.Config{CgroupRoot: ""}}
 	err := r.initCheckpoint()
 	assert.Equal(t, true, strings.Contains(err.Error(), "kube-client is not initialized"))
 
@@ -227,7 +227,7 @@ func TestAddUpdateDelEvent(t *testing.T) {
 	assert.NoError(t, err)
 	r := &Rubik{config: cfg}
 
-	cpm := checkpoint.NewManager()
+	cpm := checkpoint.NewManager("")
 	r.cpm = cpm
 	oldPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

@@ -18,7 +18,6 @@ import (
 
 	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/cachelimit"
-	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/qos"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/typedef"
@@ -37,24 +36,15 @@ func Sync(check bool, pods map[string]*typedef.PodInfo) error {
 		if !check {
 			continue
 		}
-		syncQos(pod.UID, pod.CgroupPath)
+		if err := qos.SetQosLevel(pod); err != nil {
+			log.Errorf("syncL set pod %v qoslevel error: %v", pod.UID, err)
+		}
 		if cachelimit.ClEnabled() {
 			syncCache(pod)
 		}
 	}
 
 	return nil
-}
-
-func syncQos(podID, cgPath string) {
-	podQosInfo, err := getOfflinePodQosStruct(podID, cgPath)
-	if err != nil {
-		log.Errorf("get pod %v info for qos sync error: %v", podID, err)
-		return
-	}
-	if err = podQosInfo.SetQos(); err != nil {
-		log.Errorf("sync pod %v qos error: %v", podID, err)
-	}
 }
 
 func syncCache(pod *typedef.PodInfo) {
@@ -66,19 +56,6 @@ func syncCache(pod *typedef.PodInfo) {
 	if err = podCacheInfo.SetCacheLimit(); err != nil {
 		log.Errorf("sync pod %v cache limit error: %v", pod.UID, err)
 	}
-}
-
-func getOfflinePodQosStruct(podID, cgroupPath string) (*qos.PodInfo, error) {
-	podQos := api.PodQoS{
-		CgroupPath: cgroupPath,
-		QosLevel:   -1,
-	}
-	podInfo, err := qos.NewPodInfo(context.Background(), podID, config.CgroupRoot, podQos)
-	if err != nil {
-		return nil, err
-	}
-
-	return podInfo, nil
 }
 
 func getCacheLimitPodStruct(pod *typedef.PodInfo) (*cachelimit.PodInfo, error) {

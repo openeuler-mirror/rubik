@@ -60,16 +60,16 @@ var containerInfos = []*typedef.ContainerInfo{
 var podInfos = []*typedef.PodInfo{
 	// allow quota adjustment
 	{
-		Name:       "FooPod",
-		UID:        containerInfos[0].PodID,
+		Name: "FooPod",
+		UID:  containerInfos[0].PodID,
 		Containers: map[string]*typedef.ContainerInfo{
 			containerInfos[0].Name: containerInfos[0],
 		},
 	},
 	// allow quota adjustment
 	{
-		Name:       "BarPod",
-		UID:        containerInfos[1].PodID,
+		Name: "BarPod",
+		UID:  containerInfos[1].PodID,
 		Containers: map[string]*typedef.ContainerInfo{
 			containerInfos[1].Name: containerInfos[1],
 		},
@@ -352,7 +352,7 @@ func TestManagerListPodsAndContainers(t *testing.T) {
 
 // TestManagerSyncFromCluster tests SyncFromCluster of Manager
 func TestManagerSyncFromCluster(t *testing.T) {
-	cpm := NewManager()
+	cpm := NewManager("")
 	cpm.Checkpoint = &Checkpoint{
 		Pods: make(map[string]*typedef.PodInfo, 0),
 	}
@@ -383,7 +383,7 @@ func TestMangerPodExist(t *testing.T) {
 			want: false,
 		},
 	}
-	cpm := NewManager()
+	cpm := NewManager("")
 	cpm.Checkpoint = &Checkpoint{
 		Pods: map[string]*typedef.PodInfo{
 			podInfos[0].UID: podInfos[0].Clone(),

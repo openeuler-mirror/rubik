@@ -34,7 +34,6 @@ metadata:
 data:
   config.json: |
     {
-        "autoConfig": true,
         "autoCheck": false,
         "logDriver": "stdio",
         "logDir": "/var/log/rubik",
