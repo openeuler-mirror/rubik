@@ -70,7 +70,7 @@ func (cm *Manager) AddPod(pod *corev1.Pod) {
 func (cm *Manager) GetPod(podID types.UID) *typedef.PodInfo {
 	cm.Lock()
 	defer cm.Unlock()
-	return cm.Checkpoint.Pods[string(podID)]
+	return cm.Checkpoint.Pods[string(podID)].Clone()
 }
 
 // PodExist returns true if there is a pod whose key is podID in the checkpoint
@@ -207,6 +207,7 @@ func updatePodInfoNoLock(pi *typedef.PodInfo, pod *corev1.Pod) {
 	pi.Name = pod.Name
 	pi.Offline = util.IsOffline(pod)
 	pi.CacheLimitLevel = util.GetPodCacheLimit(pod)
+	pi.QuotaBurst = util.GetQuotaBurst(pod)
 
 	nameID := make(map[string]string, len(pod.Status.ContainerStatuses))
 	for _, c := range pod.Status.ContainerStatuses {

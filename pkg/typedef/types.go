@@ -69,10 +69,16 @@ type PodInfo struct {
 	// Service Information
 	Offline         bool   `json:"offline"`
 	CacheLimitLevel string `json:"cacheLimitLevel,omitempty"`
+
+	// value of quota burst
+	QuotaBurst int64 `json:"quotaBurst"`
 }
 
 // Clone return deepcopy object
 func (pi *PodInfo) Clone() *PodInfo {
+	if pi == nil {
+		return nil
+	}
 	copy := *pi
 	// deepcopy reference object
 	copy.Containers = make(map[string]*ContainerInfo, len(pi.Containers))
