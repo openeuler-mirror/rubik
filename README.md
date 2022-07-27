@@ -15,6 +15,7 @@ Rubik当前支持如下特性：
 - [pod 访存带宽和LLC限制](./docs/modules.md#dyncache-访存带宽和llc限制)
 - [pod blkio配置](./docs/modules.md/#blkio)
 - [pod memory cgroup分级](./docs/modules.md/#memory)
+- [pod quota burst配置](./docs/modules.md/#quota-burst)
 
 ## 编译
 

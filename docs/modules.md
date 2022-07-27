@@ -228,3 +228,35 @@ rubik提供memory的指定策略和控制间隔，在`memConfig`中
   - dynlevel: 动态分级调整策略。
 
 - checkInterval为策略的周期性检查的时间，单位为秒, 默认为5。
+
+---------------------
+
+## quota burst
+
+Pod的quota burst的配置以`volcano.sh/quota-burst-time`注解的形式，在pod创建的时候配置，或者在pod运行期间通过kubectl annotate进行动态的修改，支持离线和在线pod。
+
+Pod的quota burst默认单位是microseconds, 其允许容器的cpu使用率低于quota时累积cpu资源，并在cpu利用率超过quota时，使用容器累积的cpu资源。
+
+### quota burst内核接口
+
+- /sys/fs/cgroup/cpu目录下容器的cgroup中，如`/sys/fs/cgroup/cpu/kubepods/burstable/<PodUID>/<container-longid>`目录，注解的值将被写入下列文件中：
+  - cpu.cfs_burst_us
+
+- 注解`volcano.sh/quota-burst-time`的值和cpu.cfs_burst_us的约束一致：
+  - 当cpu.cfs_quota_us不为-1，需满足cpu.cfs_burst_us + cpu.cfs_quota_us <= 2^44-1 且 cpu.cfs_burst_us <= cpu.cfs_quota_us
+  - 当cpu.cfs_quota_us为-1，cpu.cfs_burst_us最大没有限制，取决于系统最大可设置的值
+
+
+**pod配置样例**
+
+- 创建时: 在yaml文件中
+
+  ```
+  metadata:
+    annotations:
+      volcano.sh/quota-burst-time : "2000"
+  ```
+
+- 修改annotation: 可通过 kubectl annotate动态修改，如:
+
+  ```kubectl annotate --overwrite pods <podname> volcano.sh/quota-burst-time='3000'```
