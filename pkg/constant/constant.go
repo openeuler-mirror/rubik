@@ -69,6 +69,8 @@ const (
 	PriorityAnnotationKey = "volcano.sh/preemptable"
 	// CacheLimitAnnotationKey is annotation key to set L3/Mb resctrl group
 	CacheLimitAnnotationKey = "volcano.sh/cache-limit"
+	// QuotaBurstAnnotationKey is annotation key to set cpu.cfs_burst_ns
+	QuotaBurstAnnotationKey = "volcano.sh/quota-burst-time"
 	// BlkioKey is annotation key to set blkio limit
 	BlkioKey = "volcano.sh/blkio-limit"
 	// DefaultMemCheckInterval indicates the default memory check interval 5s.

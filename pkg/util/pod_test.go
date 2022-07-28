@@ -42,6 +42,58 @@ func TestIsOffline(t *testing.T) {
 	}
 }
 
+// TestGetQuotaBurst is testcase for GetQuotaBurst
+func TestGetQuotaBurst(t *testing.T) {
+	pod := &corev1.Pod{}
+	pod.Annotations = make(map[string]string)
+	maxInt64PlusOne := "9223372036854775808"
+	tests := []struct {
+		name       string
+		quotaBurst string
+		want       int64
+	}{
+		{
+			name:       "TC1-valid quota burst",
+			quotaBurst: "1",
+			want:       1,
+		},
+		{
+			name:       "TC2-empty quota burst",
+			quotaBurst: "",
+			want:       -1,
+		},
+		{
+			name:       "TC3-zero quota burst",
+			quotaBurst: "0",
+			want:       0,
+		},
+		{
+			name:       "TC4-negative quota burst",
+			quotaBurst: "-100",
+			want:       -1,
+		},
+		{
+			name:       "TC5-float quota burst",
+			quotaBurst: "100.34",
+			want:       -1,
+		},
+		{
+			name:       "TC6-nonnumerical quota burst",
+			quotaBurst: "nonnumerical",
+			want:       -1,
+		},
+		{
+			name:       "TC7-exceed max int64",
+			quotaBurst: maxInt64PlusOne,
+			want:       -1,
+		},
+	}
+	for _, tt := range tests {
+		pod.Annotations[constant.QuotaBurstAnnotationKey] = tt.quotaBurst
+		assert.Equal(t, GetQuotaBurst(pod), tt.want)
+	}
+}
+
 func TestGetPodCgroupPath(t *testing.T) {
 	var pod = &corev1.Pod{}
 	pod.UID = "AAA"

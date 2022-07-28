@@ -38,6 +38,7 @@ import (
 	"isula.org/rubik/pkg/memory"
 	"isula.org/rubik/pkg/perf"
 	"isula.org/rubik/pkg/qos"
+	"isula.org/rubik/pkg/quota"
 	"isula.org/rubik/pkg/sync"
 	log "isula.org/rubik/pkg/tinylog"
 	"isula.org/rubik/pkg/util"
@@ -113,6 +114,13 @@ func (r *Rubik) CacheLimit() error {
 		return cachelimit.Init(&r.config.CacheCfg)
 	}
 	return nil
+}
+
+// QuotaBurst sync all pod's cpu burst quota
+func (r *Rubik) QuotaBurst() {
+	if r.config.AutoCheck {
+		quota.SetPodsQuotaBurst(r.cpm.ListAllPods())
+	}
 }
 
 // initKubeClient initialize kubeClient if autoconfig is enabled
@@ -199,6 +207,8 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	if r.config.BlkioCfg.Enable {
 		blkio.SetBlkio(pod)
 	}
+	pi := r.cpm.GetPod(pod.UID)
+	quota.SetPodQuotaBurst(pi)
 }
 
 // UpdateEvent handle update event from informer
@@ -216,11 +226,16 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 		if r.config.BlkioCfg.Enable {
 			blkio.SetBlkio(newPod)
 		}
+		pi := r.cpm.GetPod(newPod.UID)
+		quota.SetPodQuotaBurst(pi)
 	} else {
+		opi := r.cpm.GetPod(oldPod.UID)
 		r.cpm.UpdatePod(newPod)
 		if r.config.BlkioCfg.Enable {
 			blkio.WriteBlkio(oldPod, newPod)
 		}
+		npi := r.cpm.GetPod(newPod.UID)
+		quota.UpdatePodQuotaBurst(opi, npi)
 	}
 
 	cpmPod := r.cpm.GetPod(newPod.UID)
@@ -251,6 +266,7 @@ func run(fcfg string) int {
 		return constant.ErrCodeFailed
 	}
 
+	rubik.QuotaBurst()
 	if err = rubik.Sync(); err != nil {
 		log.Errorf("sync qos level failed: %v", err)
 	}

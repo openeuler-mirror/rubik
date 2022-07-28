@@ -20,6 +20,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"isula.org/rubik/pkg/constant"
+	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/typedef"
 )
 
 const configHashAnnotationKey = "kubernetes.io/config.hash"
@@ -31,6 +33,27 @@ func IsOffline(pod *corev1.Pod) bool {
 
 func GetPodCacheLimit(pod *corev1.Pod) string {
 	return pod.Annotations[constant.CacheLimitAnnotationKey]
+}
+
+// GetQuotaBurst checks CPU quota burst annotation value.
+func GetQuotaBurst(pod *corev1.Pod) int64 {
+	var invQuota int64 = -1
+
+	quota := pod.Annotations[constant.QuotaBurstAnnotationKey]
+	if quota == "" {
+		return invQuota
+	}
+
+	quotaBurst, err := typedef.ParseInt64(quota)
+	if err != nil {
+		log.Errorf("pod %s burst quota annotation value %v is invalid, expect integer", pod.Name, quotaBurst)
+		return invQuota
+	}
+	if quotaBurst < 0 {
+		log.Errorf("pod %s burst quota annotation value %v is invalid, expect positive", pod.Name, quotaBurst)
+		return invQuota
+	}
+	return quotaBurst
 }
 
 // GetPodCgroupPath returns cgroup path of pod
