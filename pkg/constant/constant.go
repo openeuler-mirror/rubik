@@ -106,3 +106,8 @@ var (
 	// ErrFileTooBig file too big
 	ErrFileTooBig = errors.New("file too big")
 )
+
+const (
+	// InvalidBurst for invalid quota burst
+	InvalidBurst = -1
+)
