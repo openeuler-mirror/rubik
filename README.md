@@ -48,9 +48,8 @@ sudo make install
 
 ### 环境准备
 
-- kernel: openeuler 21.09+
+- OS: openEuler 21.09/22.03/22.09+
 - kubernetes: 1.17.0+
-- enable memory qos: `echo 1 > /proc/sys/vm/memcg_qos_enable`
 
 ### rubik daemonset部署
 

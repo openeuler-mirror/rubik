@@ -13,12 +13,11 @@
 
 CWD=$(realpath .)
 TMP_DIR := /tmp/rubik_tmpdir
+INSTALL_DIR := /var/lib/rubik
 VERSION_FILE := ./VERSION
-TEST_FILE := ./TEST
-VERSION := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$1}')
-RELEASE := $(shell cat $(VERSION_FILE) | awk -F"-" '{print $$2}')
+VERSION := $(shell awk -F"-" '{print $$1}' < $(VERSION_FILE))
+RELEASE :=$(if $(shell awk -F"-" '{print $$2}' < $(VERSION_FILE)),$(shell awk -F"-" '{print $$2}' < $(VERSION_FILE)),NA)
 BUILD_TIME := $(shell date "+%Y-%m-%d")
-USAGE := $(shell [ -f $(TEST_FILE) ] && echo 'TestOnly')
 GIT_COMMIT := $(if $(shell git rev-parse --short HEAD),$(shell git rev-parse --short HEAD),$(shell cat ./git-commit | head -c 7))
 
 DEBUG_FLAGS := -gcflags="all=-N -l"
@@ -27,7 +26,6 @@ LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
 	-X isula.org/rubik/pkg/version.BuildTime=$(BUILD_TIME) \
 	-X isula.org/rubik/pkg/version.Version=$(VERSION) \
 	-X isula.org/rubik/pkg/version.Release=$(RELEASE) \
-	-X isula.org/rubik/pkg/version.Usage=$(USAGE) \
 	-extldflags=-ftrapv \
 	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
 
@@ -93,9 +91,6 @@ cover:
 	go tool cover -html=cover.out -o cover.html
 	python3 -m http.server 8080
 
-install:
+install: image
 	install -d -m 0750 $(INSTALL_DIR)
-	install -Dp -m 0550 ./rubik $(INSTALL_DIR)
 	install -Dp -m 0640 ./hack/rubik-daemonset.yaml $(INSTALL_DIR)
-	install -Dp -m 0640 ./hack/cluster-role-binding.yaml $(INSTALL_DIR)
-	install -Dp -m 0640 ./Dockerfile $(INSTALL_DIR)
