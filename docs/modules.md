@@ -170,15 +170,15 @@ Pod的blkio的配置以`volcano.sh/blkio-limit`注解的形式，在pod创建的
 
 **rubik开启关闭blkio功能**:
 
-rubik提供blkio配置功能的开关，在`blkConfig`中
+rubik提供blkio配置功能的开关，在`blkioConfig`中
 
 ```
-"blkConfig": {
-        "limit": true
+"blkioConfig": {
+        "enable": true
 }
 ```
 
-- limit: IO控制模块使能开关， 默认为false
+- enable: IO控制模块使能开关， 默认为false
 
 **pod配置样例**:
 
@@ -215,15 +215,17 @@ dynlevel策略：基于内核cgroup的多级别控制。通过监测节点内存
 
 ### memory dynlevel策略配置详解
 
-rubik提供memory的指定策略和控制间隔，在`memConfig`中
+rubik提供memory的指定策略和控制间隔，在`memoryConfig`中
 
 ```
-"memConfig": {
+"memoryConfig": {
+        "enable": true,
         "strategy": "none",
         "checkInterval": 5
    }
 ```
 
+- enable 为是否打开该配置的开关
 - strategy为memory的策略名称，现支持 dynlevel 和 none 两个选项，默认为none。
   - none: 即不设置任何策略，不会对内存进行调整。
   - dynlevel: 动态分级调整策略。
