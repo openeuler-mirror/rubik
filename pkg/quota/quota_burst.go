@@ -59,8 +59,7 @@ func SetPodQuotaBurst(podInfo *typedef.PodInfo) {
 }
 
 func setPodQuotaBurst(podInfo *typedef.PodInfo) {
-	var invalidBurst int64 = -1
-	if podInfo.QuotaBurst == invalidBurst {
+	if podInfo.QuotaBurst == constant.InvalidBurst {
 		return
 	}
 	burst := big.NewInt(podInfo.QuotaBurst).String()
@@ -77,14 +76,15 @@ func setCtrQuotaBurst(burst []byte, c *typedef.ContainerInfo) error {
 		fname = "cpu.cfs_burst_us"
 		subsys = "cpu"
 	)
-	cgpath := filepath.Join(c.CgroupRoot, subsys, c.CgroupAddr, fname)
+	cgpath := c.CgroupPath(subsys)
+	fpath := filepath.Join(cgpath, fname)
 
-	if _, err := os.Stat(cgpath); err != nil && os.IsNotExist(err) {
-		return errors.Errorf("quota-burst path=%v missing", cgpath)
+	if _, err := os.Stat(fpath); err != nil && os.IsNotExist(err) {
+		return errors.Errorf("quota-burst path=%v missing", fpath)
 	}
 
-	if err := ioutil.WriteFile(cgpath, burst, constant.DefaultFileMode); err != nil {
-		return errors.Errorf("quota-burst path=%v setting failed: %v", cgpath, err)
+	if err := ioutil.WriteFile(fpath, burst, constant.DefaultFileMode); err != nil {
+		return errors.Errorf("quota-burst path=%v setting failed: %v", fpath, err)
 	}
 	log.Infof("quota-burst path=%v setting success", cgpath)
 	return nil

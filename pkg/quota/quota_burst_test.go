@@ -152,7 +152,7 @@ func TestSetPodsQuotaBurst(t *testing.T) {
 			t.Errorf("readFile got %v ", err)
 		}
 		var expected string
-		if pi.QuotaBurst == -1 {
+		if pi.QuotaBurst == constant.InvalidBurst {
 			expected = ""
 		} else {
 			expected = strconv.Itoa(int(pi.QuotaBurst))

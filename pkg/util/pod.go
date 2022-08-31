@@ -37,21 +37,19 @@ func GetPodCacheLimit(pod *corev1.Pod) string {
 
 // GetQuotaBurst checks CPU quota burst annotation value.
 func GetQuotaBurst(pod *corev1.Pod) int64 {
-	var invQuota int64 = -1
-
 	quota := pod.Annotations[constant.QuotaBurstAnnotationKey]
 	if quota == "" {
-		return invQuota
+		return constant.InvalidBurst
 	}
 
 	quotaBurst, err := typedef.ParseInt64(quota)
 	if err != nil {
 		log.Errorf("pod %s burst quota annotation value %v is invalid, expect integer", pod.Name, quotaBurst)
-		return invQuota
+		return constant.InvalidBurst
 	}
 	if quotaBurst < 0 {
 		log.Errorf("pod %s burst quota annotation value %v is invalid, expect positive", pod.Name, quotaBurst)
-		return invQuota
+		return constant.InvalidBurst
 	}
 	return quotaBurst
 }

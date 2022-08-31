@@ -199,16 +199,15 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	}
 	r.cpm.AddPod(pod)
 
-	cpmPod := r.cpm.GetPod(pod.UID)
-	if err := qos.SetQosLevel(cpmPod); err != nil {
+	pi := r.cpm.GetPod(pod.UID)
+	if err := qos.SetQosLevel(pi); err != nil {
 		log.Errorf("AddEvent handle error: %v", err)
 	}
+	quota.SetPodQuotaBurst(pi)
 
 	if r.config.BlkioCfg.Enable {
 		blkio.SetBlkio(pod)
 	}
-	pi := r.cpm.GetPod(pod.UID)
-	quota.SetPodQuotaBurst(pi)
 }
 
 // UpdateEvent handle update event from informer
