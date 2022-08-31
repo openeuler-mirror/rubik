@@ -35,12 +35,14 @@ import (
 const (
 	mlimit fileType = iota
 	msoftLimit
+	mhigh
 )
 
 const (
 	dropCachesFilePath   = "/proc/sys/vm/drop_caches"
 	memoryLimitFile      = "memory.limit_in_bytes"
 	memorySoftLimitFile  = "memory.soft_limit_in_bytes"
+	memoryHighFile       = "memory.high"
 	memoryUsageFile      = "memory.usage_in_bytes"
 	memoryForceEmptyFile = "memory.force_empty"
 	// maxSysMemLimit 9223372036854771712 is the default cgroup memory limit value
@@ -77,6 +79,8 @@ func NewMemoryManager(cpm *checkpoint.Manager, memConfig config.MemoryConfig) (*
 		stop:          config.ShutdownChan,
 	}
 	switch memConfig.Strategy {
+	case "fssr":
+		mm.md = newFssr(&mm)
 	case "dynlevel":
 		mm.md = newDynLevel(&mm)
 	case "none":
@@ -107,6 +111,8 @@ func writeMemoryLimit(cgroupPath string, limit string, ft fileType) error {
 		filename = memoryLimitFile
 	case msoftLimit:
 		filename = memorySoftLimitFile
+	case mhigh:
+		filename = memoryHighFile
 	default:
 		return errors.Errorf("unsupported file type %v", ft)
 	}
