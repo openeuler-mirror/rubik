@@ -47,10 +47,11 @@ Rubik启动时会解析配置文件，配置文件的路径固定为 `/var/lib/r
             "high": 50
         }
     },
-    "blkConfig": {
-        "limit": false
+    "blkioConfig": {
+        "enable": false
     },
-    "memConfig": {
+    "memoryConfig": {
+        "enable": true,
         "strategy": "none",
         "checkInterval": 5
    }
@@ -82,6 +83,8 @@ Rubik启动时会解析配置文件，配置文件的路径固定为 `/var/lib/r
 | ..mid=30                  | int    | MB中水位组控制线                                    | [low, 100]           |
 | ..high=50                 | int    | MB高水位组控制线                                    | [mid, 100]           |
 | blkioConfig               | map    | IO控制模块相关配置                                  |                      |
-| .limit=false              | bool   | IO控制模块使能开关                                  |                      |
-| memConfig                 | map    | 内存控制模块相关配置                                |                      |
+| .enable=false             | bool   | IO控制模块使能开关                                  |                      |
+| memoryConfig              | map    | 内存控制模块相关配置                                |                      |
+| .enable=false             | bool   | 内存控制模块使能开关                                |                      |
 | .strategy=none            | string | 内存动态分级回收控制策略                            | none, dynlevel, fssr |
+| .checkInterval=5          | string | 内存动态分级回收控制策略检测间隔                    | (0, 30]              |
