@@ -204,6 +204,8 @@ rubik中支持多种内存策略。针对不同场景使用不同的内存分配
 
 dynlevel策略：基于内核cgroup的多级别控制。通过监测节点内存压力，多级别动态调整离线业务的memory cgroup，尽可能地保障在线业务服务质量。
 
+fssr策略：基于内核cgroup的动态水位线控制。memory.high是内核提供的memcg级的水位线接口，rubik动态检测内存压力，动态调整离线应用的memory.high上限，实现对离线业务的内存压制，保障在线业务的服务质量。
+
 ### memory dynlevel策略内核接口
 
 - /sys/fs/cgroup/memory目录下容器的cgroup中，如`/sys/fs/cgroup/memory/kubepods/burstable/<PodUID>/<container-longid>`目录。dynlevel策略会依据当前节点的内存压力大小，依次调整节点离线应用容器的下列值:
@@ -229,6 +231,31 @@ rubik提供memory的指定策略和控制间隔，在`memoryConfig`中
 - strategy为memory的策略名称，现支持 dynlevel 和 none 两个选项，默认为none。
   - none: 即不设置任何策略，不会对内存进行调整。
   - dynlevel: 动态分级调整策略。
+  - fssr: 快压制慢恢复策略。1)rubik启动时，默认配置所有离线的memory.high为总内存的80%。2)当内存压力增加，可用内存freeMemory < reservedMemory(预留内存,totalMemory * 5%) 时认为内存紧张，此时压缩所有离线的memory.high, 压缩量为总内存的10%，即最新的memory.high=memory.high-totalMemory * 10%。3)当持续一段时间总内存比较富裕，即可用内存freeMemory > 3 * reservedMemory(totalMemory * 5%)时认为内存富裕，此时释放总内存的1%给离线应用，memory.high=memory.high+totalMemory * 1%, 直到memory free 介于reservedMemory与3 * reservedMemory之间。
+
+- checkInterval为策略的周期性检查的时间，单位为秒, 默认为5。
+
+### memory fssr策略内核接口
+
+- /sys/fs/cgroup/memory目录下容器的cgroup中，如`/sys/fs/cgroup/memory/kubepods/burstable/<PodUID>/<container-longid>`目录。fssr策略会依据当前节点的内存压力大小，依次调整节点离线应用容器的下列值:
+- memory.high
+
+### memory fssr策略配置详解
+
+rubik提供memory的指定策略和控制间隔，在`memoryConfig`中
+```
+"memoryConfig": {
+        "enable": true,
+        "strategy": "fssr",
+        "checkInterval": 5
+   }
+```
+
+- enable 为是否打开该配置的开关
+- strategy为memory的策略名称，现支持 dynlevel 和 none 两个选项，默认为none。
+  - none: 即不设置任何策略，不会对内存进行调整。
+  - dynlevel: 动态分级调整策略。
+  - fssr: 快压制慢恢复策略。1)rubik启动时，默认配置所有离线的memory.high为总内存的80%。2)当内存压力增加，可用内存freeMemory < reservedMemory(预留内存,totalMemory * 5%) 时认为内存紧张，此时压缩所有离线的memory.high, 压缩量为总内存的10%，即最新的memory.high=memory.high-totalMemory * 10%。3)当持续一段时间总内存比较富裕，即可用内存freeMemory > 3 * reservedMemory(totalMemory * 5%)时认为内存富裕，此时释放总内存的1%给离线应用，memory.high=memory.high+totalMemory * 1%, 直到memory free 介于reservedMemory与3 * reservedMemory之间。
 
 - checkInterval为策略的周期性检查的时间，单位为秒, 默认为5。
 
