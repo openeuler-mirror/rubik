@@ -32,6 +32,7 @@ import (
 	"isula.org/rubik/pkg/checkpoint"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/typedef"
 	"isula.org/rubik/pkg/util"
 )
 
@@ -159,6 +160,11 @@ func TestCacheLimit(t *testing.T) {
 				Enable:            true,
 				DefaultLimitMode:  "invalid",
 				DefaultResctrlDir: constant.TmpTestDir + "invalid",
+			},
+		},
+		cpm: &checkpoint.Manager{
+			Checkpoint: &checkpoint.Checkpoint{
+				Pods: make(map[string]*typedef.PodInfo),
 			},
 		},
 	}

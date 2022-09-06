@@ -105,13 +105,19 @@ func (r *Rubik) Monitor() {
 
 // Sync sync pods qos level
 func (r *Rubik) Sync() error {
-	return sync.Sync(r.config.AutoCheck, r.cpm.ListAllPods())
+	if !r.config.AutoCheck {
+		return nil
+	}
+	return sync.Sync(r.cpm.ListOfflinePods())
 }
 
 // CacheLimit init cache limit module
 func (r *Rubik) CacheLimit() error {
 	if r.config.CacheCfg.Enable {
-		return cachelimit.Init(&r.config.CacheCfg)
+		if r.cpm == nil {
+			return fmt.Errorf("checkpoint is not initialized before cachelimit")
+		}
+		return cachelimit.Init(r.cpm, &r.config.CacheCfg)
 	}
 	return nil
 }
