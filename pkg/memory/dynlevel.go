@@ -45,10 +45,15 @@ func newDynLevel(m *MemoryManager) (f *dynLevel) {
 }
 
 func (f *dynLevel) Run() {
-	go wait.Until(f.run, time.Duration(f.m.checkInterval)*time.Second, f.m.stop)
+	go wait.Until(f.timerProc, time.Duration(f.m.checkInterval)*time.Second, f.m.stop)
 }
 
-func (f *dynLevel) run() {
+// UpdateConfig is used to update memory config
+func (f *dynLevel) UpdateConfig(pod *typedef.PodInfo) {
+	// there is no config need to update
+}
+
+func (f *dynLevel) timerProc() {
 	f.updateStatus()
 	log.Logf("memory manager updates status with memory free: %v, memory total: %v", f.memInfo.free, f.memInfo.total)
 	f.reclaim()

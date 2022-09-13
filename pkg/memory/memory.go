@@ -30,21 +30,24 @@ import (
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/typedef"
 )
 
 const (
 	mlimit fileType = iota
 	msoftLimit
 	mhigh
+	mhighAsyncRatio
 )
 
 const (
-	dropCachesFilePath   = "/proc/sys/vm/drop_caches"
-	memoryLimitFile      = "memory.limit_in_bytes"
-	memorySoftLimitFile  = "memory.soft_limit_in_bytes"
-	memoryHighFile       = "memory.high"
-	memoryUsageFile      = "memory.usage_in_bytes"
-	memoryForceEmptyFile = "memory.force_empty"
+	dropCachesFilePath       = "/proc/sys/vm/drop_caches"
+	memoryLimitFile          = "memory.limit_in_bytes"
+	memorySoftLimitFile      = "memory.soft_limit_in_bytes"
+	memoryHighFile           = "memory.high"
+	memoryHighAsyncRatioFile = "memory.high_async_ratio"
+	memoryUsageFile          = "memory.usage_in_bytes"
+	memoryForceEmptyFile     = "memory.force_empty"
 	// maxSysMemLimit 9223372036854771712 is the default cgroup memory limit value
 	maxSysMemLimit      = 9223372036854771712
 	maxRetry            = 3
@@ -56,6 +59,7 @@ type fileType int
 
 type memDriver interface {
 	Run()
+	UpdateConfig(pod *typedef.PodInfo)
 }
 
 // MemoryManager manages memory reclaim works.
@@ -87,7 +91,7 @@ func NewMemoryManager(cpm *checkpoint.Manager, memConfig config.MemoryConfig) (*
 		log.Infof("strategy is set to none")
 		return nil, nil
 	default:
-		return nil, errors.Errorf("unsupported memStrategy, expect dynlevel|none")
+		return nil, errors.Errorf("unsupported memStrategy, expect dynlevel|fssr|none")
 	}
 	return &mm, nil
 }
@@ -104,7 +108,12 @@ func (m *MemoryManager) Run() {
 	m.md.Run()
 }
 
-func writeMemoryLimit(cgroupPath string, limit string, ft fileType) error {
+// UpdateConfig is used to update memory config
+func (m *MemoryManager) UpdateConfig(pod *typedef.PodInfo) {
+	m.md.UpdateConfig(pod)
+}
+
+func writeMemoryLimit(cgroupPath string, value string, ft fileType) error {
 	var filename string
 	switch ft {
 	case mlimit:
@@ -113,12 +122,14 @@ func writeMemoryLimit(cgroupPath string, limit string, ft fileType) error {
 		filename = memorySoftLimitFile
 	case mhigh:
 		filename = memoryHighFile
+	case mhighAsyncRatio:
+		filename = memoryHighAsyncRatioFile
 	default:
 		return errors.Errorf("unsupported file type %v", ft)
 	}
 
-	if err := writeMemoryFile(cgroupPath, filename, limit); err != nil {
-		return errors.Errorf("limit memory failed for %s/%s=%s: %v", cgroupPath, filename, limit, err)
+	if err := writeMemoryFile(cgroupPath, filename, value); err != nil {
+		return errors.Errorf("set memory file:%s/%s=%s failed, err:%v", cgroupPath, filename, value, err)
 	}
 
 	return nil
