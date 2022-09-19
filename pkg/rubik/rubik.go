@@ -214,6 +214,9 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	if r.config.BlkioCfg.Enable {
 		blkio.SetBlkio(pod)
 	}
+	if r.config.MemCfg.Enable {
+		r.mm.UpdateConfig(pi)
+	}
 }
 
 // UpdateEvent handle update event from informer
@@ -228,11 +231,17 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 	// after the Rubik is started, the pod adding events are transferred through the update handler of Kubernetes.
 	if !r.cpm.PodExist(newPod.UID) {
 		r.cpm.AddPod(newPod)
+
 		if r.config.BlkioCfg.Enable {
 			blkio.SetBlkio(newPod)
 		}
+
 		pi := r.cpm.GetPod(newPod.UID)
 		quota.SetPodQuotaBurst(pi)
+
+		if r.config.MemCfg.Enable {
+			r.mm.UpdateConfig(pi)
+		}
 	} else {
 		opi := r.cpm.GetPod(oldPod.UID)
 		r.cpm.UpdatePod(newPod)

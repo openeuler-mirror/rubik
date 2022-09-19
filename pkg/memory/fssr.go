@@ -38,6 +38,7 @@ const (
 	reclaimPercentage   = 0.1
 	prerelieveInterval  = "30m"
 	reserveRatio        = 3
+	highAsyncRatio      = 90
 )
 
 const (
@@ -54,6 +55,7 @@ type fssr struct {
 	total               int64
 	limit               int64
 	reservedMemory      int64
+	highAsyncRatio      int64
 }
 
 func newFssr(m *MemoryManager) (f *fssr) {
@@ -74,16 +76,24 @@ func (f *fssr) init(m *MemoryManager) {
 	f.reservedMemory = int64(reservePercentage * float64(f.total))
 	f.limit = int64(waterlinePercentage * float64(f.total))
 	f.st = fssrNormal
+	f.highAsyncRatio = highAsyncRatio
 	f.initOfflineContainerLimit()
 
 	log.Infof("total: %v, reserved Memory: %v, limit memory: %v", f.total, f.reservedMemory, f.limit)
 }
 
 func (f *fssr) Run() {
-	go wait.Until(f.run, time.Duration(f.mmgr.checkInterval)*time.Second, f.mmgr.stop)
+	go wait.Until(f.timerProc, time.Duration(f.mmgr.checkInterval)*time.Second, f.mmgr.stop)
 }
 
-func (f *fssr) run() {
+// UpdateConfig is used to update memory config
+func (f *fssr) UpdateConfig(pod *typedef.PodInfo) {
+	for _, c := range pod.Containers {
+		f.initContainerMemoryLimit(c)
+	}
+}
+
+func (f *fssr) timerProc() {
 	f.updateStatus()
 	if f.needAdjust() {
 		newLimit := f.calculateNewLimit()
@@ -99,12 +109,7 @@ func (f *fssr) initOfflineContainerLimit() {
 
 	containers := f.mmgr.cpm.ListOfflineContainers()
 	for _, c := range containers {
-		path := c.CgroupPath("memory")
-		if err := writeMemoryLimit(path, typedef.FormatInt64(f.limit), mhigh); err != nil {
-			log.Errorf("init offline container limit soft memory: %v failed, err: %v", c.ID, err)
-		} else {
-			log.Infof("init Offline container limit soft memory:%v : %v success", c.ID, f.limit)
-		}
+		f.initContainerMemoryLimit(c)
 	}
 }
 
@@ -165,6 +170,21 @@ func (f *fssr) calculateNewLimit() int64 {
 	return newLimit
 }
 
+func (f *fssr) initContainerMemoryLimit(c *typedef.ContainerInfo) {
+	path := c.CgroupPath("memory")
+	if err := writeMemoryLimit(path, typedef.FormatInt64(f.limit), mhigh); err != nil {
+		log.Errorf("failed to initialize the limit soft memory of offline container %v: %v", c.ID, err)
+	} else {
+		log.Infof("initialize the limit soft memory of the offline container %v to %v successfully", c.ID, f.limit)
+	}
+
+	if err := writeMemoryLimit(path, typedef.FormatInt64(f.highAsyncRatio), mhighAsyncRatio); err != nil {
+		log.Errorf("failed to initialize the async high ration of offline container %v: %v", c.ID, err)
+	} else {
+		log.Infof("initialize the async high ration of the offline container %v:%v success", c.ID, f.highAsyncRatio)
+	}
+}
+
 func (f *fssr) adjustOfflineContainerMemory(limit int64) {
 	if f.mmgr.cpm == nil {
 		log.Infof("reclaim offline containers failed, cpm is nil")
@@ -178,7 +198,6 @@ func (f *fssr) adjustOfflineContainerMemory(limit int64) {
 			log.Errorf("relieve offline containers limit soft memory %v failed, err is %v", c.ID, err)
 		} else {
 			f.limit = limit
-			log.Debugf("relieve offline containers limit soft memory %v success, limit is %v", path, f.limit)
 		}
 	}
 }
