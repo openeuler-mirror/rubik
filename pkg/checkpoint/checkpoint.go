@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	log "isula.org/rubik/pkg/tinylog"
@@ -78,6 +79,17 @@ func (cm *Manager) PodExist(podID types.UID) bool {
 	cm.Lock()
 	defer cm.Unlock()
 	_, ok := cm.Checkpoint.Pods[string(podID)]
+	return ok
+}
+
+// ContainerExist returns true if there is a pod whose key is podID in the checkpoint
+func (cm *Manager) ContainerExist(podID types.UID, containerID string) bool {
+	cm.Lock()
+	defer cm.Unlock()
+	if _, ok := cm.Checkpoint.Pods[string(podID)]; !ok {
+		return false
+	}
+	_, ok := cm.Checkpoint.Pods[string(podID)].Containers[containerID]
 	return ok
 }
 
@@ -140,7 +152,7 @@ func (cm *Manager) listContainersWithFilters(filters ...filter) map[string]*type
 	return cc
 }
 
-// listPodsWithFilters filters and returns deep copy objects of all pod
+// ListPodsWithFilters filters and returns deep copy objects of all pod
 func (cm *Manager) listPodsWithFilters(filters ...filter) map[string]*typedef.PodInfo {
 	cm.Lock()
 	defer cm.Unlock()
@@ -167,7 +179,7 @@ func mergeFilters(pi *typedef.PodInfo, filters []filter) bool {
 // ListOfflineContainers filtering offline containers
 func (cm *Manager) ListOfflineContainers() map[string]*typedef.ContainerInfo {
 	return cm.listContainersWithFilters(func(pi *typedef.PodInfo) bool {
-		return pi.Offline
+		return pi.Offline && pi.Namespace != v1.NamespaceSystem
 	})
 }
 
@@ -179,6 +191,20 @@ func (cm *Manager) ListAllContainers() map[string]*typedef.ContainerInfo {
 // ListAllPods returns all pods copies
 func (cm *Manager) ListAllPods() map[string]*typedef.PodInfo {
 	return cm.listPodsWithFilters()
+}
+
+// ListOfflinePods returns all pods copies
+func (cm *Manager) ListOfflinePods() map[string]*typedef.PodInfo {
+	return cm.listPodsWithFilters(func(pi *typedef.PodInfo) bool {
+		return pi.Offline && pi.Namespace != v1.NamespaceSystem
+	})
+}
+
+// ListOnlinePods returns all pods copies
+func (cm *Manager) ListOnlinePods() map[string]*typedef.PodInfo {
+	return cm.listPodsWithFilters(func(pi *typedef.PodInfo) bool {
+		return !pi.Offline && pi.Namespace != v1.NamespaceSystem
+	})
 }
 
 // NewPodInfo create PodInfo

@@ -15,20 +15,19 @@
 package cachelimit
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/api"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/typedef"
 	"isula.org/rubik/pkg/util"
 )
 
@@ -37,137 +36,52 @@ const (
 	noProErr   = "no such process"
 )
 
-var cacheLimitPods, onlinePods *podMap
-
-type podMap struct {
-	sync.RWMutex
-	pods map[string]*PodInfo
-}
-
-// PodInfo describe pod information
-type PodInfo struct {
-	ctx             context.Context
-	podID           string
-	cgroupPath      string
-	cacheLimitLevel string
-	containers      map[string]struct{}
-}
-
-func init() {
-	cacheLimitPods = newPodMap()
-	onlinePods = newPodMap()
-}
-
-func newPodMap() *podMap {
-	return &podMap{pods: make(map[string]*PodInfo, 0)}
-}
-
-// NewCacheLimitPodInfo return cache limit pod info
-func NewCacheLimitPodInfo(ctx context.Context, podID string, podReq api.PodQoS) (*PodInfo, error) {
-	level := podReq.CacheLimitLevel
+// SyncLevel sync cache limit level
+func SyncLevel(pi *typedef.PodInfo) error {
+	level := pi.CacheLimitLevel
 	if level == "" {
 		if defaultLimitMode == staticMode {
-			level = maxLevel
+			pi.CacheLimitLevel = maxLevel
 		} else {
-			level = dynamicLevel
+			pi.CacheLimitLevel = dynamicLevel
 		}
 	}
-	if !levelValid(level) {
-		return nil, errors.Errorf("invalid cache limit level %v for pod: %v", level, podID)
+	if !levelValid(pi.CacheLimitLevel) {
+		return errors.Errorf("invalid cache limit level %v for pod: %v", level, pi.UID)
 	}
-
-	return &PodInfo{
-		ctx:             ctx,
-		podID:           podID,
-		cgroupPath:      podReq.CgroupPath,
-		cacheLimitLevel: level,
-		containers:      make(map[string]struct{}, 0),
-	}, nil
+	return nil
 }
 
 // syncCacheLimit sync cache limit for offline pods, as new processes may generate during pod running,
 // they should be moved to resctrl directory
 func syncCacheLimit() {
-	for _, p := range cacheLimitPods.clone() {
-		if err := p.writeTasksToResctrl(config.CgroupRoot, resctrlDir); err != nil {
-			log.Errorf("Set cache limit for pod %v err: %v", p.podID, err)
+	offlinePods := cpm.ListOfflinePods()
+	for _, p := range offlinePods {
+		if err := SyncLevel(p); err != nil {
+			log.Errorf("sync cache limit level err: %v", err)
+			continue
+		}
+		if err := writeTasksToResctrl(p, resctrlDir); err != nil {
+			log.Errorf("set cache limit for pod %v err: %v", p.UID, err)
 		}
 	}
 }
 
-// Add add pod to pod list
-func (pm *podMap) Add(pod *PodInfo) {
-	pm.Lock()
-	defer pm.Unlock()
-	if _, ok := pm.pods[pod.podID]; !ok {
-		pm.pods[pod.podID] = pod
-	}
-}
-
-// Del remove pod from pod list
-func (pm *podMap) Del(podID string) {
-	pm.Lock()
-	defer pm.Unlock()
-	delete(pm.pods, podID)
-}
-
-func (pm *podMap) clone() []*PodInfo {
-	var pods []*PodInfo
-	pm.Lock()
-	defer pm.Unlock()
-	for _, pod := range pm.pods {
-		pods = append(pods, pod.clone())
-	}
-	return pods
-}
-
-func (pm *podMap) addContainer(podID, containerID string) {
-	pm.Lock()
-	defer pm.Unlock()
-	if _, ok := pm.pods[podID]; !ok {
-		return
-	}
-	pm.pods[podID].containers[containerID] = struct{}{}
-}
-
-func (pm *podMap) containerExist(podID, containerID string) bool {
-	pm.Lock()
-	defer pm.Unlock()
-	if _, ok := pm.pods[podID]; !ok {
-		return false
-	}
-	if _, ok := pm.pods[podID].containers[containerID]; ok {
-		return true
-	}
-	return false
-}
-
-func (pod *PodInfo) clone() *PodInfo {
-	p := *pod
-	p.containers = make(map[string]struct{}, len(pod.containers))
-	for c := range pod.containers {
-		p.containers[c] = struct{}{}
-	}
-	return &p
-}
-
 // SetCacheLimit set cache limit for offline pods
-func (pod *PodInfo) SetCacheLimit() error {
-	log.WithCtx(pod.ctx).Logf("Setting cache limit level=%v for pod %s", pod.cacheLimitLevel, pod.podID)
-	cacheLimitPods.Add(pod)
+func SetCacheLimit(pi *typedef.PodInfo) error {
+	log.Logf("setting cache limit level=%v for pod %s", pi.CacheLimitLevel, pi.UID)
 
-	return pod.writeTasksToResctrl(config.CgroupRoot, resctrlDir)
+	return writeTasksToResctrl(pi, resctrlDir)
 }
 
-func (pod *PodInfo) writeTasksToResctrl(cgroupRoot, resctrlRoot string) error {
-	taskRootPath := filepath.Join(cgroupRoot, "cpu", pod.cgroupPath)
+func writeTasksToResctrl(pi *typedef.PodInfo, resctrlRoot string) error {
+	taskRootPath := filepath.Join(config.CgroupRoot, "cpu", pi.CgroupPath)
 	if !util.PathExist(taskRootPath) {
-		log.Infof("Path %v not exist, maybe pod %v is deleted", taskRootPath, pod.podID)
-		cacheLimitPods.Del(pod.podID)
+		log.Infof("path %v not exist, maybe pod %v is deleted", taskRootPath, pi.UID)
 		return nil
 	}
 
-	tasks, containers, err := pod.getTasks(taskRootPath)
+	tasks, _, err := getTasks(pi, taskRootPath)
 	if err != nil {
 		return err
 	}
@@ -175,36 +89,27 @@ func (pod *PodInfo) writeTasksToResctrl(cgroupRoot, resctrlRoot string) error {
 		return nil
 	}
 
-	resctrlTaskFile := filepath.Join(resctrlRoot, dirPrefix+pod.cacheLimitLevel, "tasks")
-	success := true
+	resctrlTaskFile := filepath.Join(resctrlRoot, dirPrefix+pi.CacheLimitLevel, "tasks")
 	for _, task := range tasks {
 		if err := ioutil.WriteFile(resctrlTaskFile, []byte(task), constant.DefaultFileMode); err != nil {
-			success = false
 			if strings.Contains(err.Error(), noProErr) {
-				log.Errorf("pod %s task %s not exist", pod.podID, task)
+				log.Errorf("pod %s task %s not exist", pi.UID, task)
 				continue
 			}
 			return errors.Errorf("add task %v to file %v error: %v", task, resctrlTaskFile, err)
 		}
 	}
-	if !success {
-		return nil
-	}
-
-	for _, containerID := range containers {
-		cacheLimitPods.addContainer(pod.podID, containerID)
-	}
 
 	return nil
 }
 
-func (pod *PodInfo) getTasks(taskRootPath string) ([]string, []string, error) {
+func getTasks(pi *typedef.PodInfo, taskRootPath string) ([]string, []string, error) {
 	file := "cgroup.procs"
 	var taskList, containers []string
 	err := filepath.Walk(taskRootPath, func(path string, f os.FileInfo, err error) error {
 		if f != nil && f.IsDir() {
 			containerID := filepath.Base(f.Name())
-			if cacheLimitPods.containerExist(pod.podID, containerID) {
+			if cpm.ContainerExist(types.UID(pi.UID), containerID) {
 				return nil
 			}
 			cgFilePath, err := securejoin.SecureJoin(path, file)
@@ -227,15 +132,6 @@ func (pod *PodInfo) getTasks(taskRootPath string) ([]string, []string, error) {
 	})
 
 	return taskList, containers, err
-}
-
-// AddOnlinePod add pod to online pod list
-func AddOnlinePod(podID, cgroupPath string) {
-	onlinePods.Add(&PodInfo{
-		podID:      podID,
-		cgroupPath: cgroupPath,
-		containers: make(map[string]struct{}, 0),
-	})
 }
 
 func levelValid(level string) bool {

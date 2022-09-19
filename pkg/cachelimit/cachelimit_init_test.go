@@ -14,7 +14,6 @@
 package cachelimit
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -25,10 +24,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"isula.org/rubik/pkg/checkpoint"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/perf"
 	"isula.org/rubik/pkg/try"
+	"isula.org/rubik/pkg/typedef"
 )
 
 // TestGetNUMANum testcase
@@ -644,11 +645,10 @@ func TestGetPodCacheMiss(t *testing.T) {
 	}
 	testCGRoot := filepath.Join(config.CgroupRoot, "perf_event", t.Name())
 	type fields struct {
-		ctx             context.Context
 		podID           string
 		cgroupPath      string
 		cacheLimitLevel string
-		containers      map[string]struct{}
+		containers      map[string]*typedef.ContainerInfo
 	}
 	type args struct {
 		cgroupRoot string
@@ -665,11 +665,10 @@ func TestGetPodCacheMiss(t *testing.T) {
 		{
 			name: "TC-get pod cache miss success",
 			fields: fields{
-				ctx:             context.Background(),
 				podID:           "abcd",
 				cgroupPath:      t.Name(),
 				cacheLimitLevel: lowLevel,
-				containers:      make(map[string]struct{}),
+				containers:      make(map[string]*typedef.ContainerInfo),
 			},
 			preHook: func(t *testing.T) {
 				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
@@ -684,11 +683,10 @@ func TestGetPodCacheMiss(t *testing.T) {
 		{
 			name: "TC-get pod cache miss failed",
 			fields: fields{
-				ctx:             context.Background(),
 				podID:           "abcd",
 				cgroupPath:      t.Name(),
 				cacheLimitLevel: middleLevel,
-				containers:      make(map[string]struct{}),
+				containers:      make(map[string]*typedef.ContainerInfo),
 			},
 		},
 	}
@@ -696,17 +694,16 @@ func TestGetPodCacheMiss(t *testing.T) {
 		name := t.Name()
 		fmt.Println(name)
 		t.Run(tt.name, func(t *testing.T) {
-			p := &PodInfo{
-				ctx:             tt.fields.ctx,
-				podID:           tt.fields.podID,
-				cgroupPath:      tt.fields.cgroupPath,
-				cacheLimitLevel: tt.fields.cacheLimitLevel,
-				containers:      tt.fields.containers,
+			p := &typedef.PodInfo{
+				UID:             tt.fields.podID,
+				CgroupPath:      tt.fields.cgroupPath,
+				CacheLimitLevel: tt.fields.cacheLimitLevel,
+				Containers:      tt.fields.containers,
 			}
 			if tt.preHook != nil {
 				tt.preHook(t)
 			}
-			p.getPodCacheMiss(tt.args.cgroupRoot, tt.args.perfDu)
+			getPodCacheMiss(p, tt.args.perfDu)
 			if tt.postHook != nil {
 				tt.postHook(t)
 			}
@@ -718,14 +715,11 @@ func TestStartDynamic(t *testing.T) {
 	if !perf.HwSupport() {
 		t.Skipf("%s only run on physical machine", t.Name())
 	}
-	initCacheLimitPod()
+	initCpm()
 	startDynamic(&config.CacheConfig{}, 0, 0)
 	resctrlDir := try.GenTestDir().String()
 	testCGRoot := filepath.Join(config.CgroupRoot, "perf_event", t.Name())
 	assert.NoError(t, setMaskFile(t, resctrlDir, "3ff"))
-	cacheLimitPods.Add(&PodInfo{
-		cacheLimitLevel: dynamicLevel,
-	})
 
 	type args struct {
 		minWaterLine, maxWaterLine, wantL3, wantMb, WantFinalL3, wantFinalMb int
@@ -762,20 +756,20 @@ func TestStartDynamic(t *testing.T) {
 				wantFinalMb:  10,
 			},
 			preHook: func(t *testing.T) {
-				onlinePods = newPodMap()
-				onlinePods.Add(&PodInfo{
-					ctx:             context.Background(),
-					podID:           "abcd",
-					cgroupPath:      filepath.Base(testCGRoot),
-					cacheLimitLevel: lowLevel,
-					containers:      make(map[string]struct{}),
-				})
+				pi := &typedef.PodInfo{
+					UID:             "abcde",
+					CgroupPath:      filepath.Base(testCGRoot),
+					CacheLimitLevel: lowLevel,
+					Containers:      make(map[string]*typedef.ContainerInfo),
+				}
+				cpm.Checkpoint.Pods[pi.UID] = pi
 				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
 				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
 				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 				try.RemoveAll(testCGRoot)
+				cpm.Checkpoint.Pods = make(map[string]*typedef.PodInfo)
 			},
 		},
 		{
@@ -803,20 +797,20 @@ func TestStartDynamic(t *testing.T) {
 				wantFinalMb:  50,
 			},
 			preHook: func(t *testing.T) {
-				onlinePods = newPodMap()
-				onlinePods.Add(&PodInfo{
-					ctx:             context.Background(),
-					podID:           "abcde",
-					cgroupPath:      filepath.Base(testCGRoot),
-					cacheLimitLevel: lowLevel,
-					containers:      make(map[string]struct{}),
-				})
+				pi := &typedef.PodInfo{
+					UID:             "abcde",
+					CgroupPath:      filepath.Base(testCGRoot),
+					CacheLimitLevel: lowLevel,
+					Containers:      make(map[string]*typedef.ContainerInfo),
+				}
+				cpm.Checkpoint.Pods[pi.UID] = pi
 				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
 				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
 				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 				try.RemoveAll(testCGRoot)
+				cpm.Checkpoint.Pods = make(map[string]*typedef.PodInfo)
 			},
 		},
 		{
@@ -844,20 +838,20 @@ func TestStartDynamic(t *testing.T) {
 				wantFinalMb:  10,
 			},
 			preHook: func(t *testing.T) {
-				onlinePods = newPodMap()
-				onlinePods.Add(&PodInfo{
-					ctx:             context.Background(),
-					podID:           "abcde",
-					cgroupPath:      filepath.Base(testCGRoot),
-					cacheLimitLevel: lowLevel,
-					containers:      make(map[string]struct{}),
-				})
+				pi := &typedef.PodInfo{
+					UID:             "abcde",
+					CgroupPath:      filepath.Base(testCGRoot),
+					CacheLimitLevel: lowLevel,
+					Containers:      make(map[string]*typedef.ContainerInfo),
+				}
+				cpm.Checkpoint.Pods[pi.UID] = pi
 				try.MkdirAll(testCGRoot, constant.DefaultDirMode)
 				try.WriteFile(filepath.Join(testCGRoot, "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 			},
 			postHook: func(t *testing.T) {
 				try.WriteFile(filepath.Join(config.CgroupRoot, "perf_event", "tasks"), []byte(fmt.Sprint(os.Getpid())), constant.DefaultFileMode)
 				try.RemoveAll(testCGRoot)
+				cpm.Checkpoint.Pods = make(map[string]*typedef.PodInfo)
 			},
 		},
 	}
@@ -920,9 +914,10 @@ func TestClEnabled(t *testing.T) {
 
 // TestDynamicExist test dynamicExist
 func TestDynamicExist(t *testing.T) {
-	initCacheLimitPod()
+	initCpm()
+	cpm.Checkpoint.Pods["podabc"].CacheLimitLevel = lowLevel
 	assert.Equal(t, false, dynamicExist())
-	cacheLimitPods.Add(&PodInfo{cacheLimitLevel: dynamicLevel})
+	cpm.Checkpoint.Pods["podabc"].CacheLimitLevel = dynamicLevel
 	assert.Equal(t, true, dynamicExist())
 }
 
@@ -1008,7 +1003,12 @@ func TestInit(t *testing.T) {
 			}
 			var cfg config.CacheConfig
 			cfg = tt.args.cfg
-			if err := Init(&cfg); (err != nil) != tt.wantErr {
+			m := &checkpoint.Manager{
+				Checkpoint: &checkpoint.Checkpoint{
+					Pods: make(map[string]*typedef.PodInfo),
+				},
+			}
+			if err := Init(m, &cfg); (err != nil) != tt.wantErr {
 				t.Errorf("Init() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.postHook != nil {

@@ -25,10 +25,12 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"isula.org/rubik/pkg/checkpoint"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/perf"
 	log "isula.org/rubik/pkg/tinylog"
+	"isula.org/rubik/pkg/typedef"
 	"isula.org/rubik/pkg/util"
 )
 
@@ -65,6 +67,7 @@ var (
 	numaNum, l3PercentDynamic, mbPercentDynamic int
 	defaultLimitMode                            string
 	enable                                      bool
+	cpm                                         *checkpoint.Manager
 )
 
 type cacheLimitSet struct {
@@ -75,7 +78,7 @@ type cacheLimitSet struct {
 }
 
 // Init init and starts cache limit
-func Init(cfg *config.CacheConfig) error {
+func Init(m *checkpoint.Manager, cfg *config.CacheConfig) error {
 	enable = true
 	if !isHostPidns("/proc/self/ns/pid") {
 		return errors.New("share pid namespace with host is needed for cache limit")
@@ -93,6 +96,7 @@ func Init(cfg *config.CacheConfig) error {
 		return errors.Errorf("cache limit directory create failed: %v", err)
 	}
 	defaultLimitMode = cfg.DefaultLimitMode
+	cpm = m
 
 	go wait.Until(syncCacheLimit, time.Second, config.ShutdownChan)
 	missMax, missMin := 20, 10
@@ -142,7 +146,7 @@ func checkCacheCfg(cfg *config.CacheConfig) error {
 
 // initCacheLimitDir init multi-level cache limit directories
 func initCacheLimitDir(cfg *config.CacheConfig) error {
-	log.Infof("Init cache limit directory")
+	log.Infof("init cache limit directory")
 
 	var err error
 	if numaNum, err = getNUMANum(numaNodeDir); err != nil {
@@ -165,7 +169,7 @@ func initCacheLimitDir(cfg *config.CacheConfig) error {
 		}
 	}
 
-	log.Infof("Init cache limit directory success")
+	log.Infof("init cache limit directory success")
 	return nil
 }
 
@@ -235,7 +239,7 @@ func (cl *cacheLimitSet) writeResctrlSchemata(numaNum int) error {
 
 func (cl *cacheLimitSet) doFlush() error {
 	if err := cl.writeResctrlSchemata(numaNum); err != nil {
-		return errors.Errorf("Adjust dynamic cache limit to l3:%v mb:%v error: %v",
+		return errors.Errorf("adjust dynamic cache limit to l3:%v mb:%v error: %v",
 			cl.L3Percent, cl.MbPercent, err)
 	}
 	l3PercentDynamic = cl.L3Percent
@@ -250,6 +254,7 @@ func (cl *cacheLimitSet) flush(cfg *config.CacheConfig, step int) error {
 	if l3PercentDynamic == l3 && mbPercentDynamic == mb {
 		return nil
 	}
+	log.Infof("flush L3 from %v to %v, Mb from %v to %v", cl.L3Percent, l3, cl.MbPercent, mb)
 	cl.L3Percent, cl.MbPercent = l3, mb
 	return cl.doFlush()
 }
@@ -270,13 +275,18 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 	if !dynamicExist() {
 		return
 	}
+
 	stepMore, stepLess := 5, -50
 	needMore := true
 	limiter := newCacheLimitSet(cfg.DefaultResctrlDir, dynamicLevel, l3PercentDynamic, mbPercentDynamic)
 
-	for _, p := range onlinePods.clone() {
-		cacheMiss, LLCMiss := p.getPodCacheMiss(config.CgroupRoot, cfg.PerfDuration)
+	onlinePods := cpm.ListOnlinePods()
+	for _, p := range onlinePods {
+		cacheMiss, LLCMiss := getPodCacheMiss(p, cfg.PerfDuration)
 		if cacheMiss >= missMax || LLCMiss >= missMax {
+			log.Infof("online pod %v cache miss: %v LLC miss: %v exceeds maxmiss, lower offline cache limit",
+				p.UID, cacheMiss, LLCMiss)
+
 			if err := limiter.flush(cfg, stepLess); err != nil {
 				log.Errorf(err.Error())
 			}
@@ -296,18 +306,22 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 }
 
 func dynamicExist() bool {
-	for _, p := range cacheLimitPods.clone() {
-		if p.cacheLimitLevel == dynamicLevel {
+	offlinePods := cpm.ListOfflinePods()
+	for _, p := range offlinePods {
+		err := SyncLevel(p)
+		if err != nil {
+			continue
+		}
+		if p.CacheLimitLevel == dynamicLevel {
 			return true
 		}
 	}
 	return false
 }
 
-func (p *PodInfo) getPodCacheMiss(cgroupRoot string, perfDu int) (int, int) {
-	cgroupPath := filepath.Join(cgroupRoot, perfEvent, p.cgroupPath)
+func getPodCacheMiss(pi *typedef.PodInfo, perfDu int) (int, int) {
+	cgroupPath := filepath.Join(config.CgroupRoot, perfEvent, pi.CgroupPath)
 	if !util.PathExist(cgroupPath) {
-		onlinePods.Del(p.podID)
 		return 0, 0
 	}
 

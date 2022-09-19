@@ -15,44 +15,36 @@
 package cachelimit
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"isula.org/rubik/pkg/checkpoint"
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
 	"isula.org/rubik/pkg/try"
+	"isula.org/rubik/pkg/typedef"
 
 	"github.com/stretchr/testify/assert"
-	"isula.org/rubik/api"
 )
 
-func initCacheLimitPod() {
-	cacheLimitPods.Lock()
-	defer cacheLimitPods.Unlock()
-	cacheLimitPods.pods = make(map[string]*PodInfo, 0)
+var podInfo = typedef.PodInfo{
+	CgroupPath:      "kubepods/podaaa",
+	Offline:         true,
+	CacheLimitLevel: "dynamic",
 }
 
-func (podList *podMap) getPodInfo(podID string) *PodInfo {
-	podList.Lock()
-	defer podList.Unlock()
-	if podList.pods[podID] == nil {
-		return nil
+func initCpm() {
+	podID := "podabc"
+	cpm = &checkpoint.Manager{
+		Checkpoint: &checkpoint.Checkpoint{
+			Pods: map[string]*typedef.PodInfo{
+				podID: &podInfo,
+			},
+		},
 	}
-	pod := PodInfo{
-		podID:           podList.pods[podID].podID,
-		cgroupPath:      podList.pods[podID].cgroupPath,
-		cacheLimitLevel: podList.pods[podID].cacheLimitLevel,
-	}
-	containers := make(map[string]struct{}, 0)
-	for i, c := range podList.pods[podID].containers {
-		containers[i] = c
-	}
-	pod.containers = containers
-
-	return &pod
 }
 
 // TestLevelValid testcase
@@ -86,134 +78,59 @@ func TestLevelValid(t *testing.T) {
 }
 
 // TestNewCacheLimitPodInfo test NewCacheLimitPodInfo
-func TestNewCacheLimitPodInfo(t *testing.T) {
-	ctx := context.Background()
-	podID := "podabc"
-	podReq := api.PodQoS{
+func TestSyncLevel(t *testing.T) {
+	podInfo := typedef.PodInfo{
 		CgroupPath:      "kubepods/podaaa",
-		QosLevel:        -1,
+		Offline:         true,
 		CacheLimitLevel: "invalid",
 	}
-	_, err := NewCacheLimitPodInfo(ctx, podID, podReq)
+	err := SyncLevel(&podInfo)
 	assert.Equal(t, true, err != nil)
 
-	podReq.CacheLimitLevel = lowLevel
-	pod, err := NewCacheLimitPodInfo(ctx, podID, podReq)
+	podInfo.CacheLimitLevel = lowLevel
+	err = SyncLevel(&podInfo)
 	assert.NoError(t, err)
-	assert.Equal(t, pod.podID, podID)
-	assert.Equal(t, pod.cacheLimitLevel, podReq.CacheLimitLevel)
-	assert.Equal(t, pod.cgroupPath, podReq.CgroupPath)
+	assert.Equal(t, podInfo.CacheLimitLevel, lowLevel)
 
 	defaultLimitMode = staticMode
-	podReq.CacheLimitLevel = ""
-	pod, err = NewCacheLimitPodInfo(ctx, podID, podReq)
+	podInfo.CacheLimitLevel = ""
+	err = SyncLevel(&podInfo)
 	assert.NoError(t, err)
-	assert.Equal(t, pod.cacheLimitLevel, maxLevel)
+	assert.Equal(t, podInfo.CacheLimitLevel, maxLevel)
 
 	defaultLimitMode = dynamicMode
-	podReq.CacheLimitLevel = ""
-	pod, err = NewCacheLimitPodInfo(ctx, podID, podReq)
+	podInfo.CacheLimitLevel = ""
+	err = SyncLevel(&podInfo)
 	assert.NoError(t, err)
-	assert.Equal(t, pod.cacheLimitLevel, dynamicLevel)
-}
-
-func newTestPodInfo(podID string) api.PodQoS {
-	return api.PodQoS{
-		CgroupPath:      "kubepods/" + podID,
-		QosLevel:        -1,
-		CacheLimitLevel: "low",
-	}
-}
-
-// TestPodListAddAndDel test Add and Del
-func TestPodListAddAndDel(t *testing.T) {
-	initCacheLimitPod()
-	podID := "podabc"
-	pod, err := NewCacheLimitPodInfo(context.Background(), podID, newTestPodInfo(podID))
-	assert.NoError(t, err)
-
-	cacheLimitPods.Add(pod)
-	assert.Equal(t, cacheLimitPods.getPodInfo(podID).podID, podID)
-	cacheLimitPods.Del(podID)
-	assert.Equal(t, true, cacheLimitPods.getPodInfo(podID) == nil)
-}
-
-// TestClone test clone
-func TestClone(t *testing.T) {
-	initCacheLimitPod()
-	podID1 := "podabc"
-	pod1, err := NewCacheLimitPodInfo(context.Background(), podID1, newTestPodInfo(podID1))
-	pod1.containers["con1"] = struct{}{}
-	assert.NoError(t, err)
-	podID2 := "podabc2"
-	pod2, err := NewCacheLimitPodInfo(context.Background(), podID2, newTestPodInfo(podID2))
-
-	cacheLimitPods.Add(pod1)
-	cacheLimitPods.Add(pod2)
-	podList := cacheLimitPods.clone()
-	podNum := 2
-	assert.Equal(t, podNum, len(podList))
-	cacheLimitPods.pods[podID1].containers["con2"] = struct{}{}
-	cacheLimitPods.Del(podID2)
-	for _, p := range podList {
-		if p.podID == podID1 {
-			assert.Equal(t, 1, len(p.containers))
-		}
-	}
-}
-
-// TestAddContainer test addContainer
-func TestAddContainer(t *testing.T) {
-	initCacheLimitPod()
-	podID := "podabc"
-	containerID := "containerabc"
-	cacheLimitPods.addContainer(podID, containerID)
-	assert.Equal(t, true, cacheLimitPods.getPodInfo(podID) == nil)
-	assert.Equal(t, false, cacheLimitPods.containerExist(podID, containerID))
-
-	pod, err := NewCacheLimitPodInfo(context.Background(), podID, newTestPodInfo(podID))
-	assert.NoError(t, err)
-	cacheLimitPods.Add(pod)
-	cacheLimitPods.addContainer(podID, containerID)
-	assert.Equal(t, true, cacheLimitPods.getPodInfo(podID).containers != nil)
-	assert.Equal(t, true, cacheLimitPods.containerExist(podID, containerID))
-}
-
-// TestAddOnlinePod test AddOnlinePod
-func TestAddOnlinePod(t *testing.T) {
-	podID := "podabc"
-	cgroupPath := "kubepods/podabc"
-	AddOnlinePod(podID, cgroupPath)
-	assert.Equal(t, podID, onlinePods.getPodInfo(podID).podID)
-	assert.Equal(t, cgroupPath, onlinePods.getPodInfo(podID).cgroupPath)
+	assert.Equal(t, podInfo.CacheLimitLevel, dynamicLevel)
 }
 
 // TestWriteTasksToResctrl test writeTasksToResctrl
 func TestWriteTasksToResctrl(t *testing.T) {
-	initCacheLimitPod()
-	podID := "podabc"
-	pod, err := NewCacheLimitPodInfo(context.Background(), podID, newTestPodInfo(podID))
-	cacheLimitPods.Add(pod)
+	initCpm()
+	err := SyncLevel(&podInfo)
 	assert.NoError(t, err)
 
 	testDir := try.GenTestDir().String()
+	config.CgroupRoot = testDir
+
 	pid, procsFile, container := "12345", "cgroup.procs", "container1"
-	podCPUCgroupPath := filepath.Join(testDir, "cpu", pod.cgroupPath)
+	podCPUCgroupPath := filepath.Join(testDir, "cpu", podInfo.CgroupPath)
 	try.MkdirAll(filepath.Join(podCPUCgroupPath, container), constant.DefaultDirMode)
-	err = pod.writeTasksToResctrl(testDir, testDir)
+	err = writeTasksToResctrl(&podInfo, testDir)
 	// pod cgroup.procs not exist, return error
 	assert.Equal(t, true, err != nil)
 	_, err = os.Create(filepath.Join(podCPUCgroupPath, procsFile))
 	assert.NoError(t, err)
 	try.WriteFile(filepath.Join(podCPUCgroupPath, container, procsFile), []byte(pid), constant.DefaultFileMode)
 
-	err = pod.writeTasksToResctrl(testDir, testDir)
+	err = writeTasksToResctrl(&podInfo, testDir)
 	// resctrl tasks file not exist, return error
 	assert.Equal(t, true, err != nil)
 
-	resctrlSubDir, taskFile := dirPrefix+pod.cacheLimitLevel, "tasks"
+	resctrlSubDir, taskFile := dirPrefix+podInfo.CacheLimitLevel, "tasks"
 	try.MkdirAll(filepath.Join(testDir, resctrlSubDir), constant.DefaultDirMode)
-	err = pod.writeTasksToResctrl(testDir, testDir)
+	err = writeTasksToResctrl(&podInfo, testDir)
 	// write success
 	assert.NoError(t, err)
 	bytes, err := ioutil.ReadFile(filepath.Join(testDir, resctrlSubDir, taskFile))
@@ -221,25 +138,21 @@ func TestWriteTasksToResctrl(t *testing.T) {
 	assert.Equal(t, pid, strings.TrimSpace(string(bytes)))
 
 	// container pid already written
-	err = pod.writeTasksToResctrl(testDir, testDir)
+	err = writeTasksToResctrl(&podInfo, testDir)
 	assert.NoError(t, err)
+
+	config.CgroupRoot = constant.DefaultCgroupRoot
 }
 
 // TestSetCacheLimit test SetCacheLimit
 func TestSetCacheLimit(t *testing.T) {
-	podID := "podabc"
-	pod, err := NewCacheLimitPodInfo(context.Background(), podID, newTestPodInfo(podID))
-	assert.NoError(t, err)
-	err = pod.SetCacheLimit()
+	initCpm()
+	err := SetCacheLimit(&podInfo)
 	assert.NoError(t, err)
 }
 
 // TestSyncCacheLimit test syncCacheLimit
 func TestSyncCacheLimit(t *testing.T) {
-	initCacheLimitPod()
-	podID := "podabc"
-	pod, err := NewCacheLimitPodInfo(context.Background(), podID, newTestPodInfo(podID))
-	cacheLimitPods.Add(pod)
-	assert.NoError(t, err)
+	initCpm()
 	syncCacheLimit()
 }
