@@ -1,6 +1,6 @@
 Name: rubik
 Version: 0.1.0
-Release: 2
+Release: 3
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -49,6 +49,12 @@ install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
 rm -rf %{buildroot}
 
 %changelog
+* Mon Sep 19 2022 yangjiaqi <yangjiaqi16@huawei.com> - 0.1.0-3
+- Type:bugfix
+- CVENA
+- SUG:restart
+- DESC:fix compile problem and make rubik real static
+
 * Tue Jan 11 2022 DCCooper <1866858@gmail.com> - 0.1.0-2
 - Type:bugfix
 - CVE:NA
