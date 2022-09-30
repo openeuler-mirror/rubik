@@ -14,6 +14,7 @@
 CWD=$(realpath .)
 TMP_DIR := /tmp/rubik_tmpdir
 INSTALL_DIR := /var/lib/rubik
+BUILD_DIR=build
 VERSION_FILE := ./VERSION
 VERSION := $(shell awk -F"-" '{print $$1}' < $(VERSION_FILE))
 RELEASE :=$(if $(shell awk -F"-" '{print $$2}' < $(VERSION_FILE)),$(shell awk -F"-" '{print $$2}' < $(VERSION_FILE)),NA)
@@ -29,8 +30,6 @@ LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
 	-extldflags=-ftrapv \
 	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
 
-export GO111MODULE=off
-
 GO_BUILD=CGO_ENABLED=1 \
 	CGO_CFLAGS="-fstack-protector-strong -fPIE" \
 	CGO_CPPFLAGS="-fstack-protector-strong -fPIE" \
@@ -43,40 +42,33 @@ all: release
 help:
 	@echo "Usage:"
 	@echo
-	@echo "make                          # build rubik for debug"
-	@echo "make release                  # build rubik for release, open security build option"
-	@echo "make image                    # container image build"
+	@echo "make                          # build rubik with security build option"
+	@echo "make image                    # build container image"
 	@echo "make check                    # static check for latest commit"
 	@echo "make checkall                 # static check for whole project"
-	@echo "make tests                    # run all testcases within project"
-	@echo "make test-unit                # only run unit test for project"
-	@echo "make cover                    # generate cover report"
-	@echo
-
-dev:
-	mkdir -p $(TMP_DIR)
-	$(GO_BUILD) $(DEBUG_FLAGS) -o rubik $(LD_FLAGS) rubik.go
+	@echo "make tests                    # run all tests"
+	@echo "make test-unit                # run unit test"
+	@echo "make cover                    # generate coverage report"
+	@echo "make install                  # install files to /var/lib/rubik"
 
 release:
-	mkdir -p $(TMP_DIR)
+	mkdir -p $(TMP_DIR) $(BUILD_DIR)
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
-	$(GO_BUILD) -o rubik $(LD_FLAGS) rubik.go 2>/dev/null
-	@if [ -f ./hack/rubik-daemonset.yaml ]; then sed -i 's/rubik_image_name_and_tag/rubik:$(VERSION)-$(RELEASE)/g' ./hack/rubik-daemonset.yaml; fi;
-
-safe: release
+	$(GO_BUILD) -o $(BUILD_DIR)/rubik $(LD_FLAGS) rubik.go
+	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
 
 image: release
 	docker build -f Dockerfile -t rubik:$(VERSION)-$(RELEASE) .
 
 check:
-	@echo "Static check start for last commit"
+	@echo "Static check for last commit ..."
 	@./hack/static_check.sh last
-	@echo "Static check last commit finished"
+	@echo "Static check for last commit finished"
 
 checkall:
-	@echo "Static check start for whole project"
+	@echo "Static check for all ..."
 	@./hack/static_check.sh all
-	@echo "Static check project finished"
+	@echo "Static check for all finished"
 
 tests: test-unit test-integration
 
@@ -91,6 +83,6 @@ cover:
 	go tool cover -html=cover.out -o cover.html
 	python3 -m http.server 8080
 
-install: image
+install:
 	install -d -m 0750 $(INSTALL_DIR)
-	install -Dp -m 0640 ./hack/rubik-daemonset.yaml $(INSTALL_DIR)
+	cp -f $(BUILD_DIR)/* $(INSTALL_DIR)
