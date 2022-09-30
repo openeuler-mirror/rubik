@@ -1,3 +1,6 @@
+# github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+## explicit
+github.com/coreos/go-systemd/daemon
 # github.com/cyphar/filepath-securejoin v0.0.0-00010101000000-000000000000 => github.com/cyphar/filepath-securejoin v0.2.2
 ## explicit
 github.com/cyphar/filepath-securejoin

@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	corev1 "k8s.io/api/core/v1"
@@ -287,6 +288,15 @@ func run(fcfg string) int {
 
 	log.Logf("Start rubik with cfg\n%v", rubik.config)
 	go signalHandler()
+
+	// Notify systemd that rubik is ready SdNotify() only tries to
+	// notify if the NOTIFY_SOCKET environment is set, so it's
+	// safe to call when systemd isn't present.
+	// Ignore the return values here because they're not valid for
+	// platforms that don't use systemd.  For platforms that use
+	// systemd, rubik doesn't log if the notification failed.
+	_, _ = daemon.SdNotify(false, daemon.SdNotifyReady)
+
 	rubik.Monitor()
 
 	return 0

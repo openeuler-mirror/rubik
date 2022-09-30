@@ -56,6 +56,7 @@ release:
 	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
 	$(GO_BUILD) -o $(BUILD_DIR)/rubik $(LD_FLAGS) rubik.go
 	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
+	cp hack/rubik.service $(BUILD_DIR)
 
 image: release
 	docker build -f Dockerfile -t rubik:$(VERSION)-$(RELEASE) .
@@ -86,3 +87,4 @@ cover:
 install:
 	install -d -m 0750 $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/* $(INSTALL_DIR)
+	cp -f $(BUILD_DIR)/rubik.service /lib/systemd/system/
