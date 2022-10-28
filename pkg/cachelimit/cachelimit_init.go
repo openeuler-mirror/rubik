@@ -37,8 +37,10 @@ import (
 const (
 	schemataFile = "schemata"
 	numaNodeDir  = "/sys/devices/system/node"
+	cpuDir       = "/sys/devices/system/cpu"
 	dirPrefix    = "rubik_"
 	perfEvent    = "perf_event"
+	cpu          = "cpu"
 
 	lowLevel     = "low"
 	middleLevel  = "middle"
@@ -60,7 +62,7 @@ const (
 	minPercent = 10
 	maxPercent = 100
 
-	base2, base16, bitSize = 2, 16, 32
+	base2, base10, base16, bitSize = 2, 10, 16, 32
 )
 
 var (
@@ -284,18 +286,20 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 
 	onlinePods := cpm.ListOnlinePods()
 	for _, p := range onlinePods {
-		ipc, cacheMiss, LLCMiss, err := getPodPerf(p, cfg.PerfDuration)
+		ipc, cpuUsage, cacheMiss, LLCMiss, err := getPodPerf(p, cfg.PerfDuration)
 		if err != nil {
 			log.Errorf(err.Error())
 		}
 
-		if estimateQosViolation(p, missMax, cacheMiss, LLCMiss, ipcMin, ipc) {
+		if estimateQosViolation(p, cpuUsage, missMax, cacheMiss, LLCMiss, ipcMin, ipc) {
 			if err := limiter.flush(cfg, stepLess); err != nil {
 				log.Errorf(err.Error())
 			}
 			return
 		}
 		if (cacheMiss >= missMin || LLCMiss >= missMin) && ipc >= ipcMax {
+			log.Infof("online pod %v cache miss: %v LLC miss: %v lower than missMin, more offline cache limit",
+				p.UID, cacheMiss, LLCMiss)
 			needMore = false
 		}
 	}
@@ -308,8 +312,16 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 	}
 }
 
-func estimateQosViolation(p *typedef.PodInfo, missMax, cacheMiss, LLCMiss int, ipcMin, ipc float64) bool {
-	if ipc < ipcMin {
+func estimateQosViolation(p *typedef.PodInfo, cpuUsage, missMax, cacheMiss, LLCMiss int, ipcMin, ipc float64) bool {
+	cpuBusyLimit := 30
+	loadBusyLimit := 0.8
+	cpuNum, err := getCPUNum(cpuDir)
+	if err != nil {
+		log.Errorf("cannot get cpu num")
+	}
+	loadavg, err := getLoadAvg()
+
+	if ipc < ipcMin && (cpuUsage/cpuNum > cpuBusyLimit || loadavg/float64(cpuNum) > loadBusyLimit) {
 		log.Infof("online pod %v ipc down: %v lower offline cache limit",
 			p.UID, ipc)
 		return true
@@ -336,22 +348,50 @@ func dynamicExist() bool {
 	return false
 }
 
-// getPodPerf return ipc, cache miss, llc miss of the pod
-func getPodPerf(pi *typedef.PodInfo, perfDu int) (float64, int, int, error) {
-	cgroupPath := filepath.Join(config.CgroupRoot, perfEvent, pi.CgroupPath)
-	if !util.PathExist(cgroupPath) {
-		return 0, 0, 0.0, errors.Errorf("path %v not exist, cannot get perf statistics", cgroupPath)
+// getPodPerf return ipc, cpu usage, cache miss, llc miss of the pod
+func getPodPerf(pi *typedef.PodInfo, perfDu int) (float64, int, int, int, error) {
+	perfPath := filepath.Join(config.CgroupRoot, perfEvent, pi.CgroupPath)
+	loadPath := filepath.Join(config.CgroupRoot, cpu, pi.CgroupPath)
+	if !util.PathExist(perfPath) {
+		return 0.0, 0, 0, 0, errors.Errorf("path %v not exist, cannot get perf statistics", perfPath)
+	}
+	if !util.PathExist(loadPath) {
+		return 0.0, 0, 0, 0, errors.Errorf("path %v not exist, cannot get perf statistics", loadPath)
 	}
 
-	stat, err := perf.CgroupStat(cgroupPath, time.Duration(perfDu)*time.Millisecond)
+	tStart := time.Now().UnixNano()
+	cpuUsageStart, _ := ioutil.ReadFile(filepath.Join(loadPath, "cpuacct.usage"))
+	cpuStart, _ := strconv.ParseInt(strings.TrimSpace(string(cpuUsageStart)), base10, bitSize)
+
+	stat, err := perf.CgroupStat(perfPath, time.Duration(perfDu)*time.Millisecond)
+
+	tStop := time.Now().UnixNano()
+	cpuUsageStop, _ := ioutil.ReadFile(filepath.Join(loadPath, "cpuacct.usage"))
+	cpuStop, _ := strconv.ParseInt(strings.TrimSpace(string(cpuUsageStop)), base10, bitSize)
+
 	if err != nil {
-		return 0, 0, 0.0, err
+		return 0.0, 0, 0, 0, err
 	}
 
 	return float64(stat.Instructions) / (1.0 + float64(stat.CpuCycles)),
+		int(100.0 * (float64(cpuStop-cpuStart) / float64(tStop-tStart))),
 		int(100.0 * float64(stat.CacheMisses) / (1.0 + float64(stat.CacheReferences))),
 		int(100.0 * float64(stat.LLCMiss) / (1.0 + float64(stat.LLCAccess))),
 		nil
+}
+
+func getLoadAvg() (float64, error) {
+	var loadavg float64
+	file, err := os.Open("/proc/loadavg")
+	defer file.Close()
+	if err != nil {
+		return 0.0, err
+	}
+	ret, err := fmt.Fscanf(file, "%f %f %f", &loadavg)
+	if err != nil || ret != 1 {
+		return 0.0, errors.Errorf("unexpected format of /proc/loadavg")
+	}
+	return loadavg, nil
 }
 
 func getPodCacheMiss(pi *typedef.PodInfo, perfDu int) (int, int) {
@@ -385,6 +425,14 @@ func checkResctrlExist(cfg *config.CacheConfig) error {
 			schemataPath, cfg.DefaultResctrlDir)
 	}
 	return nil
+}
+
+func getCPUNum(path string) (int, error) {
+	files, err := filepath.Glob(filepath.Join(path, "cpu*"))
+	if err != nil {
+		return 0, err
+	}
+	return len(files), nil
 }
 
 func getNUMANum(path string) (int, error) {
