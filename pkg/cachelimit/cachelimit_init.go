@@ -276,23 +276,26 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 		return
 	}
 
+	ipcMax := 2.1
+	ipcMin := 1.6
 	stepMore, stepLess := 5, -50
 	needMore := true
 	limiter := newCacheLimitSet(cfg.DefaultResctrlDir, dynamicLevel, l3PercentDynamic, mbPercentDynamic)
 
 	onlinePods := cpm.ListOnlinePods()
 	for _, p := range onlinePods {
-		cacheMiss, LLCMiss := getPodCacheMiss(p, cfg.PerfDuration)
-		if cacheMiss >= missMax || LLCMiss >= missMax {
-			log.Infof("online pod %v cache miss: %v LLC miss: %v exceeds maxmiss, lower offline cache limit",
-				p.UID, cacheMiss, LLCMiss)
+		ipc, cacheMiss, LLCMiss, err := getPodPerf(p, cfg.PerfDuration)
+		if err != nil {
+			log.Errorf(err.Error())
+		}
 
+		if estimateQosViolation(p, missMax, cacheMiss, LLCMiss, ipcMin, ipc) {
 			if err := limiter.flush(cfg, stepLess); err != nil {
 				log.Errorf(err.Error())
 			}
 			return
 		}
-		if cacheMiss >= missMin || LLCMiss >= missMin {
+		if (cacheMiss >= missMin || LLCMiss >= missMin) && ipc >= ipcMax {
 			needMore = false
 		}
 	}
@@ -303,6 +306,20 @@ func startDynamic(cfg *config.CacheConfig, missMax, missMin int) {
 	if err := limiter.flush(cfg, stepMore); err != nil {
 		log.Errorf(err.Error())
 	}
+}
+
+func estimateQosViolation(p *typedef.PodInfo, missMax, cacheMiss, LLCMiss int, ipcMin, ipc float64) bool {
+	if ipc < ipcMin {
+		log.Infof("online pod %v ipc down: %v lower offline cache limit",
+			p.UID, ipc)
+		return true
+	}
+	if cacheMiss >= missMax || LLCMiss >= missMax {
+		log.Infof("online pod %v cache miss: %v LLC miss: %v exceeds maxmiss, lower offline cache limit",
+			p.UID, cacheMiss, LLCMiss)
+		return true
+	}
+	return false
 }
 
 func dynamicExist() bool {
@@ -317,6 +334,24 @@ func dynamicExist() bool {
 		}
 	}
 	return false
+}
+
+// getPodPerf return ipc, cache miss, llc miss of the pod
+func getPodPerf(pi *typedef.PodInfo, perfDu int) (float64, int, int, error) {
+	cgroupPath := filepath.Join(config.CgroupRoot, perfEvent, pi.CgroupPath)
+	if !util.PathExist(cgroupPath) {
+		return 0, 0, 0.0, errors.Errorf("path %v not exist, cannot get perf statistics", cgroupPath)
+	}
+
+	stat, err := perf.CgroupStat(cgroupPath, time.Duration(perfDu)*time.Millisecond)
+	if err != nil {
+		return 0, 0, 0.0, err
+	}
+
+	return float64(stat.Instructions) / (1.0 + float64(stat.CpuCycles)),
+		int(100.0 * float64(stat.CacheMisses) / (1.0 + float64(stat.CacheReferences))),
+		int(100.0 * float64(stat.LLCMiss) / (1.0 + float64(stat.LLCAccess))),
+		nil
 }
 
 func getPodCacheMiss(pi *typedef.PodInfo, perfDu int) (int, int) {
