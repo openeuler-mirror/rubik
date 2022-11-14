@@ -36,6 +36,7 @@ import (
 	"isula.org/rubik/pkg/checkpoint"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/constant"
+	"isula.org/rubik/pkg/iocost"
 	"isula.org/rubik/pkg/memory"
 	"isula.org/rubik/pkg/perf"
 	"isula.org/rubik/pkg/qos"
@@ -86,6 +87,10 @@ func (r *Rubik) initComponents() error {
 	}
 
 	if err := r.initEventHandler(); err != nil {
+		return err
+	}
+
+	if err := r.initNodeConfig(); err != nil {
 		return err
 	}
 
@@ -198,6 +203,16 @@ func (r *Rubik) initCheckpoint() error {
 	return nil
 }
 
+func (r *Rubik) initNodeConfig() error {
+	for _, nc := range r.config.NodeConfig {
+		if nc.NodeName == r.nodeName && nc.IOcostEnable {
+			iocost.SetIOcostEnable(true)
+			return iocost.ConfigIOcost(nc.IOcostConfig)
+		}
+	}
+	return nil
+}
+
 // AddEvent handle add event from informer
 func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	// Rubik does not process add event of pods that are not in the running state.
@@ -218,6 +233,7 @@ func (r *Rubik) AddEvent(pod *corev1.Pod) {
 	if r.config.MemCfg.Enable {
 		r.mm.UpdateConfig(pi)
 	}
+	iocost.SetPodWeight(pi)
 }
 
 // UpdateEvent handle update event from informer
@@ -243,6 +259,7 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 		if r.config.MemCfg.Enable {
 			r.mm.UpdateConfig(pi)
 		}
+		iocost.SetPodWeight(pi)
 	} else {
 		opi := r.cpm.GetPod(oldPod.UID)
 		r.cpm.UpdatePod(newPod)
@@ -251,6 +268,7 @@ func (r *Rubik) UpdateEvent(oldPod *corev1.Pod, newPod *corev1.Pod) {
 		}
 		npi := r.cpm.GetPod(newPod.UID)
 		quota.UpdatePodQuotaBurst(opi, npi)
+		iocost.SetPodWeight(npi)
 	}
 
 	cpmPod := r.cpm.GetPod(newPod.UID)
