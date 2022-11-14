@@ -119,7 +119,7 @@ func SetPodWeight(pod *typedef.PodInfo) error {
 	if err := configWeight(pod.Offline, weightFile); err != nil {
 		return err
 	}
-	if err := bindMemcgBlkio(pod); err != nil {
+	if err := bindMemcgBlkio(pod.Containers); err != nil {
 		return err
 	}
 	return nil
@@ -188,8 +188,8 @@ func configLinearModel(linearModelParam config.Param, devno string) error {
 	return writeIOcost(filePath, paramStr)
 }
 
-func bindMemcgBlkio(pod *typedef.PodInfo) error {
-	for _, container := range pod.Containers {
+func bindMemcgBlkio(containers map[string]*typedef.ContainerInfo) error {
+	for _, container := range containers {
 		memPath := container.CgroupPath(memSubName)
 		blkPath := container.CgroupPath(blkSubName)
 		ino, err := getDirInode(blkPath)
