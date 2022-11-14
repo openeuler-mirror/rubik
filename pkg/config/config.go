@@ -42,6 +42,7 @@ type Config struct {
 	CacheCfg   CacheConfig  `json:"cacheConfig,omitempty"`
 	BlkioCfg   BlkioConfig  `json:"blkioConfig,omitempty"`
 	MemCfg     MemoryConfig `json:"memoryConfig,omitempty"`
+	NodeConfig []NodeConfig `json:"nodeConfig,omitempty"`
 }
 
 // CacheConfig define cache limit related config
@@ -71,6 +72,31 @@ type MemoryConfig struct {
 	Enable        bool   `json:"enable,omitempty"`
 	Strategy      string `json:"strategy,omitempty"`
 	CheckInterval int    `json:"checkInterval,omitempty"`
+}
+
+// NodeConfig define node configuration for each node
+type NodeConfig struct {
+	NodeName     string         `json:"nodeName,omitempty"`
+	IOcostEnable bool           `json:"iocostEnable,omitempty"`
+	IOcostConfig []IOcostConfig `json:"iocostConfig,omitempty"`
+}
+
+// IOcostConfig define iocost for node
+type IOcostConfig struct {
+	Dev    string `json:"dev,omitempty"`
+	Enable bool   `json:"enable,omitempty"`
+	Model  string `json:"model,omitempty"`
+	Param  Param  `json:"param,omitempty"`
+}
+
+// Param for linear model
+type Param struct {
+	Rbps      int64 `json:"rbps,omitempty"`
+	Rseqiops  int64 `json:"rseqiops,omitempty"`
+	Rrandiops int64 `json:"rrandiops,omitempty"`
+	Wbps      int64 `json:"wbps,omitempty"`
+	Wseqiops  int64 `json:"wseqiops,omitempty"`
+	Wrandiops int64 `json:"wrandiops,omitempty"`
 }
 
 // NewConfig returns new config load from config file
