@@ -1,6 +1,6 @@
 Name: rubik
-Version: 0.1.0
-Release: 3
+Version: 1.0.0
+Release: 1
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -29,12 +29,13 @@ cp %{SOURCE6} .
 %build
 sh ./apply-patch
 make release
+strip ./build/rubik
 
 %install
 # create directory /var/lib/rubik
 install -d %{buildroot}%{_sharedstatedir}/%{name}
 # install rubik binary
-install -Dp ./rubik %{buildroot}%{_sharedstatedir}/%{name}
+install -Dp ./build/rubik %{buildroot}%{_sharedstatedir}/%{name}
 # install artifacts
 install -Dp ./hack/rubik-daemonset.yaml %{buildroot}%{_sharedstatedir}/%{name}/rubik-daemonset.yaml
 install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
@@ -49,6 +50,12 @@ install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
 rm -rf %{buildroot}
 
 %changelog
+* Mon Nov 14 2022 hanchao <hanchao47@huawei.com> - 1.0.0-1
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:upgrade rubik version to v1.0.0
+
 * Mon Sep 19 2022 yangjiaqi <yangjiaqi16@huawei.com> - 0.1.0-3
 - Type:bugfix
 - CVENA
