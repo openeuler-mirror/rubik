@@ -1,0 +1,66 @@
+From 1817eb44c25980c5ced63965838fe428c8860540 Mon Sep 17 00:00:00 2001
+From: yangjiaqi <yangjiaqi16@huawei.com>
+Date: Wed, 16 Nov 2022 20:34:20 +0800
+Subject: [PATCH] set the burst value for the pod to enable the container burst
+
+---
+ pkg/quota/quota_burst.go | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/pkg/quota/quota_burst.go b/pkg/quota/quota_burst.go
+index 641e514..2d13cec 100644
+--- a/pkg/quota/quota_burst.go
++++ b/pkg/quota/quota_burst.go
+@@ -27,7 +27,6 @@ import (
+ 	"isula.org/rubik/pkg/typedef"
+ )
+ 
+-
+ // SetPodsQuotaBurst sync pod's burst quota when autoconfig is set
+ func SetPodsQuotaBurst(podInfos map[string]*typedef.PodInfo) {
+ 	for _, pi := range podInfos {
+@@ -62,6 +61,7 @@ func setPodQuotaBurst(podInfo *typedef.PodInfo) {
+ 	if podInfo.QuotaBurst == constant.InvalidBurst {
+ 		return
+ 	}
++	// 1. Try to write container burst value
+ 	burst := big.NewInt(podInfo.QuotaBurst).String()
+ 	for _, c := range podInfo.Containers {
+ 		err := setCtrQuotaBurst([]byte(burst), c)
+@@ -69,20 +69,27 @@ func setPodQuotaBurst(podInfo *typedef.PodInfo) {
+ 			log.Errorf("set container quota burst failed: %v", err)
+ 		}
+ 	}
++	// 2. Try to write pod burst value
++	const subsys = "cpu"
++	podPath := filepath.Join(podInfo.CgroupRoot, subsys, podInfo.CgroupPath)
++	podBurst := big.NewInt(int64(len(podInfo.Containers)) * podInfo.QuotaBurst).String()
++	setQuotaBurst([]byte(podBurst), podPath)
+ }
+ 
+ func setCtrQuotaBurst(burst []byte, c *typedef.ContainerInfo) error {
+-	const (
+-		fname = "cpu.cfs_burst_us"
+-		subsys = "cpu"
+-	)
++	const subsys = "cpu"
+ 	cgpath := c.CgroupPath(subsys)
+-	fpath := filepath.Join(cgpath, fname)
++	return setQuotaBurst(burst, cgpath)
++}
+ 
++func setQuotaBurst(burst []byte, cgpath string) error {
++	const burst_file_name = "cpu.cfs_burst_us"
++	fpath := filepath.Join(cgpath, burst_file_name)
++	// check whether cgroup support cpu burst
+ 	if _, err := os.Stat(fpath); err != nil && os.IsNotExist(err) {
+ 		return errors.Errorf("quota-burst path=%v missing", fpath)
+ 	}
+-
++	// try to write cfs_burst_us
+ 	if err := ioutil.WriteFile(fpath, burst, constant.DefaultFileMode); err != nil {
+ 		return errors.Errorf("quota-burst path=%v setting failed: %v", fpath, err)
+ 	}
+-- 
+2.30.0
+
