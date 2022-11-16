@@ -1,6 +1,6 @@
 Name: rubik
 Version: 1.0.0
-Release: 1
+Release: 2
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -50,6 +50,12 @@ install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
 rm -rf %{buildroot}
 
 %changelog
+* Wed Nov 16 2022 yangjiaqi <yangjiaqi16@huawei.com> - 1.0.0-2
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:set the burst value for the pod to enable the container burst
+
 * Mon Nov 14 2022 hanchao <hanchao47@huawei.com> - 1.0.0-1
 - Type:bugfix
 - CVE:NA
