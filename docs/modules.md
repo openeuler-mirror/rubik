@@ -290,3 +290,83 @@ Pod的quota burst默认单位是microseconds, 其允许容器的cpu使用率低�
 - 修改annotation: 可通过 kubectl annotate动态修改，如:
 
   ```kubectl annotate --overwrite pods <podname> volcano.sh/quota-burst-time='3000'```
+
+---------------------
+
+## rubik支持基于iocost的io权重控制
+
+### 依赖说明
+rubik支持通过在cgroup v1下的iocost控制不同pod的io权重分配。因此需要内核支持如下特性：
+- 内核支持cgroup v1 blkcg iocost
+- 内核支持cgroup v1 writeback
+
+### rubik实现说明
+
+```mermaid
+sequenceDiagram
+actor user as actor
+participant apiserver
+participant rubik
+participant kernel;
+participant cgroup;
+user->>kernel: use iocost_coef_gen.py to get iocost parameter
+user->>rubik: deploy rubik and enable rubik iocost feature and take iocost parameter
+activate rubik;
+rubik->>apiserver: listen and watch
+rubik->>rubik: parsing iocost parameters
+rubik->>cgroup : configure iocost parameters
+user->>apiserver : deploy pod
+apiserver->>rubik : send pod configure
+rubik->>cgroup : parse pod's configure and bind memcg with blkcg and config pod's iocost.weight
+```
+
+步骤如下
+- 部署rubik时，rubik解析配置并设置iocost相关参数
+- rubik注册监听事件到k8s api-server
+- pod被部署时将pod配置信息等回调到rubik
+- rubik解析pod配置信息，并根据qos level配置pod iocost权重
+
+### rubik协议说明
+```json
+"nodeConfig": [
+        {
+            "nodeName": "slaver01",
+            "iocostEnable": true,
+            "iocostConfig": [
+                {
+                    "dev": "sda",
+                    "enable": false,
+                    "model": "linear",
+                    "param": {
+                        "rbps": 174610612,
+                        "rseqiops": 41788,
+                        "rrandiops": 371,
+                        "wbps": 178587889,
+                        "wseqiops": 42792,
+                        "wrandiops": 379
+                    }
+                }
+            ]
+        }
+    ]
+```
+
+| 配置项 | 类型  |    说明      |
+| -----------   | ----------- | ------ |
+| nodeConfig    | 数组        | node节点配置信息 |
+| nodeName      | string      | 要配置的节点名称 |
+| iocostEnable  | bool     | 该node节点是否使用iocost |
+| iocostConfig  | 数组    | 针对不同物理磁盘的配置数组,当iocostEnable为true时会被读取 |
+| dev           | string   | 物理磁盘名称 |
+| enable | bool | 该物理磁盘是否启用iocost |
+| model | string | iocost的模型名称,linear为内核自带线性模型 |
+| param | object | 该参数针对model参数配置,当model为linear时,下面的参数都是linear相关参数 |
+| r(w)bps | int64 | 该物理块设备最大读(写)带宽 |
+| r(w)seqiops | int64 | 该物理块设备最大顺序读(写)iops |
+| r(w)randiops | int64 | 该物理块设备最大随机读(写)iops |
+
+
+### 其他
+- iocost linear模型相关参数可以通过iocost_coef_gen.py脚本获取，可以从[link](https://github.com/torvalds/linux/blob/master/tools/cgroup/iocost_coef_gen.py)获得。
+
+- 在blkcg根系统文件下存在`blkio.cost.qos`和`blkio.cost.model`两个文件接口。实现方式和接口说明可以访问openEuler内核文档。

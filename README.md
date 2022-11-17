@@ -16,6 +16,7 @@ Rubik当前支持如下特性：
 - [pod blkio配置](./docs/modules.md/#blkio)
 - [pod memory cgroup分级](./docs/modules.md/#memory)
 - [pod quota burst配置](./docs/modules.md/#quota-burst)
+- [基于iocost io权重控制](./docs/modules.md/#rubik支持基于iocost的io权重控制)
 
 ## 编译
 
