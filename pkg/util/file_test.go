@@ -127,3 +127,43 @@ func TestReadSmallFile(t *testing.T) {
 	_, err = ReadSmallFile(filepath.Join(filePath, "missing"))
 	assert.Error(t, err)
 }
+
+// TestCreateLockFile is CreateLockFile function test
+func TestCreateLockFile(t *testing.T) {
+	lockFile := filepath.Join(constant.TmpTestDir, "rubik.lock")
+	err := os.RemoveAll(lockFile)
+	assert.NoError(t, err)
+
+	lock, err := CreateLockFile(lockFile)
+	assert.NoError(t, err)
+	RemoveLockFile(lock, lockFile)
+}
+
+// TestLockFail is CreateLockFile fail test
+func TestLockFail(t *testing.T) {
+	lockFile := filepath.Join(constant.TmpTestDir, "rubik.lock")
+	err := os.RemoveAll(constant.TmpTestDir)
+	assert.NoError(t, err)
+	os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode)
+
+	_, err = os.Create(filepath.Join(constant.TmpTestDir, "rubik-lock"))
+	assert.NoError(t, err)
+	_, err = CreateLockFile(filepath.Join(constant.TmpTestDir, "rubik-lock", "rubik.lock"))
+	assert.Equal(t, true, err != nil)
+	err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "rubik-lock"))
+	assert.NoError(t, err)
+
+	err = os.MkdirAll(lockFile, constant.DefaultDirMode)
+	assert.NoError(t, err)
+	_, err = CreateLockFile(lockFile)
+	assert.Equal(t, true, err != nil)
+	err = os.RemoveAll(lockFile)
+	assert.NoError(t, err)
+
+	_, err = CreateLockFile(lockFile)
+	assert.NoError(t, err)
+	_, err = CreateLockFile(lockFile)
+	assert.Equal(t, true, err != nil)
+	err = os.RemoveAll(lockFile)
+	assert.NoError(t, err)
+}
