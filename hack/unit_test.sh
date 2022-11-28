@@ -13,10 +13,16 @@
 # Description: go test script
 
 export GO111MODULE=off
+export GOPATH="${PWD}"/build
 
-test_log=${PWD}/unit_test_log
+mkdir -p "${GOPATH}"/src/isula.org
+ln -sfn "${PWD}" build/src/isula.org/rubik
+cd $GOPATH/src/isula.org/rubik
+
+test_log=unit_test.log
 rm -rf "${test_log}"
 touch "${test_log}"
+
 go_list=$(go list ./...)
 for path in ${go_list}; do
     echo "Start to test: ${path}"

@@ -7,20 +7,70 @@
 // IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 // PURPOSE.
 // See the Mulan PSL v2 for more details.
-// Author: Danni Xia
-// Create: 2021-10-18
-// Description: filelock related common functions
+// Author: Xiang Li
+// Create: 2021-04-17
+// Description: filepath related common functions
 
 package util
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
 
 	"isula.org/rubik/pkg/constant"
-	"isula.org/rubik/pkg/tinylog"
+	log "isula.org/rubik/pkg/tinylog"
 )
+
+const (
+	fileMaxSize = 10 * 1024 * 1024 // 10MB
+)
+
+// CreateFile create full path including dir and file.
+func CreateFile(path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), constant.DefaultDirMode); err != nil {
+		return err
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
+}
+
+// IsDirectory returns true if the file exists and it is a dir
+func IsDirectory(path string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil {
+		return false
+	}
+
+	return fi.IsDir()
+}
+
+// ReadSmallFile read small file less than 10MB
+func ReadSmallFile(path string) ([]byte, error) {
+	st, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if st.Size() > fileMaxSize {
+		return nil, constant.ErrFileTooBig
+	}
+	return ioutil.ReadFile(path) // nolint: gosec
+}
+
+// PathExist returns true if the path exists
+func PathExist(path string) bool {
+	if _, err := os.Lstat(path); err != nil {
+		return false
+	}
+
+	return true
+}
 
 // CreateLockFile creates a lock file
 func CreateLockFile(p string) (*os.File, error) {
@@ -35,7 +85,7 @@ func CreateLockFile(p string) (*os.File, error) {
 	}
 
 	if err = syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		tinylog.DropError(lock.Close())
+		log.DropError(lock.Close())
 		return nil, err
 	}
 
@@ -45,7 +95,7 @@ func CreateLockFile(p string) (*os.File, error) {
 // RemoveLockFile removes lock file - this function used cleanup resource,
 // errors will ignored to make sure more source is cleaned.
 func RemoveLockFile(lock *os.File, path string) {
-	tinylog.DropError(syscall.Flock(int(lock.Fd()), syscall.LOCK_UN))
-	tinylog.DropError(lock.Close())
-	tinylog.DropError(os.Remove(path))
+	log.DropError(syscall.Flock(int(lock.Fd()), syscall.LOCK_UN))
+	log.DropError(lock.Close())
+	log.DropError(os.Remove(path))
 }
