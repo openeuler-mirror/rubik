@@ -1,16 +1,17 @@
 Name: rubik
 Version: 1.0.0
-Release: 4
+Release: 5
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
 Source0: https://gitee.com/openeuler/rubik/repository/archive/v%{version}.tar.gz
 Source1: git-commit
-Source2: VERSION-openeuler
+Source2: VERSION-vendor
 Source3: apply-patch
 Source4: gen-version.sh
 Source5: series.conf
 Source6: patch.tar.gz
+Source7: build_rubik_image.sh
 BuildRoot: %{_tmppath}/%{name}-%{version}-build
 BuildRequires: golang >= 1.13
 
@@ -25,6 +26,7 @@ cp %{SOURCE3} .
 cp %{SOURCE4} .
 cp %{SOURCE5} .
 cp %{SOURCE6} .
+cp %{SOURCE7} .
 
 %build
 sh ./apply-patch
@@ -34,22 +36,32 @@ strip ./build/rubik
 %install
 # create directory /var/lib/rubik
 install -d %{buildroot}%{_sharedstatedir}/%{name}
-# install rubik binary
-install -Dp ./build/rubik %{buildroot}%{_sharedstatedir}/%{name}
+# create directory /var/lib/rubik/build for image build
+install -d %{buildroot}%{_sharedstatedir}/%{name}/build
+# install rubik binary to build folder
+install -Dp ./build/rubik %{buildroot}%{_sharedstatedir}/%{name}/build
 # install artifacts
 install -Dp ./hack/rubik-daemonset.yaml %{buildroot}%{_sharedstatedir}/%{name}/rubik-daemonset.yaml
 install -Dp ./Dockerfile %{buildroot}%{_sharedstatedir}/%{name}/Dockerfile
+install -Dp ./build_rubik_image.sh %{buildroot}%{_sharedstatedir}/%{name}/build_rubik_image.sh
 
 %files
 %dir %attr(750,root,root) %{_sharedstatedir}/%{name}
-%attr(550,root,root) %{_sharedstatedir}/%{name}/rubik
+%attr(550,root,root) %{_sharedstatedir}/%{name}/build/rubik
 %attr(640,root,root) %{_sharedstatedir}/%{name}/rubik-daemonset.yaml
 %attr(640,root,root) %{_sharedstatedir}/%{name}/Dockerfile
+%attr(550,root,root) %{_sharedstatedir}/%{name}/build_rubik_image.sh
 
 %clean
 rm -rf %{buildroot}
 
 %changelog
+* Tue Nov 29 2022 CooperLi <a710905118@163.com> - 1.0.0-5
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:add build folder for container image build
+
 * Mon Nov 21 2022 yangjiaqi <yangjiaqi16@huawei.com> - 1.0.0-4
 - Type:bugfix
 - CVE:NA
