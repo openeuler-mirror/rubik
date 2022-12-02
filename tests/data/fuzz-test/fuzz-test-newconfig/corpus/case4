@@ -1,7 +1,0 @@
-{
-    "logDriver": "stdio",
-    "logDir": "/var/lib/rubik/logs",
-    "logSize": 9999999999,
-    "logLevel": "info",
-    "cgroupRoot": "/sys/fs/cgroup"
-}
