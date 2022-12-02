@@ -23,8 +23,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	log "isula.org/rubik/pkg/common/tinylog"
 	"isula.org/rubik/pkg/modules/config"
-	log "isula.org/rubik/pkg/tools/tinylog"
 )
 
 const invalidErr = "Auto config error: invalid pod type"
