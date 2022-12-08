@@ -6,18 +6,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/modules/checkpoint"
 	"isula.org/rubik/pkg/registry"
 )
 
 type Memory struct {
 	Name string
-	api.Service
-	api.PodEventSubscriber
 }
 
 func init() {
-	registry.DefaultRegister.Register(&NewMemory().Service, "memory")
+	registry.DefaultRegister.Register(NewMemory(), "memory")
 }
 
 func NewMemory() *Memory {
@@ -58,4 +56,10 @@ func (m *Memory) DeletePod(podID types.UID) {
 
 func (m *Memory) ID() string {
 	return m.Name
+}
+
+func (m *Memory) PodEventHandler() error {
+	fmt.Println("memory PodEventHandler()")
+	checkpoint.DefaultCheckPointPublisher.Subscribe(m)
+	return nil
 }

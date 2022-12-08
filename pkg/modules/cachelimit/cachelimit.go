@@ -6,18 +6,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/modules/checkpoint"
 	"isula.org/rubik/pkg/registry"
 )
 
 type CacheLimit struct {
 	Name string
-	api.Service
-	api.PodEventSubscriber
 }
 
 func init() {
-	registry.DefaultRegister.Register(&NewCacheLimit().Service, "cacheLimit")
+	registry.DefaultRegister.Register(NewCacheLimit(), "cacheLimit")
 }
 
 func NewCacheLimit() *CacheLimit {
@@ -58,4 +56,10 @@ func (c *CacheLimit) DeletePod(podID types.UID) {
 
 func (c *CacheLimit) ID() string {
 	return c.Name
+}
+
+func (c *CacheLimit) PodEventHandler() error {
+	fmt.Println("cache limit PodEventHandler")
+	checkpoint.DefaultCheckPointPublisher.Subscribe(c)
+	return nil
 }

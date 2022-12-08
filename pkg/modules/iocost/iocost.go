@@ -6,18 +6,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/modules/checkpoint"
 	"isula.org/rubik/pkg/registry"
 )
 
 type IOCost struct {
 	Name string
-	api.Service
-	api.PodEventSubscriber
 }
 
 func init() {
-	registry.DefaultRegister.Register(&NewIOCost().Service, "iocost")
+	registry.DefaultRegister.Register(NewIOCost(), "iocost")
 }
 
 func NewIOCost() *IOCost {
@@ -45,17 +43,23 @@ func (i *IOCost) TearDown() error {
 }
 
 func (i *IOCost) AddPod(pod *corev1.Pod) {
-	fmt.Println("cpu AddPod()")
+	fmt.Println("iocost AddPod()")
 }
 
 func (i *IOCost) UpdatePod(pod *corev1.Pod) {
-	fmt.Println("cpu UpdatePod()")
+	fmt.Println("iocost UpdatePod()")
 }
 
 func (i *IOCost) DeletePod(podID types.UID) {
-	fmt.Println("cpu DeletePod()")
+	fmt.Println("iocost DeletePod()")
 }
 
 func (i *IOCost) ID() string {
 	return i.Name
+}
+
+func (i *IOCost) PodEventHandler() error {
+	fmt.Println("iosoct PodEventHandler")
+	checkpoint.DefaultCheckPointPublisher.Subscribe(i)
+	return nil
 }

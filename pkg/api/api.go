@@ -20,6 +20,7 @@ type Service interface {
 	Setup() error
 	Run() error
 	TearDown() error
+	PodEventHandler() error
 }
 
 // PodEventSubscriber control pod activities

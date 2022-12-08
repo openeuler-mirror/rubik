@@ -6,18 +6,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/modules/checkpoint"
 	"isula.org/rubik/pkg/registry"
 )
 
 type CPU struct {
 	Name string
-	api.Service
-	api.PodEventSubscriber
 }
 
 func init() {
-	registry.DefaultRegister.Register(&NewCPU().Service, "cpu")
+	registry.DefaultRegister.Register(NewCPU(), "cpu")
 }
 
 func NewCPU() *CPU {
@@ -58,4 +56,10 @@ func (c *CPU) DeletePod(podID types.UID) {
 
 func (c *CPU) ID() string {
 	return c.Name
+}
+
+func (c *CPU) PodEventHandler() error {
+	fmt.Println("cpu PodEventHandler")
+	checkpoint.DefaultCheckPointPublisher.Subscribe(c)
+	return nil
 }

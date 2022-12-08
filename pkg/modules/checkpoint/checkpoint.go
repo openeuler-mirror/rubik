@@ -23,6 +23,8 @@ type CheckPointPublisher struct {
 	viewer      CheckPointViewer
 }
 
+var DefaultCheckPointPublisher = NewCheckPointPublisher()
+
 func NewCheckPointPublisher() *CheckPointPublisher {
 	return &CheckPointPublisher{
 		checkpoint: &CheckPoint{
@@ -33,12 +35,12 @@ func NewCheckPointPublisher() *CheckPointPublisher {
 }
 
 func (cpp *CheckPointPublisher) Subscribe(s api.PodEventSubscriber) {
-	fmt.Printf("CheckPointPublisher subscribe()\n")
+	fmt.Printf("CheckPointPublisher subscribe(%s)\n", s.ID())
 	cpp.subscribers = append(cpp.subscribers, s)
 }
 
 func (cpp *CheckPointPublisher) Unsubscribe(s api.PodEventSubscriber) {
-	fmt.Printf("CheckPointPublisher unsubscribe()\n")
+	fmt.Printf("CheckPointPublisher unsubscribe(%s)\n", s.ID())
 	subscribersLength := len(cpp.subscribers)
 	for i, subscriber := range cpp.subscribers {
 		if s.ID() == subscriber.ID() {

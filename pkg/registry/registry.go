@@ -7,14 +7,14 @@ import (
 )
 
 type RubikRegistry struct {
-	services map[string]*api.Service
+	services map[string]api.Service
 }
 
 var DefaultRegister = NewRegistry()
 
-func NewRegistry() *RubikRegistry {
-	return &RubikRegistry{
-		services: make(map[string]*api.Service),
+func NewRegistry() RubikRegistry {
+	return RubikRegistry{
+		services: make(map[string]api.Service),
 	}
 }
 
@@ -23,7 +23,7 @@ func (r *RubikRegistry) Init() error {
 	return nil
 }
 
-func (r *RubikRegistry) Register(s *api.Service, name string) error {
+func (r *RubikRegistry) Register(s api.Service, name string) error {
 	fmt.Printf("rubik registry Register(%s)\n", name)
 	if _, ok := r.services[name]; !ok {
 		r.services[name] = s
@@ -31,13 +31,13 @@ func (r *RubikRegistry) Register(s *api.Service, name string) error {
 	return nil
 }
 
-func (r *RubikRegistry) Deregister(s *api.Service, name string) error {
+func (r *RubikRegistry) Deregister(s api.Service, name string) error {
 	fmt.Printf("rubik register Deregister(%s)\n", name)
 	delete(r.services, name)
 	return nil
 }
 
-func (r *RubikRegistry) GetService(name string) (*api.Service, error) {
+func (r *RubikRegistry) GetService(name string) (api.Service, error) {
 	fmt.Printf("rubik register GetService(%s)\n", name)
 	if s, ok := r.services[name]; ok {
 		return s, nil
@@ -46,9 +46,9 @@ func (r *RubikRegistry) GetService(name string) (*api.Service, error) {
 	}
 }
 
-func (r *RubikRegistry) ListServices() ([]*api.Service, error) {
+func (r *RubikRegistry) ListServices() ([]api.Service, error) {
 	fmt.Println("rubik register ListServices()")
-	var services []*api.Service
+	var services []api.Service
 	for _, s := range r.services {
 		services = append(services, s)
 	}
