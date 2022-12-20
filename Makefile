@@ -88,3 +88,4 @@ install:
 	install -d -m 0750 $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/* $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/rubik.service /lib/systemd/system/
+
