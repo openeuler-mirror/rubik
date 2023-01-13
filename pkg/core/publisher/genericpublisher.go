@@ -104,10 +104,10 @@ func (pub *genericPublisher) Unsubscribe(s api.Subscriber) error {
 
 // Publish publishes Event to subscribers interested in specified topic
 func (pub *genericPublisher) Publish(eventType typedef.EventType, data typedef.Event) {
+	log.Debugf("publish %s event", eventType.String())
 	pub.RLock()
 	for id := range pub.topicSubscribersMap[eventType] {
 		pub.subscribers[id](eventType, data)
 	}
 	pub.RUnlock()
-	log.Debugf("publish %s event", eventType.String())
 }

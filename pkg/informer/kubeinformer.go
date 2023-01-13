@@ -97,13 +97,13 @@ func (ki *kubeInformer) Start(stopCh <-chan struct{}) {
 }
 
 func (ki *kubeInformer) addFunc(obj interface{}) {
-	ki.Publish(typedef.ADD, obj)
+	ki.Publish(typedef.RAW_POD_ADD, obj)
 }
 
 func (ki *kubeInformer) updateFunc(oldObj, newObj interface{}) {
-	ki.Publish(typedef.UPDATE, newObj)
+	ki.Publish(typedef.RAW_POD_UPDATE, newObj)
 }
 
 func (ki *kubeInformer) deleteFunc(obj interface{}) {
-	ki.Publish(typedef.DELETE, obj)
+	ki.Publish(typedef.RAW_POD_DELETE, obj)
 }
