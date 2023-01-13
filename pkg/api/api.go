@@ -30,13 +30,23 @@ type Registry interface {
 	ListServices() ([]*Service, error)
 }
 
-// Service contains progress that all services(modules) need to have
+// Service contains progress that all services need to have
 type Service interface {
 	Init() error
 	Setup() error
 	Run() error
 	TearDown() error
 	PodEventHandler() error
+}
+
+type PersistentService interface {
+	Init() error
+	Start(stopCh <-chan struct{})
+}
+
+type ConfigParser interface {
+	ParseConfig(data []byte) (map[string]interface{}, error)
+	UnmarshalSubConfig(data interface{}, v interface{}) error
 }
 
 // PodEventSubscriber control pod activities

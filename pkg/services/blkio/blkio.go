@@ -6,8 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"isula.org/rubik/pkg/modules/checkpoint"
-	"isula.org/rubik/pkg/registry"
+	"isula.org/rubik/pkg/services"
 )
 
 type Blkio struct {
@@ -15,7 +14,9 @@ type Blkio struct {
 }
 
 func init() {
-	registry.DefaultRegister.Register(NewBlkio(), "blkio")
+	services.Register("blkio", func() interface{} {
+		return NewBlkio()
+	})
 }
 
 func NewBlkio() *Blkio {
@@ -60,6 +61,5 @@ func (b *Blkio) ID() string {
 
 func (b *Blkio) PodEventHandler() error {
 	fmt.Println("blkio PodEventHandler")
-	checkpoint.DefaultCheckPointPublisher.Subscribe(b)
 	return nil
 }
