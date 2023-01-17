@@ -25,8 +25,6 @@ const (
 	RubikSock = "/run/rubik/rubik.sock"
 	// ConfigFile is rubik config file
 	ConfigFile = "/var/lib/rubik/config.json"
-	// DefaultLogDir is default log dir
-	DefaultLogDir = "/var/log/rubik"
 	// LockFile is rubik lock file
 	LockFile = "/run/rubik/rubik.lock"
 	// ReadTimeout is timeout for http read
@@ -79,6 +77,23 @@ const (
 	DefaultMaxMemCheckInterval = 30
 	// DefaultMemStrategy indicates the default memory strategy.
 	DefaultMemStrategy = "none"
+)
+
+// log config
+const (
+	LogDriverStdio = "stdio"
+	LogDriverFile  = "file"
+
+	LogLevelDebug = "debug"
+	LogLevelInfo  = "info"
+	LogLevelWarn  = "warn"
+	LogLevelError = "error"
+	LogLevelStack = "stack"
+
+	// DefaultLogDir is default log dir
+	DefaultLogDir   = "/var/log/rubik"
+	DefaultLogLevel = LogLevelInfo
+	DefaultLogSize  = 1024
 )
 
 // LevelType is type definition of qos level
