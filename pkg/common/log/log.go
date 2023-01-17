@@ -35,12 +35,8 @@ const (
 	// UUID is log uuid
 	UUID = "uuid"
 
-	logDriverStdio = "stdio"
-	logDriverFile  = "file"
-	logStack       = 20
-	logStackFrom   = 2
-	logLevelInfo   = "info"
-	logLevelStack  = "stack"
+	logStack     = 20
+	logStackFrom = 2
 
 	logFileNum       = 10
 	logSizeMin int64 = 10          // 10MB
@@ -83,21 +79,21 @@ func makeLogDir(logDir string) error {
 	return nil
 }
 
-// InitConfig init log config
+// InitConfig initializes log config
 func InitConfig(driver, logdir, level string, size int64) error {
 	if driver == "" {
-		driver = logDriverStdio
+		driver = constant.LogDriverStdio
 	}
-	if driver != logDriverStdio && driver != logDriverFile {
+	if driver != constant.LogDriverStdio && driver != constant.LogDriverFile {
 		return fmt.Errorf("invalid log driver %s", driver)
 	}
 	logDriver = stdio
-	if driver == logDriverFile {
+	if driver == constant.LogDriverFile {
 		logDriver = file
 	}
 
 	if level == "" {
-		level = logLevelInfo
+		level = constant.LogLevelInfo
 	}
 	levelstr, err := logLevelFromString(level)
 	if err != nil {
@@ -111,7 +107,7 @@ func InitConfig(driver, logdir, level string, size int64) error {
 	logSize = size
 	logFileMaxSize = logSize / logFileNum
 
-	if driver == "file" {
+	if driver == constant.LogDriverFile {
 		if err := makeLogDir(logdir); err != nil {
 			return err
 		}
@@ -139,15 +135,15 @@ func DropError(args ...interface{}) {
 func logLevelToString(level int) string {
 	switch level {
 	case logDebug:
-		return "debug"
+		return constant.LogLevelDebug
 	case logInfo:
-		return "info"
+		return constant.LogLevelInfo
 	case logWarn:
-		return "warn"
+		return constant.LogLevelWarn
 	case logError:
-		return "error"
+		return constant.LogLevelError
 	case logStack:
-		return logLevelStack
+		return constant.LogLevelStack
 	default:
 		return ""
 	}
@@ -155,13 +151,13 @@ func logLevelToString(level int) string {
 
 func logLevelFromString(level string) (int, error) {
 	switch level {
-	case "debug":
+	case constant.LogLevelDebug:
 		return logDebug, nil
-	case "info", "":
+	case constant.LogLevelInfo, "":
 		return logInfo, nil
-	case "warn":
+	case constant.LogLevelWarn:
 		return logWarn, nil
-	case "error":
+	case constant.LogLevelError:
 		return logError, nil
 	default:
 		return logInfo, fmt.Errorf("invalid log level %s", level)
@@ -211,7 +207,7 @@ func logf(level string, format string, args ...interface{}) {
 	raw := fmt.Sprintf(format, args...) + "\n"
 
 	depth := 1
-	if level == logLevelStack {
+	if level == constant.LogLevelStack {
 		depth = logStack
 	}
 
@@ -223,7 +219,7 @@ func logf(level string, format string, args ...interface{}) {
 			fs = strings.Split("."+fs[len(fs)-1], ".")
 			fn := fs[len(fs)-1]
 			line = tag + fmt.Sprintf("%s:%d:%s() ", file, linum, fn) + raw
-		} else if level == logLevelStack {
+		} else if level == constant.LogLevelStack {
 			break
 		}
 		writeLine(line)
