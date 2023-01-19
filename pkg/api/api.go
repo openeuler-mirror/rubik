@@ -16,7 +16,6 @@ package api
 
 import (
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"isula.org/rubik/pkg/core/typedef"
 )
@@ -30,31 +29,34 @@ type Registry interface {
 	ListServices() ([]*Service, error)
 }
 
+type ServiceChecker interface {
+	Validate() bool
+}
+
+type EventFunc interface {
+	AddFunc(podInfo *typedef.PodInfo) error
+	UpdateFunc(old, new *typedef.PodInfo) error
+	DeleteFunc(podInfo *typedef.PodInfo) error
+}
+
 // Service contains progress that all services need to have
 type Service interface {
-	Init() error
+	EventFunc
+	ServiceChecker
+	ID() string
 	Setup() error
-	Run() error
 	TearDown() error
-	PodEventHandler() error
 }
 
 type PersistentService interface {
-	Init() error
+	ServiceChecker
+	Setup(viewer Viewer) error
 	Start(stopCh <-chan struct{})
 }
 
 type ConfigParser interface {
 	ParseConfig(data []byte) (map[string]interface{}, error)
 	UnmarshalSubConfig(data interface{}, v interface{}) error
-}
-
-// PodEventSubscriber control pod activities
-type PodEventSubscriber interface {
-	AddPod(pod *corev1.Pod)
-	UpdatePod(pod *corev1.Pod)
-	DeletePod(podID types.UID)
-	ID() string
 }
 
 // Viewer collect on/offline pods info

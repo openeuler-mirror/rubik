@@ -32,6 +32,7 @@ func AddRunningService(name string, service interface{}) {
 
 type ServiceManager struct {
 	api.Subscriber
+	api.Viewer
 	sync.RWMutex
 	RunningServices           map[string]api.Service
 	RunningPersistentServices map[string]api.PersistentService
@@ -56,8 +57,11 @@ func GetServiceManager() *ServiceManager {
 func (manager *ServiceManager) HandleEvent(eventType typedef.EventType, event typedef.Event) {
 	switch eventType {
 	case typedef.INFO_ADD:
+		manager.AddFunc(event)
 	case typedef.INFO_UPDATE:
+		manager.UpdateFunc(event)
 	case typedef.INFO_DELETE:
+		manager.DeleteFunc(event)
 	default:
 		log.Infof("service manager fail to process %s type", eventType.String())
 	}
@@ -89,4 +93,90 @@ func (manager *ServiceManager) tryAddPersistentService(name string, service inte
 		log.Debugf("persistent service %s will run", name)
 	}
 	return ok
+}
+
+func (manager *ServiceManager) Setup() error {
+	for _, s := range manager.RunningServices {
+		if err := s.Setup(); err != nil {
+			s.TearDown()
+			return err
+		}
+	}
+	for _, s := range manager.RunningPersistentServices {
+		if err := s.Setup(manager.Viewer); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (manager *ServiceManager) Run(stopChan chan struct{}) error {
+	for _, s := range manager.RunningPersistentServices {
+		s.Start(stopChan)
+	}
+	return nil
+}
+
+func (manager *ServiceManager) AddFunc(event typedef.Event) {
+	podInfo, ok := event.(*typedef.PodInfo)
+	if !ok {
+		log.Warnf("receive invalid event: %T", event)
+		return
+	}
+
+	runOnce := func(s api.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+		wg.Add(1)
+		s.AddFunc(podInfo)
+		wg.Done()
+	}
+	manager.RLock()
+	var wg sync.WaitGroup
+	for _, s := range manager.RunningServices {
+		go runOnce(s, podInfo.Clone(), &wg)
+	}
+	manager.RUnlock()
+}
+
+func (manager *ServiceManager) UpdateFunc(event typedef.Event) {
+	podInfos, ok := event.([]*typedef.PodInfo)
+	if !ok {
+		log.Warnf("receive invalid event: %T", event)
+		return
+	}
+	const podInfosLen = 2
+	if len(podInfos) != podInfosLen {
+		log.Warnf("pod infos contains more than two pods")
+		return
+	}
+	runOnce := func(s api.Service, old, new *typedef.PodInfo, wg *sync.WaitGroup) {
+		wg.Add(1)
+		s.UpdateFunc(old, new)
+		wg.Done()
+	}
+	manager.RLock()
+	var wg sync.WaitGroup
+	for _, s := range manager.RunningServices {
+		go runOnce(s, podInfos[0], podInfos[1], &wg)
+	}
+	manager.RUnlock()
+}
+
+func (manager *ServiceManager) DeleteFunc(event typedef.Event) {
+	podInfo, ok := event.(*typedef.PodInfo)
+	if !ok {
+		log.Warnf("receive invalid event: %T", event)
+		return
+	}
+
+	runOnce := func(s api.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+		wg.Add(1)
+		s.DeleteFunc(podInfo)
+		wg.Done()
+	}
+	manager.RLock()
+	var wg sync.WaitGroup
+	for _, s := range manager.RunningServices {
+		go runOnce(s, podInfo.Clone(), &wg)
+	}
+	manager.RUnlock()
 }

@@ -142,7 +142,7 @@ func (manager *PodManager) tryUpdate(podInfo *typedef.PodInfo) {
 	if manager.pods.podExist(podInfo.UID) {
 		oldPod := manager.pods.getPod(podInfo.UID)
 		manager.pods.updatePod(podInfo)
-		manager.Publish(typedef.INFO_UPDATE, []interface{}{oldPod, podInfo.Clone()})
+		manager.Publish(typedef.INFO_UPDATE, []*typedef.PodInfo{oldPod, podInfo.Clone()})
 	}
 }
 

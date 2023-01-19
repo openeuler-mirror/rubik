@@ -3,9 +3,7 @@ package cachelimit
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-
+	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services"
 )
 
@@ -28,14 +26,18 @@ type MultiLvlPercent struct {
 	High int `json:"high,omitempty"`
 }
 
-type CacheLimit struct {
-	Name              string          `json:"-"`
+type CacheLimitConfig struct {
 	DefaultLimitMode  string          `json:"defaultLimitMode,omitempty"`
 	DefaultResctrlDir string          `json:"-"`
 	AdjustInterval    int             `json:"adjustInterval,omitempty"`
 	PerfDuration      int             `json:"perfDuration,omitempty"`
 	L3Percent         MultiLvlPercent `json:"l3Percent,omitempty"`
 	MemBandPercent    MultiLvlPercent `json:"memBandPercent,omitempty"`
+}
+
+type CacheLimit struct {
+	Name   string `json:"-"`
+	Config CacheLimitConfig
 }
 
 func init() {
@@ -46,26 +48,24 @@ func init() {
 
 func NewCacheLimit() *CacheLimit {
 	return &CacheLimit{
-		DefaultLimitMode:  "static",
-		DefaultResctrlDir: "/sys/fs/resctrl",
-		AdjustInterval:    defaultAdInt,
-		PerfDuration:      defaultPerfDur,
-		L3Percent: MultiLvlPercent{
-			Low:  defaultLowL3,
-			Mid:  defaultMidL3,
-			High: defaultHighL3,
-		},
-		MemBandPercent: MultiLvlPercent{
-			Low:  defaultLowMB,
-			Mid:  defaultMidMB,
-			High: defaultHighMB,
+		Name: "cacheLimit",
+		Config: CacheLimitConfig{
+			DefaultLimitMode:  "static",
+			DefaultResctrlDir: "/sys/fs/resctrl",
+			AdjustInterval:    defaultAdInt,
+			PerfDuration:      defaultPerfDur,
+			L3Percent: MultiLvlPercent{
+				Low:  defaultLowL3,
+				Mid:  defaultMidL3,
+				High: defaultHighL3,
+			},
+			MemBandPercent: MultiLvlPercent{
+				Low:  defaultLowMB,
+				Mid:  defaultMidMB,
+				High: defaultHighMB,
+			},
 		},
 	}
-}
-
-func (c *CacheLimit) Init() error {
-	fmt.Println("cache limit Init()")
-	return nil
 }
 
 func (c *CacheLimit) Setup() error {
@@ -83,22 +83,22 @@ func (c *CacheLimit) TearDown() error {
 	return nil
 }
 
-func (c *CacheLimit) AddPod(pod *corev1.Pod) {
-	fmt.Println("cache limit AddPod()")
-}
-
-func (c *CacheLimit) UpdatePod(pod *corev1.Pod) {
-	fmt.Println("cache limit UpdatePod()")
-}
-
-func (c *CacheLimit) DeletePod(podID types.UID) {
-	fmt.Println("cache limit DeletePod()")
-}
-
 func (c *CacheLimit) ID() string {
 	return c.Name
 }
 
-func (c *CacheLimit) PodEventHandler() error {
+func (c *CacheLimit) AddFunc(podInfo *typedef.PodInfo) error {
 	return nil
+}
+
+func (c *CacheLimit) UpdateFunc(old, new *typedef.PodInfo) error {
+	return nil
+}
+
+func (c *CacheLimit) DeleteFunc(podInfo *typedef.PodInfo) error {
+	return nil
+}
+
+func (c *CacheLimit) Validate() bool {
+	return true
 }
