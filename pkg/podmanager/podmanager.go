@@ -155,3 +155,11 @@ func (manager *PodManager) tryDelete(id string) {
 		manager.Publish(typedef.INFO_DELETE, oldPod)
 	}
 }
+
+func (manager *PodManager) ListOfflinePods() ([]*typedef.PodInfo, error) {
+	return nil, nil
+}
+
+func (manager *PodManager) ListOnlinePods() ([]*typedef.PodInfo, error) {
+	return nil, nil
+}

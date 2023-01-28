@@ -15,8 +15,6 @@
 package api
 
 import (
-	corev1 "k8s.io/api/core/v1"
-
 	"isula.org/rubik/pkg/core/typedef"
 )
 
@@ -33,6 +31,10 @@ type ServiceChecker interface {
 	Validate() bool
 }
 
+type ServiceDescriber interface {
+	ID() string
+}
+
 type EventFunc interface {
 	AddFunc(podInfo *typedef.PodInfo) error
 	UpdateFunc(old, new *typedef.PodInfo) error
@@ -41,17 +43,17 @@ type EventFunc interface {
 
 // Service contains progress that all services need to have
 type Service interface {
-	EventFunc
+	ServiceDescriber
 	ServiceChecker
-	ID() string
-	Setup() error
-	TearDown() error
+	EventFunc
+	PreStart() error
 }
 
 type PersistentService interface {
+	ServiceDescriber
 	ServiceChecker
-	Setup(viewer Viewer) error
-	Start(stopCh <-chan struct{})
+	PreStart(viewer Viewer) error
+	Start(stopCh <-chan struct{}) error
 }
 
 type ConfigParser interface {
@@ -61,8 +63,8 @@ type ConfigParser interface {
 
 // Viewer collect on/offline pods info
 type Viewer interface {
-	ListOnlinePods() ([]*corev1.Pod, error)
-	ListOfflinePods() ([]*corev1.Pod, error)
+	ListOnlinePods() ([]*typedef.PodInfo, error)
+	ListOfflinePods() ([]*typedef.PodInfo, error)
 }
 
 // Publisher is a generic interface for Observables

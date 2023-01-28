@@ -80,6 +80,9 @@ func (c *Config) LoadConfig(path string) error {
 	}
 	c.Fields = fields
 	c.parseAgentConfig()
+	if err := c.PrepareServices(); err != nil {
+		return fmt.Errorf("error preparing services: %s", err)
+	}
 	return nil
 }
 
