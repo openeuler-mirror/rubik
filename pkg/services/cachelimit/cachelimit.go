@@ -68,18 +68,13 @@ func NewCacheLimit() *CacheLimit {
 	}
 }
 
-func (c *CacheLimit) Setup() error {
+func (c *CacheLimit) PreStart() error {
 	fmt.Println("cache limit Setup()")
 	return nil
 }
 
-func (c *CacheLimit) Run() error {
-	fmt.Println("cache limit Run()")
-	return nil
-}
-
-func (c *CacheLimit) TearDown() error {
-	fmt.Println("cache limit TearDown()")
+func (c *CacheLimit) Terminate() error {
+	fmt.Println("cache limit Terminate()")
 	return nil
 }
 

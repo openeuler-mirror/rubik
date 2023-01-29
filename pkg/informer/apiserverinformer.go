@@ -11,7 +11,7 @@
 // Create: 2023-01-05
 // Description: This file defines apiinformer which interact with kubernetes apiserver
 
-// Package typedef implement informer interface
+// Package informer implements informer interface
 package informer
 
 import (
@@ -31,20 +31,20 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 )
 
-// KubeInformer interacts with k8s api server and forward data to the internal
-type kubeInformer struct {
+// APIServerInformer interacts with k8s api server and forward data to the internal
+type APIServerInformer struct {
 	api.Publisher
 	client   *kubernetes.Clientset
 	nodeName string
 }
 
-// NewKubeInformer creates an KubeInformer instance
-func NewKubeInformer(publisher api.Publisher) (*kubeInformer, error) {
-	informer := &kubeInformer{
+// NewAPIServerInformer creates an PIServerInformer instance
+func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
+	informer := &APIServerInformer{
 		Publisher: publisher,
 	}
 
-	// interact with apiserver
+	// create apiserver client
 	client, err := initKubeClient()
 	if err != nil {
 		return nil, fmt.Errorf("fail to init kubenetes client: %v", err)
@@ -76,34 +76,34 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 	return kubeClient, nil
 }
 
-// Start starts and enables KubeInfomer
-func (ki *kubeInformer) Start(stopCh <-chan struct{}) {
+// Start starts and enables PIServerInformer
+func (ai *APIServerInformer) Start(stopCh <-chan struct{}) {
 	const (
 		reSyncTime        = 30
 		specNodeNameField = "spec.nodeName"
 	)
-	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(ki.client,
+	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(ai.client,
 		time.Duration(reSyncTime)*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			// set Options to return only pods on the current node.
-			options.FieldSelector = fields.OneTermEqualSelector(specNodeNameField, ki.nodeName).String()
+			options.FieldSelector = fields.OneTermEqualSelector(specNodeNameField, ai.nodeName).String()
 		}))
 	kubeInformerFactory.Core().V1().Pods().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    ki.addFunc,
-		UpdateFunc: ki.updateFunc,
-		DeleteFunc: ki.deleteFunc,
+		AddFunc:    ai.addFunc,
+		UpdateFunc: ai.updateFunc,
+		DeleteFunc: ai.deleteFunc,
 	})
 	kubeInformerFactory.Start(stopCh)
 }
 
-func (ki *kubeInformer) addFunc(obj interface{}) {
-	ki.Publish(typedef.RAW_POD_ADD, obj)
+func (ai *APIServerInformer) addFunc(obj interface{}) {
+	ai.Publish(typedef.RAW_POD_ADD, obj)
 }
 
-func (ki *kubeInformer) updateFunc(oldObj, newObj interface{}) {
-	ki.Publish(typedef.RAW_POD_UPDATE, newObj)
+func (ai *APIServerInformer) updateFunc(oldObj, newObj interface{}) {
+	ai.Publish(typedef.RAW_POD_UPDATE, newObj)
 }
 
-func (ki *kubeInformer) deleteFunc(obj interface{}) {
-	ki.Publish(typedef.RAW_POD_DELETE, obj)
+func (ai *APIServerInformer) deleteFunc(obj interface{}) {
+	ai.Publish(typedef.RAW_POD_DELETE, obj)
 }

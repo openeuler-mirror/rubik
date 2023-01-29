@@ -21,8 +21,7 @@ type BlkioConfig struct {
 }
 
 type Blkio struct {
-	Name   string `json:"-"`
-	Config BlkioConfig
+	Name string `json:"-"`
 }
 
 func init() {
@@ -35,13 +34,13 @@ func NewBlkio() *Blkio {
 	return &Blkio{Name: "blkio"}
 }
 
-func (b *Blkio) Setup() error {
+func (b *Blkio) PreStart() error {
 	fmt.Println("blkio Setup()")
 	return nil
 }
 
-func (b *Blkio) TearDown() error {
-	fmt.Println("blkio TearDown()")
+func (b *Blkio) Terminate() error {
+	fmt.Println("blkio Terminate")
 	return nil
 }
 

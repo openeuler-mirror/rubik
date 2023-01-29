@@ -27,9 +27,11 @@ const (
 type PublisherFactory struct {
 }
 
-// NewPublisherFactory creates a publisher factory class
-func NewPublisherFactory() *PublisherFactory {
-	return &PublisherFactory{}
+var publisherFactory = &PublisherFactory{}
+
+// NewPublisherFactory creates a publisher factory instance
+func GetPublisherFactory() *PublisherFactory {
+	return publisherFactory
 }
 
 // GetPublisher returns the publisher entity according to the publisher type
