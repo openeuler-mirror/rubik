@@ -1,9 +1,10 @@
 package cachelimit
 
 import (
+	"context"
 	"fmt"
 
-	"isula.org/rubik/pkg/core/typedef"
+	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/services"
 )
 
@@ -68,12 +69,12 @@ func NewCacheLimit() *CacheLimit {
 	}
 }
 
-func (c *CacheLimit) PreStart() error {
-	fmt.Println("cache limit Setup()")
+func (c *CacheLimit) PreStart(viewer api.Viewer) error {
+	fmt.Println("cache limit Prestart()")
 	return nil
 }
 
-func (c *CacheLimit) Terminate() error {
+func (c *CacheLimit) Terminate(viewer api.Viewer) error {
 	fmt.Println("cache limit Terminate()")
 	return nil
 }
@@ -82,18 +83,11 @@ func (c *CacheLimit) ID() string {
 	return c.Name
 }
 
-func (c *CacheLimit) AddFunc(podInfo *typedef.PodInfo) error {
-	return nil
+func (c *CacheLimit) Run(ctx context.Context) {
+	fmt.Println("cacheLimit Run")
 }
 
-func (c *CacheLimit) UpdateFunc(old, new *typedef.PodInfo) error {
+func (b *CacheLimit) Validate() error {
+	fmt.Println("cachelimit Validate()")
 	return nil
-}
-
-func (c *CacheLimit) DeleteFunc(podInfo *typedef.PodInfo) error {
-	return nil
-}
-
-func (c *CacheLimit) Validate() bool {
-	return true
 }

@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(rubik.RunAgent())
+	os.Exit(rubik.Run())
 }

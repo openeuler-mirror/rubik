@@ -15,6 +15,8 @@
 package api
 
 import (
+	"context"
+
 	"isula.org/rubik/pkg/core/typedef"
 )
 
@@ -25,10 +27,6 @@ type Registry interface {
 	Deregister(*Service, string) error
 	GetService(string) (*Service, error)
 	ListServices() ([]*Service, error)
-}
-
-type ServiceChecker interface {
-	Validate() bool
 }
 
 type ServiceDescriber interface {
@@ -44,16 +42,14 @@ type EventFunc interface {
 // Service contains progress that all services need to have
 type Service interface {
 	ServiceDescriber
-	ServiceChecker
 	EventFunc
-	PreStart() error
 }
 
+// PersistentService is an abstract persistent running service
 type PersistentService interface {
 	ServiceDescriber
-	ServiceChecker
-	PreStart(viewer Viewer) error
-	Start(stopCh <-chan struct{}) error
+	// Run is a service processing logic, which is blocking (implemented in an infinite loop, etc.)
+	Run(ctx context.Context)
 }
 
 type ConfigParser interface {
@@ -70,7 +66,7 @@ type Viewer interface {
 // Publisher is a generic interface for Observables
 type Publisher interface {
 	Subscribe(s Subscriber) error
-	Unsubscribe(s Subscriber) error
+	Unsubscribe(s Subscriber)
 	Publish(topic typedef.EventType, event typedef.Event)
 }
 
@@ -90,5 +86,5 @@ type EventHandler interface {
 // Informer is an interface for external pod data sources to interact with rubik
 type Informer interface {
 	Publisher
-	Start(stopCh <-chan struct{})
+	Start(ctx context.Context)
 }

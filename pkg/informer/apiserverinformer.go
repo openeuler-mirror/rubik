@@ -15,6 +15,7 @@
 package informer
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -77,33 +78,36 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 }
 
 // Start starts and enables PIServerInformer
-func (ai *APIServerInformer) Start(stopCh <-chan struct{}) {
+func (informer *APIServerInformer) Start(ctx context.Context) {
 	const (
 		reSyncTime        = 30
 		specNodeNameField = "spec.nodeName"
 	)
-	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(ai.client,
+	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(informer.client,
 		time.Duration(reSyncTime)*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			// set Options to return only pods on the current node.
-			options.FieldSelector = fields.OneTermEqualSelector(specNodeNameField, ai.nodeName).String()
+			options.FieldSelector = fields.OneTermEqualSelector(specNodeNameField, informer.nodeName).String()
 		}))
 	kubeInformerFactory.Core().V1().Pods().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    ai.addFunc,
-		UpdateFunc: ai.updateFunc,
-		DeleteFunc: ai.deleteFunc,
+		AddFunc:    informer.AddFunc,
+		UpdateFunc: informer.UpdateFunc,
+		DeleteFunc: informer.DeleteFunc,
 	})
-	kubeInformerFactory.Start(stopCh)
+	kubeInformerFactory.Start(ctx.Done())
 }
 
-func (ai *APIServerInformer) addFunc(obj interface{}) {
-	ai.Publish(typedef.RAW_POD_ADD, obj)
+// AddFunc handles the raw pod increase event
+func (informer *APIServerInformer) AddFunc(obj interface{}) {
+	informer.Publish(typedef.RAW_POD_ADD, obj)
 }
 
-func (ai *APIServerInformer) updateFunc(oldObj, newObj interface{}) {
-	ai.Publish(typedef.RAW_POD_UPDATE, newObj)
+// UpdateFunc handles the raw pod update event
+func (informer *APIServerInformer) UpdateFunc(oldObj, newObj interface{}) {
+	informer.Publish(typedef.RAW_POD_UPDATE, newObj)
 }
 
-func (ai *APIServerInformer) deleteFunc(obj interface{}) {
-	ai.Publish(typedef.RAW_POD_DELETE, obj)
+// DeleteFunc handles the raw pod deletion event
+func (informer *APIServerInformer) DeleteFunc(obj interface{}) {
+	informer.Publish(typedef.RAW_POD_DELETE, obj)
 }
