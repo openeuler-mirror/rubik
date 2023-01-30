@@ -87,10 +87,11 @@ func (pub *genericPublisher) Subscribe(s api.Subscriber) error {
 }
 
 // Unsubscribe unsubscribes the indicated subscriber
-func (pub *genericPublisher) Unsubscribe(s api.Subscriber) error {
+func (pub *genericPublisher) Unsubscribe(s api.Subscriber) {
 	id := s.ID()
 	if !pub.subscriberExisted(id) {
-		return fmt.Errorf("subscriber %v has not registered", id)
+		log.Warnf("subscriber %v has not registered", id)
+		return
 	}
 	pub.Lock()
 	for _, topic := range s.TopicsFunc() {
@@ -99,7 +100,6 @@ func (pub *genericPublisher) Unsubscribe(s api.Subscriber) error {
 	}
 	delete(pub.subscribers, id)
 	pub.Unlock()
-	return nil
 }
 
 // Publish publishes Event to subscribers interested in specified topic

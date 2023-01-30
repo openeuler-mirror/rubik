@@ -15,14 +15,15 @@
 package rubik
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
-	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/publisher"
 	"isula.org/rubik/pkg/informer"
@@ -34,7 +35,7 @@ import (
 type Agent struct {
 	Config     *config.Config
 	PodManager *podmanager.PodManager
-	stopCh     *util.DisposableChannel
+	informer   api.Informer
 }
 
 // NewAgent returns an agent for given configuration
@@ -42,83 +43,96 @@ func NewAgent(cfg *config.Config) *Agent {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.TYPE_GENERIC)
 	a := &Agent{
 		Config:     cfg,
-		stopCh:     util.NewDisposableChannel(),
 		PodManager: podmanager.NewPodManager(publisher),
 	}
 	return a
 }
 
 // Run starts and runs the agent until receiving stop signal
-func (a *Agent) Run() error {
-	go a.handleSignals()
-	if err := a.startServiceHandler(); err != nil {
+func (a *Agent) Run(ctx context.Context) error {
+	if err := a.startServiceHandler(ctx); err != nil {
 		return err
 	}
-	if err := a.startInformer(); err != nil {
+	if err := a.startInformer(ctx); err != nil {
 		return err
 	}
-	a.stopCh.Wait()
-	if err := a.stopServiceHandler(); err != nil {
-		return err
-	}
+	<-ctx.Done()
+	a.stopInformer()
+	a.stopServiceHandler()
 	return nil
 }
 
-// handleSignals handles external signal input
-func (a *Agent) handleSignals() {
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-	for sig := range signalChan {
-		if sig == syscall.SIGTERM || sig == syscall.SIGINT {
-			log.Infof("signal %v received and starting exit...", sig)
-			a.stopCh.Close()
-		}
-	}
-}
-
 // startInformer starts informer to obtain external data
-func (a *Agent) startInformer() error {
+func (a *Agent) startInformer(ctx context.Context) error {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.TYPE_GENERIC)
 	informer, err := informer.GetInfomerFactory().GetInformerCreator(informer.APISERVER)(publisher)
 	if err != nil {
 		return fmt.Errorf("fail to set informer: %v", err)
 	}
-	informer.Start(a.stopCh.Channel())
+	if err := informer.Subscribe(a.PodManager); err != nil {
+		return fmt.Errorf("fail to subscribe informer: %v", err)
+	}
+	a.informer = informer
+	informer.Start(ctx)
 	return nil
 }
 
+// stopInformer stops the infomer
+func (a *Agent) stopInformer() {
+	a.informer.Unsubscribe(a.PodManager)
+}
+
 // startServiceHandler starts and runs the service
-func (a *Agent) startServiceHandler() error {
+func (a *Agent) startServiceHandler(ctx context.Context) error {
 	serviceManager := services.GetServiceManager()
 	if err := serviceManager.Setup(a.PodManager); err != nil {
 		return fmt.Errorf("error setting service handler: %v", err)
 	}
-	if err := serviceManager.Start(a.stopCh.Channel()); err != nil {
-		return fmt.Errorf("error setting service handler: %v", err)
-	}
+	serviceManager.Start(ctx)
 	a.PodManager.Subscribe(serviceManager)
 	return nil
 }
 
-// stopServiceHandler stops the service
-func (a *Agent) stopServiceHandler() error {
+// stopServiceHandler stops sending data to the ServiceManager
+func (a *Agent) stopServiceHandler() {
 	serviceManager := services.GetServiceManager()
-	if err := serviceManager.Stop(); err != nil {
-		return fmt.Errorf("error stop service handler: %v", err)
+	a.PodManager.Unsubscribe(serviceManager)
+	serviceManager.Stop()
+}
+
+// runAgent creates and runs rubik's agent
+func runAgent(ctx context.Context) error {
+	c := config.NewConfig(config.JSON)
+	if err := c.LoadConfig(constant.ConfigFile); err != nil {
+		return fmt.Errorf("error loading config: %v", err)
+	}
+	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
+		return fmt.Errorf("error initializing log: %v", err)
+	}
+	agent := NewAgent(c)
+	if err := agent.Run(ctx); err != nil {
+		return fmt.Errorf("error running agent: %v", err)
 	}
 	return nil
 }
 
-// RunAgent creates and runs rubik's agent
-func RunAgent() int {
-	c := config.NewConfig(config.JSON)
-	if err := c.LoadConfig(constant.ConfigFile); err != nil {
-		log.Errorf("load config failed: %v\n", err)
-		return -1
-	}
-	agent := NewAgent(c)
-	if err := agent.Run(); err != nil {
-		log.Errorf("error running agent: %v", err)
+// Run runs agent and process signal
+func Run() int {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+		for sig := range signalChan {
+			if sig == syscall.SIGTERM || sig == syscall.SIGINT {
+				log.Infof("signal %v received and starting exit...", sig)
+				cancel()
+			}
+		}
+	}()
+
+	if err := runAgent(ctx); err != nil {
+		log.Errorf("error running rubik agent: %v", err)
 		return -1
 	}
 	return 0

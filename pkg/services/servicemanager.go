@@ -15,13 +15,16 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/subscriber"
 	"isula.org/rubik/pkg/core/typedef"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // serviceManagerName is the unique ID of the service manager
@@ -52,7 +55,7 @@ type ServiceManager struct {
 	sync.RWMutex
 	RunningServices           map[string]api.Service
 	RunningPersistentServices map[string]api.PersistentService
-	exitFuncs                 []func() error
+	TerminateFuncs            map[string]Terminator
 }
 
 // serviceManager is the only global service manager
@@ -74,13 +77,18 @@ func GetServiceManager() *ServiceManager {
 
 // HandleEvent is used to handle PodInfo events pushed by the publisher
 func (manager *ServiceManager) HandleEvent(eventType typedef.EventType, event typedef.Event) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("panic occurr: %v", err)
+		}
+	}()
 	switch eventType {
 	case typedef.INFO_ADD:
-		manager.AddFunc(event)
+		manager.addFunc(event)
 	case typedef.INFO_UPDATE:
-		manager.UpdateFunc(event)
+		manager.updateFunc(event)
 	case typedef.INFO_DELETE:
-		manager.DeleteFunc(event)
+		manager.deleteFunc(event)
 	default:
 		log.Infof("service manager fail to process %s type", eventType.String())
 	}
@@ -115,73 +123,97 @@ func (manager *ServiceManager) tryAddPersistentService(name string, service inte
 	return ok
 }
 
-// Setup pre-starts services, such as preparing the environment, etc.
-func (manager *ServiceManager) Setup(v api.Viewer) error {
-	var (
-		exitFuncs []func() error
-		// process when fail to pre-start services
-		errorHandler = func(err error) error {
-			for _, exitFunc := range exitFuncs {
-				exitFunc()
-			}
-			return err
-		}
-	)
-	// pre-start services
-	for _, s := range manager.RunningServices {
-		if err := s.PreStart(); err != nil {
-			return errorHandler(fmt.Errorf("error running services %s: %v", s.ID(), err))
-		}
-		if t, ok := s.(Terminator); ok {
-			exitFuncs = append(exitFuncs, t.Terminate)
+// terminatingRunningServices handles services exits during the setup and exit phases
+func (manager *ServiceManager) terminatingRunningServices(err error) error {
+	if manager.TerminateFuncs == nil {
+		return nil
+	}
+	for id, t := range manager.TerminateFuncs {
+		if termErr := t.Terminate(manager.Viewer); termErr != nil {
+			log.Errorf("error terminating services %s: %v", id, termErr)
 		}
 	}
-	// pre-start persistent services only when viewer is prepared
+	return err
+}
+
+// Setup pre-starts services, such as preparing the environment, etc.
+func (manager *ServiceManager) Setup(v api.Viewer) error {
+	// only when viewer is prepared
 	if v == nil {
 		return nil
 	}
 	manager.Viewer = v
-	for _, s := range manager.RunningPersistentServices {
-		if err := s.PreStart(manager.Viewer); err != nil {
-			return errorHandler(fmt.Errorf("error running persistent services %s: %v", s.ID(), err))
-		}
+	manager.TerminateFuncs = make(map[string]Terminator)
+	setupFunc := func(id string, s interface{}) error {
+		// 1. record the termination function of the service that has been setup
 		if t, ok := s.(Terminator); ok {
-			exitFuncs = append(exitFuncs, t.Terminate)
+			manager.TerminateFuncs[id] = t
+		}
+		// 2. execute the pre-start function of the service
+		p, ok := s.(PreStarter)
+		if !ok {
+			return nil
+		}
+		if err := p.PreStart(manager.Viewer); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// 1. pre-start services
+	for _, s := range manager.RunningServices {
+		if err := setupFunc(s.ID(), s); err != nil {
+			/*
+				handle the error and terminate all services that have been started
+				when any setup stage failed
+			*/
+			return manager.terminatingRunningServices(fmt.Errorf("error running services %s: %v", s.ID(), err))
 		}
 	}
-	manager.exitFuncs = exitFuncs
-	return nil
-}
-
-// Start starts and runs the service
-func (manager *ServiceManager) Start(stopChan <-chan struct{}) error {
+	// 2. pre-start persistent services
 	for _, s := range manager.RunningPersistentServices {
-		s.Start(stopChan)
-	}
-	return nil
-}
-
-// Start starts and runs the service
-func (manager *ServiceManager) Stop() error {
-	var (
-		allErr     error
-		errorOccur bool = false
-	)
-	for _, exitFunc := range manager.exitFuncs {
-		if err := exitFunc(); err != nil {
-			log.Errorf("error stopping services: %v", err)
-			allErr = fmt.Errorf("error stopping services")
-			errorOccur = true
+		if err := setupFunc(s.ID(), s); err != nil {
+			return manager.terminatingRunningServices(fmt.Errorf("error running services %s: %v", s.ID(), err))
 		}
 	}
-	if errorOccur {
-		return allErr
-	}
 	return nil
 }
 
-// AddFunc handles pod addition events
-func (manager *ServiceManager) AddFunc(event typedef.Event) {
+// Start starts and runs the persistent service
+func (manager *ServiceManager) Start(ctx context.Context) {
+	/*
+		The Run function of the service will be called continuously until the context is canceled.
+		When a service panics while running, recover will catch the violation
+		and briefly restart for a short period of time.
+	*/
+	const restartDuration = 2 * time.Second
+	runner := func(ctx context.Context, id string, runFunc func(ctx context.Context)) {
+		var restartCount int64 = 0
+		wait.UntilWithContext(ctx, func(ctx context.Context) {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Errorf("service %s catch a panic: %v", id, err)
+				}
+			}()
+			if restartCount > 0 {
+				log.Warnf("service %s has restart %v times", id, restartCount)
+			}
+			restartCount++
+			runFunc(ctx)
+		}, restartDuration)
+	}
+	for id, s := range manager.RunningPersistentServices {
+		go runner(ctx, id, s.Run)
+	}
+}
+
+// Stop terminates the running service
+func (manager *ServiceManager) Stop() error {
+	return manager.terminatingRunningServices(nil)
+}
+
+// addFunc handles pod addition events
+func (manager *ServiceManager) addFunc(event typedef.Event) {
 	podInfo, ok := event.(*typedef.PodInfo)
 	if !ok {
 		log.Warnf("receive invalid event: %T", event)
@@ -202,8 +234,8 @@ func (manager *ServiceManager) AddFunc(event typedef.Event) {
 	manager.RUnlock()
 }
 
-// UpdateFunc() handles pod update events
-func (manager *ServiceManager) UpdateFunc(event typedef.Event) {
+// updateFunc handles pod update events
+func (manager *ServiceManager) updateFunc(event typedef.Event) {
 	podInfos, ok := event.([]*typedef.PodInfo)
 	if !ok {
 		log.Warnf("receive invalid event: %T", event)
@@ -228,8 +260,8 @@ func (manager *ServiceManager) UpdateFunc(event typedef.Event) {
 	manager.RUnlock()
 }
 
-// DeleteFunc handles pod deletion events
-func (manager *ServiceManager) DeleteFunc(event typedef.Event) {
+// deleteFunc handles pod deletion events
+func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	podInfo, ok := event.(*typedef.PodInfo)
 	if !ok {
 		log.Warnf("receive invalid event: %T", event)
@@ -251,5 +283,8 @@ func (manager *ServiceManager) DeleteFunc(event typedef.Event) {
 }
 
 type Terminator interface {
-	Terminate() error
+	Terminate(api.Viewer) error
+}
+type PreStarter interface {
+	PreStart(api.Viewer) error
 }

@@ -108,7 +108,18 @@ func (c *Config) PrepareServices() error {
 		if err := c.UnmarshalSubConfig(config, service); err != nil {
 			return fmt.Errorf("error unmarshaling %s config: %v", name, err)
 		}
+
+		// try to verify configuration
+		if validator, ok := service.(Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return fmt.Errorf("error configuring service %s: %v", name, err)
+			}
+		}
 		services.AddRunningService(name, service)
 	}
 	return nil
+}
+
+type Validator interface {
+	Validate() error
 }

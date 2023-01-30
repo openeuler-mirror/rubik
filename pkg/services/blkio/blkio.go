@@ -3,6 +3,7 @@ package blkio
 import (
 	"fmt"
 
+	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services"
 )
@@ -34,13 +35,13 @@ func NewBlkio() *Blkio {
 	return &Blkio{Name: "blkio"}
 }
 
-func (b *Blkio) PreStart() error {
-	fmt.Println("blkio Setup()")
+func (b *Blkio) PreStart(viewer api.Viewer) error {
+	fmt.Println("blkio prestart")
 	return nil
 }
 
-func (b *Blkio) Terminate() error {
-	fmt.Println("blkio Terminate")
+func (b *Blkio) Terminate(viewer api.Viewer) error {
+	fmt.Println("blkio Terminates")
 	return nil
 }
 
@@ -58,8 +59,4 @@ func (b *Blkio) UpdateFunc(old, new *typedef.PodInfo) error {
 
 func (b *Blkio) DeleteFunc(podInfo *typedef.PodInfo) error {
 	return nil
-}
-
-func (b *Blkio) Validate() bool {
-	return true
 }
