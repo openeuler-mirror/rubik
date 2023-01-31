@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/sys/unix"
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
@@ -121,22 +122,39 @@ func runAgent(ctx context.Context) error {
 
 // Run runs agent and process signal
 func Run() int {
+	// 0. file mask permission setting and parameter checking
+	unix.Umask(constant.DefaultUmask)
+	if len(os.Args) > 1 {
+		fmt.Println("args not allowed")
+		return constant.ArgumentErrorExitCode
+	}
+	// 1. apply file locks, only one rubik process can run at the same time
+	lock, err := util.CreateLockFile(constant.LockFile)
+	if err != nil {
+		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
+		return constant.RepeatRunExitCode
+	}
+	defer util.RemoveLockFile(lock, constant.LockFile)
+
 	ctx, cancel := context.WithCancel(context.Background())
+	// 2. handle external signals
+	go handelSignals(cancel)
 
-	go func() {
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
-		for sig := range signalChan {
-			if sig == syscall.SIGTERM || sig == syscall.SIGINT {
-				log.Infof("signal %v received and starting exit...", sig)
-				cancel()
-			}
-		}
-	}()
-
+	// 3. run rubik-agent
 	if err := runAgent(ctx); err != nil {
 		log.Errorf("error running rubik agent: %v", err)
-		return -1
+		return constant.ErrorExitCode
 	}
-	return 0
+	return constant.NormalExitCode
+}
+
+func handelSignals(cancel context.CancelFunc) {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+	for sig := range signalChan {
+		if sig == syscall.SIGTERM || sig == syscall.SIGINT {
+			log.Infof("signal %v received and starting exit...", sig)
+			cancel()
+		}
+	}
 }
