@@ -24,6 +24,7 @@ import (
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/publisher"
 	"isula.org/rubik/pkg/informer"
@@ -106,9 +107,11 @@ func runAgent(ctx context.Context) error {
 	if err := c.LoadConfig(constant.ConfigFile); err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
+	// Agent parameter enable
 	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
 		return fmt.Errorf("error initializing log: %v", err)
 	}
+	util.CgroupRoot = c.Agent.CgroupRoot
 	agent := NewAgent(c)
 	if err := agent.Run(ctx); err != nil {
 		return fmt.Errorf("error running agent: %v", err)

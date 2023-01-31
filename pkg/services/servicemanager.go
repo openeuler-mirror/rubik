@@ -228,7 +228,7 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
-		go runOnce(s, podInfo.Clone(), &wg)
+		go runOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
 	manager.RUnlock()
@@ -276,7 +276,7 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
-		go runOnce(s, podInfo.Clone(), &wg)
+		go runOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
 	manager.RUnlock()

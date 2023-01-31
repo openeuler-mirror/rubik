@@ -38,7 +38,7 @@ func NewPodCache() *podCache {
 func (cache *podCache) getPod(podID string) *typedef.PodInfo {
 	cache.RLock()
 	defer cache.RUnlock()
-	return cache.Pods[podID].Clone()
+	return cache.Pods[podID].DeepCopy()
 }
 
 // podExist returns true if there is a pod whose key is podID in the pods
