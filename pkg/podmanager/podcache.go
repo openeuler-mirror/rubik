@@ -86,3 +86,20 @@ func (cache *podCache) updatePod(pod *typedef.PodInfo) {
 	cache.Unlock()
 	log.Debugf("update pod %v", pod.UID)
 }
+
+// substitute replaces all the data in the cache
+func (cache *podCache) substitute(pods []*typedef.PodInfo) {
+	cache.Lock()
+	defer cache.Unlock()
+	cache.Pods = make(map[string]*typedef.PodInfo, 0)
+	if pods == nil {
+		return
+	}
+	for _, pod := range pods {
+		if pod == nil || pod.UID == "" {
+			continue
+		}
+		cache.Pods[pod.UID] = pod
+		log.Debugf("substituting pod %v", pod.UID)
+	}
+}

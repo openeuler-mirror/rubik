@@ -47,11 +47,24 @@ func NewPodManager(publisher api.Publisher) *PodManager {
 
 // HandleEvent handles the event from publisher
 func (manager *PodManager) HandleEvent(eventType typedef.EventType, event typedef.Event) {
+	switch eventType {
+	case typedef.RAW_POD_ADD, typedef.RAW_POD_UPDATE, typedef.RAW_POD_DELETE:
+		manager.handleWatchEvent(eventType, event)
+	case typedef.RAW_POD_SYNC_ALL:
+		manager.handleListEvent(eventType, event)
+	default:
+		log.Infof("fail to process %s type event", eventType.String())
+	}
+}
+
+// handleWatchEvent handles the watch event
+func (manager *PodManager) handleWatchEvent(eventType typedef.EventType, event typedef.Event) {
 	pod, err := eventToRawPod(event)
 	if err != nil {
 		log.Warnf(err.Error())
 		return
 	}
+
 	switch eventType {
 	case typedef.RAW_POD_ADD:
 		manager.addFunc(pod)
@@ -60,13 +73,32 @@ func (manager *PodManager) HandleEvent(eventType typedef.EventType, event typede
 	case typedef.RAW_POD_DELETE:
 		manager.deleteFunc(pod)
 	default:
-		log.Infof("fail to process %s type event", eventType.String())
+		log.Errorf("code problem, should not go here...")
+	}
+}
+
+// handleListEvent handles the list event
+func (manager *PodManager) handleListEvent(eventType typedef.EventType, event typedef.Event) {
+	pods, err := eventToRawPods(event)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	switch eventType {
+	case typedef.RAW_POD_SYNC_ALL:
+		manager.sync(pods)
+	default:
+		log.Errorf("code problem, should not go here...")
 	}
 }
 
 // EventTypes returns the intersted event types
 func (manager *PodManager) EventTypes() []typedef.EventType {
-	return []typedef.EventType{typedef.RAW_POD_ADD, typedef.RAW_POD_UPDATE, typedef.RAW_POD_DELETE}
+	return []typedef.EventType{typedef.RAW_POD_ADD,
+		typedef.RAW_POD_UPDATE,
+		typedef.RAW_POD_DELETE,
+		typedef.RAW_POD_SYNC_ALL,
+	}
 }
 
 // eventToRawPod converts the event interface to RawPod pointer
@@ -77,6 +109,23 @@ func eventToRawPod(e typedef.Event) (*typedef.RawPod, error) {
 	}
 	rawPod := typedef.RawPod(*pod)
 	return &rawPod, nil
+}
+
+// eventToRawPods converts the event interface to RawPod pointer slice
+func eventToRawPods(e typedef.Event) ([]*typedef.RawPod, error) {
+	pods, ok := e.([]corev1.Pod)
+	if !ok {
+		return nil, fmt.Errorf("fail to get *typedef.RawPod which type is %T", e)
+	}
+	toRawPodPointer := func(pod corev1.Pod) *typedef.RawPod {
+		tmp := typedef.RawPod(pod)
+		return &tmp
+	}
+	var pointerPods []*typedef.RawPod
+	for _, pod := range pods {
+		pointerPods = append(pointerPods, toRawPodPointer(pod))
+	}
+	return pointerPods, nil
 }
 
 // addFunc handles the pod add event
@@ -156,10 +205,24 @@ func (manager *PodManager) tryDelete(id string) {
 	}
 }
 
+// sync replaces all Pod information sent over
+func (manager *PodManager) sync(pods []*typedef.RawPod) {
+	var newPods []*typedef.PodInfo
+	for _, pod := range pods {
+		if pod == nil || !pod.Running() {
+			continue
+		}
+		newPods = append(newPods, pod.StripInfo())
+	}
+	manager.pods.substitute(newPods)
+}
+
+// ListOfflinePods returns offline pods
 func (manager *PodManager) ListOfflinePods() ([]*typedef.PodInfo, error) {
 	return nil, nil
 }
 
+// ListOnlinePods returns online pods
 func (manager *PodManager) ListOnlinePods() ([]*typedef.PodInfo, error) {
 	return nil, nil
 }
