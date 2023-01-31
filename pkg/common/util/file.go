@@ -14,13 +14,14 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
 
 	"isula.org/rubik/pkg/common/constant"
-	log "isula.org/rubik/pkg/common/tinylog"
+	log "isula.org/rubik/pkg/common/log"
 )
 
 const (
@@ -58,7 +59,7 @@ func ReadSmallFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	if st.Size() > fileMaxSize {
-		return nil, constant.ErrFileTooBig
+		return nil, fmt.Errorf("file too big")
 	}
 	return ioutil.ReadFile(path) // nolint: gosec
 }
