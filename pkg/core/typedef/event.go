@@ -34,17 +34,20 @@ const (
 	INFO_UPDATE
 	// PodManager deletes pod information event
 	INFO_DELETE
+	// Full amount of kubernetes pods
+	RAW_POD_SYNC_ALL
 )
 
-const unknownType = "unknown"
+const undefinedType = "undefined"
 
 var eventTypeToString = map[EventType]string{
-	RAW_POD_ADD:    "addrawpod",
-	RAW_POD_UPDATE: "updaterawpod",
-	RAW_POD_DELETE: "deleterawpod",
-	INFO_ADD:       "addinfo",
-	INFO_UPDATE:    "updateinfo",
-	INFO_DELETE:    "deleteinfo",
+	RAW_POD_ADD:      "addrawpod",
+	RAW_POD_UPDATE:   "updaterawpod",
+	RAW_POD_DELETE:   "deleterawpod",
+	INFO_ADD:         "addinfo",
+	INFO_UPDATE:      "updateinfo",
+	INFO_DELETE:      "deleteinfo",
+	RAW_POD_SYNC_ALL: "syncallrawpods",
 }
 
 // String returns the string of the current event type
@@ -52,5 +55,5 @@ func (t EventType) String() string {
 	if str, ok := eventTypeToString[t]; ok {
 		return str
 	}
-	return unknownType
+	return undefinedType
 }

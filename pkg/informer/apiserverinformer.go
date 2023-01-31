@@ -29,6 +29,7 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 )
 
@@ -79,15 +80,29 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 
 // Start starts and enables PIServerInformer
 func (informer *APIServerInformer) Start(ctx context.Context) {
-	const (
-		reSyncTime        = 30
-		specNodeNameField = "spec.nodeName"
-	)
+	const specNodeNameField = "spec.nodeName"
+	// set options to return only pods on the current node.
+	var fieldSelector = fields.OneTermEqualSelector(specNodeNameField, informer.nodeName).String()
+	informer.listFunc(fieldSelector)
+	informer.watchFunc(ctx, fieldSelector)
+}
+
+func (informer *APIServerInformer) listFunc(fieldSelector string) {
+	pods, err := informer.client.CoreV1().Pods("").List(context.Background(),
+		metav1.ListOptions{FieldSelector: fieldSelector})
+	if err != nil {
+		log.Errorf("error listing all pods: %v", err)
+		return
+	}
+	informer.Publish(typedef.RAW_POD_SYNC_ALL, pods.Items)
+}
+
+func (informer *APIServerInformer) watchFunc(ctx context.Context, fieldSelector string) {
+	const reSyncTime = 30
 	kubeInformerFactory := informers.NewSharedInformerFactoryWithOptions(informer.client,
 		time.Duration(reSyncTime)*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
-			// set Options to return only pods on the current node.
-			options.FieldSelector = fields.OneTermEqualSelector(specNodeNameField, informer.nodeName).String()
+			options.FieldSelector = fieldSelector
 		}))
 	kubeInformerFactory.Core().V1().Pods().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    informer.AddFunc,
