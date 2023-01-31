@@ -141,7 +141,7 @@ func (manager *PodManager) addFunc(pod *typedef.RawPod) {
 		return
 	}
 	// step1: get pod information
-	podInfo := pod.StripInfo()
+	podInfo := pod.ExtractPodInfo()
 	if podInfo == nil {
 		log.Errorf("fail to strip info from raw pod")
 		return
@@ -159,7 +159,7 @@ func (manager *PodManager) updateFunc(pod *typedef.RawPod) {
 	}
 
 	// add or update information for running pod
-	podInfo := pod.StripInfo()
+	podInfo := pod.ExtractPodInfo()
 	if podInfo == nil {
 		log.Errorf("fail to strip info from raw pod")
 		return
@@ -181,7 +181,7 @@ func (manager *PodManager) tryAdd(podInfo *typedef.PodInfo) {
 	// only add when pod is not existed
 	if !manager.pods.podExist(podInfo.UID) {
 		manager.pods.addPod(podInfo)
-		manager.Publish(typedef.INFO_ADD, podInfo)
+		manager.Publish(typedef.INFO_ADD, podInfo.DeepCopy())
 	}
 }
 
@@ -191,7 +191,7 @@ func (manager *PodManager) tryUpdate(podInfo *typedef.PodInfo) {
 	if manager.pods.podExist(podInfo.UID) {
 		oldPod := manager.pods.getPod(podInfo.UID)
 		manager.pods.updatePod(podInfo)
-		manager.Publish(typedef.INFO_UPDATE, []*typedef.PodInfo{oldPod, podInfo.Clone()})
+		manager.Publish(typedef.INFO_UPDATE, []*typedef.PodInfo{oldPod, podInfo.DeepCopy()})
 	}
 }
 
@@ -212,7 +212,7 @@ func (manager *PodManager) sync(pods []*typedef.RawPod) {
 		if pod == nil || !pod.Running() {
 			continue
 		}
-		newPods = append(newPods, pod.StripInfo())
+		newPods = append(newPods, pod.ExtractPodInfo())
 	}
 	manager.pods.substitute(newPods)
 }
