@@ -1,8 +1,6 @@
 package blkio
 
 import (
-	"fmt"
-
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services"
@@ -23,6 +21,7 @@ type BlkioConfig struct {
 
 type Blkio struct {
 	Name string `json:"-"`
+	Log  api.Logger
 }
 
 func init() {
@@ -36,12 +35,12 @@ func NewBlkio() *Blkio {
 }
 
 func (b *Blkio) PreStart(viewer api.Viewer) error {
-	fmt.Println("blkio prestart")
+	b.Log.Debugf("blkio prestart")
 	return nil
 }
 
 func (b *Blkio) Terminate(viewer api.Viewer) error {
-	fmt.Println("blkio Terminates")
+	b.Log.Infof("blkio Terminate")
 	return nil
 }
 

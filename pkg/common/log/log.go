@@ -32,16 +32,12 @@ import (
 type CtxKey string
 
 const (
-	// UUID is log uuid
-	UUID = "uuid"
-
-	logStack     = 20
-	logStackFrom = 2
-
-	logFileNum       = 10
-	logSizeMin int64 = 10          // 10MB
-	logSizeMax int64 = 1024 * 1024 // 1TB
-	unitMB     int64 = 1024 * 1024
+	logStack           = 20
+	logStackFrom       = 2
+	logFileNum         = 10
+	logSizeMin   int64 = 10          // 10MB
+	logSizeMax   int64 = 1024 * 1024 // 1TB
+	unitMB       int64 = 1024 * 1024
 )
 
 const (
@@ -63,8 +59,7 @@ var (
 	logSize        int64 = 1024
 	logFileMaxSize int64
 	logFileSize    int64
-
-	lock = sync.Mutex{}
+	lock           = sync.Mutex{}
 )
 
 func makeLogDir(logDir string) error {
@@ -272,15 +267,15 @@ func WithCtx(ctx context.Context) *Entry {
 }
 
 func (e *Entry) level(l int) string {
-	uuid, ok := e.Ctx.Value(CtxKey(UUID)).(string)
+	id, ok := e.Ctx.Value(CtxKey(constant.LogEntryKey)).(string)
 	if ok {
-		return logLevelToString(l) + " UUID=" + uuid
+		return logLevelToString(l) + " " + constant.LogEntryKey + "=" + id
 	}
 	return logLevelToString(l)
 }
 
-// Logf write logs
-func (e *Entry) Logf(f string, args ...interface{}) {
+// Warnf write logs
+func (e *Entry) Warnf(f string, args ...interface{}) {
 	if logInfo < logLevel {
 		return
 	}

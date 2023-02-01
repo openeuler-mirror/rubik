@@ -2,7 +2,6 @@ package cachelimit
 
 import (
 	"context"
-	"fmt"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/services"
@@ -38,6 +37,7 @@ type CacheLimitConfig struct {
 
 type CacheLimit struct {
 	Name   string `json:"-"`
+	Log    api.Logger
 	Config CacheLimitConfig
 }
 
@@ -70,12 +70,12 @@ func NewCacheLimit() *CacheLimit {
 }
 
 func (c *CacheLimit) PreStart(viewer api.Viewer) error {
-	fmt.Println("cache limit Prestart()")
+	c.Log.Infof("cache limit Prestart()")
 	return nil
 }
 
 func (c *CacheLimit) Terminate(viewer api.Viewer) error {
-	fmt.Println("cache limit Terminate()")
+	c.Log.Infof("cache limit Terminate()")
 	return nil
 }
 
@@ -84,10 +84,10 @@ func (c *CacheLimit) ID() string {
 }
 
 func (c *CacheLimit) Run(ctx context.Context) {
-	fmt.Println("cacheLimit Run")
+	c.Log.Infof("cacheLimit Run")
 }
 
-func (b *CacheLimit) Validate() error {
-	fmt.Println("cachelimit Validate()")
+func (c *CacheLimit) Validate() error {
+	c.Log.Infof("cachelimit Validate()")
 	return nil
 }

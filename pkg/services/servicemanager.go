@@ -17,6 +17,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -134,6 +135,17 @@ func (manager *ServiceManager) terminatingRunningServices(err error) error {
 		}
 	}
 	return err
+}
+
+// SetLoggerOnService assigns a value to the variable Log member if there is a Log field
+func SetLoggerOnService(value interface{}, logger api.Logger) bool {
+	// look for a member variable named Log
+	field := reflect.ValueOf(value).Elem().FieldByName("Log")
+	if !field.IsValid() || !field.CanSet() || field.Type().String() != "api.Logger" {
+		return false
+	}
+	field.Set(reflect.ValueOf(logger))
+	return true
 }
 
 // Setup pre-starts services, such as preparing the environment, etc.

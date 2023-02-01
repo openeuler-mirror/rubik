@@ -58,7 +58,7 @@ func TestInitConfigLogDriver(t *testing.T) {
 	assert.Equal(t, stdio, logDriver)
 	logString = "Test InitConfig with logDriver stdio"
 	Infof(logString)
-	b, err = ioutil.ReadFile(logFilePath)
+	_, err = ioutil.ReadFile(logFilePath)
 	assert.Equal(t, true, err != nil)
 
 	// logDriver invalid
@@ -162,11 +162,11 @@ func TestInitConfigLogLevel(t *testing.T) {
 				assert.Equal(t, tt.error, strings.Contains(string(b), errorLogSting))
 				os.Remove(logFilePath)
 
-				ctx := context.WithValue(context.Background(), CtxKey(UUID), "abc123")
+				ctx := context.WithValue(context.Background(), CtxKey(constant.LogEntryKey), "abc123")
 				WithCtx(ctx).Debugf(debugLogSting)
 				WithCtx(ctx).Infof(infoLogSting)
 				WithCtx(ctx).Errorf(errorLogSting)
-				WithCtx(ctx).Logf(logLogString)
+				WithCtx(ctx).Warnf(logLogString)
 				b, err = ioutil.ReadFile(logFilePath)
 				assert.NoError(t, err)
 				assert.Equal(t, tt.debug, strings.Contains(string(b), debugLogSting))
