@@ -79,7 +79,7 @@ func (pub *genericPublisher) Subscribe(s api.Subscriber) error {
 			pub.topicSubscribersMap[topic] = make(subscriberIDs, 0)
 		}
 		pub.topicSubscribersMap[topic][id] = struct{}{}
-		log.Debugf("%s subscribes topic %s\n", id, topic)
+		log.Debugf("%s subscribes topic %s", id, topic)
 	}
 	pub.subscribers[id] = s.NotifyFunc
 	pub.Unlock()
@@ -96,7 +96,7 @@ func (pub *genericPublisher) Unsubscribe(s api.Subscriber) {
 	pub.Lock()
 	for _, topic := range s.TopicsFunc() {
 		delete(pub.topicSubscribersMap[topic], id)
-		log.Debugf("%s unsubscribes topic %s\n", id, topic)
+		log.Debugf("%s unsubscribes topic %s", id, topic)
 	}
 	delete(pub.subscribers, id)
 	pub.Unlock()

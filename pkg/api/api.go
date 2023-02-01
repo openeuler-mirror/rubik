@@ -88,3 +88,15 @@ type Informer interface {
 	Publisher
 	Start(ctx context.Context)
 }
+
+// Logger is the handler to print the log
+type Logger interface {
+	// Errorf logs bugs that affect normal functionality
+	Errorf(f string, args ...interface{})
+	// Warnf logs produce unexpected results
+	Warnf(f string, args ...interface{})
+	// Infof logs normal messages
+	Infof(f string, args ...interface{})
+	// Debugf logs verbose messages
+	Debugf(f string, args ...interface{})
+}

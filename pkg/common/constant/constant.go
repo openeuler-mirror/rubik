@@ -74,6 +74,8 @@ const (
 	DefaultLogDir   = "/var/log/rubik"
 	DefaultLogLevel = LogLevelInfo
 	DefaultLogSize  = 1024
+	// LogEntryKey is the key representing EntryName in the context
+	LogEntryKey = "module"
 )
 
 // exit code

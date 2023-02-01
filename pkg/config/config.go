@@ -1,11 +1,13 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/services"
 )
 
@@ -107,6 +109,10 @@ func (c *Config) PrepareServices() error {
 		service := creator()
 		if err := c.UnmarshalSubConfig(config, service); err != nil {
 			return fmt.Errorf("error unmarshaling %s config: %v", name, err)
+		}
+
+		if services.SetLoggerOnService(service, log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), name))) {
+			log.Debugf("set logger for service: %s", name)
 		}
 
 		// try to verify configuration
