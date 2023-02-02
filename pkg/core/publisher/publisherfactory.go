@@ -29,7 +29,7 @@ type PublisherFactory struct {
 
 var publisherFactory = &PublisherFactory{}
 
-// NewPublisherFactory creates a publisher factory instance
+// GetPublisherFactory creates a publisher factory instance
 func GetPublisherFactory() *PublisherFactory {
 	return publisherFactory
 }

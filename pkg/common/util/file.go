@@ -21,7 +21,7 @@ import (
 	"syscall"
 
 	"isula.org/rubik/pkg/common/constant"
-	log "isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/log"
 )
 
 const (
@@ -33,8 +33,7 @@ func CreateFile(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), constant.DefaultDirMode); err != nil {
 		return err
 	}
-
-	f, err := os.Create(path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, constant.DefaultFileMode)
 	if err != nil {
 		return err
 	}

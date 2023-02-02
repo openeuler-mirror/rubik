@@ -15,26 +15,26 @@
 package typedef
 
 type (
-	// the type of event published by generic publisher
+	// EventType is the type of event published by generic publisher
 	EventType int8
-	// the event published by generic publisher
+	// Event is the event published by generic publisher
 	Event interface{}
 )
 
 const (
-	// Kubernetes starts a new Pod event
+	// RAW_POD_ADD means Kubernetes starts a new Pod event
 	RAW_POD_ADD EventType = iota
-	// Kubernetes updates Pod event
+	// RAW_POD_UPDATE means Kubernetes updates Pod event
 	RAW_POD_UPDATE
-	// Kubernetes deletes Pod event
+	// RAW_POD_DELETE means Kubernetes deletes Pod event
 	RAW_POD_DELETE
-	// PodManager adds pod information event
+	// INFO_ADD means PodManager adds pod information event
 	INFO_ADD
-	// PodManager updates pod information event
+	// INFO_UPDATE means PodManager updates pod information event
 	INFO_UPDATE
-	// PodManager deletes pod information event
+	// INFO_DELETE means PodManager deletes pod information event
 	INFO_DELETE
-	// Full amount of kubernetes pods
+	// RAW_POD_SYNC_ALL means Full amount of kubernetes pods
 	RAW_POD_SYNC_ALL
 )
 

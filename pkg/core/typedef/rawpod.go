@@ -18,8 +18,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"isula.org/rubik/pkg/common/constant"
 	corev1 "k8s.io/api/core/v1"
+
+	"isula.org/rubik/pkg/common/constant"
 )
 
 const (
@@ -40,7 +41,7 @@ type (
 			You can continue to expand RawContainer in the future,
 			such as saving the running state of the container.
 		*/
-		corev1.ContainerStatus
+		status corev1.ContainerStatus
 	}
 	// RawPod represents kubernetes pod structure
 	RawPod corev1.Pod
@@ -100,7 +101,7 @@ func (pod *RawPod) ListRawContainers() map[string]*RawContainer {
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		// Since corev1.Container only exists the container name, use Name as the unique key
 		nameRawContainersMap[containerStatus.Name] = &RawContainer{
-			containerStatus,
+			status: containerStatus,
 		}
 	}
 	return nameRawContainersMap
@@ -122,7 +123,7 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 		if id == "" {
 			continue
 		}
-		idContainersMap[id] = NewContainerInfo(rawContainer.Name, id, podCgroupPath)
+		idContainersMap[id] = NewContainerInfo(rawContainer.status.Name, id, podCgroupPath)
 	}
 	return idContainersMap
 }

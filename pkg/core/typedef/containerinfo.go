@@ -26,8 +26,11 @@ import (
 type ContainerEngineType int8
 
 const (
+	// UNDEFINED means undefined container engine
 	UNDEFINED ContainerEngineType = iota
+	// DOCKER means docker container engine
 	DOCKER
+	// CONTAINERD means containerd container engine
 	CONTAINERD
 )
 
@@ -45,7 +48,7 @@ func (engine *ContainerEngineType) Support(cont *RawContainer) bool {
 	if *engine == UNDEFINED {
 		return false
 	}
-	return strings.HasPrefix(cont.ContainerID, engine.Prefix())
+	return strings.HasPrefix(cont.status.ContainerID, engine.Prefix())
 }
 
 // Prefix returns the ID prefix of the container engine
@@ -92,14 +95,14 @@ func (cont *RawContainer) getRealContainerID() string {
 		So we don't consider the case of midway container engine changes
 		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
 	*/
-	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.ContainerID) })
+	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
 
 	if !currentContainerEngines.Support(cont) {
 		log.Errorf("fatal error : unsupported container engine")
 		return ""
 	}
 
-	cid := cont.ContainerID[len(currentContainerEngines.Prefix()):]
+	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]
 	// the container may be in the creation or deletion phase.
 	if len(cid) == 0 {
 		return ""
@@ -109,6 +112,6 @@ func (cont *RawContainer) getRealContainerID() string {
 
 // DeepCopy returns deepcopy object.
 func (info *ContainerInfo) DeepCopy() *ContainerInfo {
-	copy := *info
-	return &copy
+	copyObject := *info
+	return &copyObject
 }

@@ -92,7 +92,7 @@ func (cache *podCache) substitute(pods []*typedef.PodInfo) {
 	cache.Lock()
 	defer cache.Unlock()
 	cache.Pods = make(map[string]*typedef.PodInfo, 0)
-	if pods == nil {
+	if len(pods) == 0 {
 		return
 	}
 	for _, pod := range pods {

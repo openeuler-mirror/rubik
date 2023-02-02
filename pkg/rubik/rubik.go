@@ -11,7 +11,7 @@
 // Create: 2023-01-28
 // Description: This file defines rubik agent to control the life cycle of each component
 
-// // Package rubik defines the overall logic
+// Package rubik defines the overall logic
 package rubik
 
 import (
@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/unix"
+
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
