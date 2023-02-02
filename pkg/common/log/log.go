@@ -90,7 +90,7 @@ func InitConfig(driver, logdir, level string, size int64) error {
 	if level == "" {
 		level = constant.LogLevelInfo
 	}
-	levelstr, err := logLevelFromString(level)
+	levelstr, err := levelFromString(level)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func DropError(args ...interface{}) {
 	}
 }
 
-func logLevelToString(level int) string {
+func levelToString(level int) string {
 	switch level {
 	case logDebug:
 		return constant.LogLevelDebug
@@ -144,7 +144,7 @@ func logLevelToString(level int) string {
 	}
 }
 
-func logLevelFromString(level string) (int, error) {
+func levelFromString(level string) (int, error) {
 	switch level {
 	case constant.LogLevelDebug:
 		return logDebug, nil
@@ -159,20 +159,20 @@ func logLevelFromString(level string) (int, error) {
 	}
 }
 
-func logRename() {
+func renameLogFile() {
 	for i := logFileNum - 1; i > 1; i-- {
-		old := logFname + fmt.Sprintf(".%d", i-1)
-		new := logFname + fmt.Sprintf(".%d", i)
-		if _, err := os.Stat(old); err == nil {
-			DropError(os.Rename(old, new))
+		oldFile := logFname + fmt.Sprintf(".%d", i-1)
+		newFile := logFname + fmt.Sprintf(".%d", i)
+		if _, err := os.Stat(oldFile); err == nil {
+			DropError(os.Rename(oldFile, newFile))
 		}
 	}
 	DropError(os.Rename(logFname, logFname+".1"))
 }
 
-func logRotate(line int64) string {
+func rotateLog(line int64) string {
 	if atomic.AddInt64(&logFileSize, line) > logFileMaxSize*unitMB {
-		logRename()
+		renameLogFile()
 		atomic.StoreInt64(&logFileSize, line)
 	}
 
@@ -188,7 +188,7 @@ func writeLine(line string) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	f, err := os.OpenFile(logRotate(int64(len(line))), os.O_CREATE|os.O_APPEND|os.O_WRONLY, constant.DefaultFileMode)
+	f, err := os.OpenFile(rotateLog(int64(len(line))), os.O_CREATE|os.O_APPEND|os.O_WRONLY, constant.DefaultFileMode)
 	if err != nil {
 		return
 	}
@@ -197,7 +197,7 @@ func writeLine(line string) {
 	DropError(f.Close())
 }
 
-func logf(level string, format string, args ...interface{}) {
+func output(level string, format string, args ...interface{}) {
 	tag := fmt.Sprintf("%s [rubik] level=%s ", time.Now().Format("2006-01-02 15:04:05.000"), level)
 	raw := fmt.Sprintf(format, args...) + "\n"
 
@@ -224,34 +224,34 @@ func logf(level string, format string, args ...interface{}) {
 // Warnf log warn level
 func Warnf(format string, args ...interface{}) {
 	if logWarn >= logLevel {
-		logf(logLevelToString(logInfo), format, args...)
+		output(levelToString(logInfo), format, args...)
 	}
 }
 
 // Infof log info level
 func Infof(format string, args ...interface{}) {
 	if logInfo >= logLevel {
-		logf(logLevelToString(logInfo), format, args...)
+		output(levelToString(logInfo), format, args...)
 	}
 }
 
 // Debugf log debug level
 func Debugf(format string, args ...interface{}) {
 	if logDebug >= logLevel {
-		logf(logLevelToString(logDebug), format, args...)
+		output(levelToString(logDebug), format, args...)
 	}
 }
 
 // Errorf log error level
 func Errorf(format string, args ...interface{}) {
 	if logError >= logLevel {
-		logf(logLevelToString(logError), format, args...)
+		output(levelToString(logError), format, args...)
 	}
 }
 
 // Stackf log stack dump
 func Stackf(format string, args ...interface{}) {
-	logf("stack", format, args...)
+	output("stack", format, args...)
 }
 
 // Entry is log entry
@@ -269,9 +269,9 @@ func WithCtx(ctx context.Context) *Entry {
 func (e *Entry) level(l int) string {
 	id, ok := e.Ctx.Value(CtxKey(constant.LogEntryKey)).(string)
 	if ok {
-		return logLevelToString(l) + " " + constant.LogEntryKey + "=" + id
+		return levelToString(l) + " " + constant.LogEntryKey + "=" + id
 	}
-	return logLevelToString(l)
+	return levelToString(l)
 }
 
 // Warnf write logs
@@ -279,7 +279,7 @@ func (e *Entry) Warnf(f string, args ...interface{}) {
 	if logInfo < logLevel {
 		return
 	}
-	logf(e.level(logInfo), f, args...)
+	output(e.level(logInfo), f, args...)
 }
 
 // Infof write logs
@@ -287,7 +287,7 @@ func (e *Entry) Infof(f string, args ...interface{}) {
 	if logInfo < logLevel {
 		return
 	}
-	logf(e.level(logInfo), f, args...)
+	output(e.level(logInfo), f, args...)
 }
 
 // Debugf write verbose logs
@@ -295,7 +295,7 @@ func (e *Entry) Debugf(f string, args ...interface{}) {
 	if logDebug < logLevel {
 		return
 	}
-	logf(e.level(logDebug), f, args...)
+	output(e.level(logDebug), f, args...)
 }
 
 // Errorf write error logs
@@ -303,5 +303,5 @@ func (e *Entry) Errorf(f string, args ...interface{}) {
 	if logError < logLevel {
 		return
 	}
-	logf(e.level(logError), f, args...)
+	output(e.level(logError), f, args...)
 }

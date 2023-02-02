@@ -84,7 +84,7 @@ const (
 	NormalExitCode int = iota
 	// ArgumentErrorExitCode for normal failed
 	ArgumentErrorExitCode
-	//RepeatRunExitCode for repeat run exit
+	// RepeatRunExitCode for repeat run exit
 	RepeatRunExitCode
 	// ErrorExitCode failed during run
 	ErrorExitCode

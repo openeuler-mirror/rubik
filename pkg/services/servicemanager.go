@@ -21,11 +21,12 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/subscriber"
 	"isula.org/rubik/pkg/core/typedef"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // serviceManagerName is the unique ID of the service manager
@@ -294,9 +295,12 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	manager.RUnlock()
 }
 
+// Terminator is an interface that calls a collection of methods when the service terminates
 type Terminator interface {
 	Terminate(api.Viewer) error
 }
+
+// PreStarter is an interface for calling a collection of methods when the service is pre-started
 type PreStarter interface {
 	PreStart(api.Viewer) error
 }

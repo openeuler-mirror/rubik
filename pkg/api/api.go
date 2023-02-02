@@ -29,10 +29,12 @@ type Registry interface {
 	ListServices() ([]*Service, error)
 }
 
+// ServiceDescriber describes services
 type ServiceDescriber interface {
 	ID() string
 }
 
+// EventFunc is the event handler for Service
 type EventFunc interface {
 	AddFunc(podInfo *typedef.PodInfo) error
 	UpdateFunc(old, new *typedef.PodInfo) error
@@ -52,6 +54,7 @@ type PersistentService interface {
 	Run(ctx context.Context)
 }
 
+// ConfigParser is a configuration parser for different languages
 type ConfigParser interface {
 	ParseConfig(data []byte) (map[string]interface{}, error)
 	UnmarshalSubConfig(data interface{}, v interface{}) error

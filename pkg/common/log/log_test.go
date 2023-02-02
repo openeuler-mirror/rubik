@@ -254,10 +254,10 @@ func TestLogOthers(t *testing.T) {
 	assert.Equal(t, true, err != nil)
 
 	const outOfRangeLogLevel = 100
-	s := logLevelToString(outOfRangeLogLevel)
+	s := levelToString(outOfRangeLogLevel)
 	assert.Equal(t, "", s)
 	const stackLoglevel = 20
-	s = logLevelToString(stackLoglevel)
+	s = levelToString(stackLoglevel)
 	assert.Equal(t, "stack", s)
 
 	logDriver = 1

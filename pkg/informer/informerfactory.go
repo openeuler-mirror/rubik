@@ -25,6 +25,7 @@ type (
 	informerType int8
 	// informer's factory class
 	informerFactory struct{}
+	informerCreator func(publisher api.Publisher) (api.Informer, error)
 )
 
 const (
@@ -36,7 +37,7 @@ const (
 var defaultInformerFactory *informerFactory
 
 // GetInformerCreator returns the constructor of the informer of the specified type
-func (factory *informerFactory) GetInformerCreator(iType informerType) func(publisher api.Publisher) (api.Informer, error) {
+func (factory *informerFactory) GetInformerCreator(iType informerType) informerCreator {
 	switch iType {
 	case APISERVER:
 		return NewAPIServerInformer
