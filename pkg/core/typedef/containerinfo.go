@@ -15,15 +15,19 @@
 package typedef
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/util"
 )
 
 // ContainerEngineType indicates the type of container engine
 type ContainerEngineType int8
+type CgroupKey struct {
+	subsys, filename string
+}
 
 const (
 	// UNDEFINED means undefined container engine
@@ -62,17 +66,22 @@ func (engine *ContainerEngineType) Prefix() string {
 
 // ContainerInfo contains the interested information of container
 type ContainerInfo struct {
-	Name       string `json:"name"`
-	ID         string `json:"id"`
-	CgroupPath string `json:"cgroupPath"`
+	Name             string      `json:"name"`
+	ID               string      `json:"id"`
+	CgroupPath       string      `json:"cgroupPath"`
+	RequestResources ResourceMap `json:"requests,omitempty"`
+	LimitResources   ResourceMap `json:"limits,omitempty"`
 }
 
 // NewContainerInfo creates a ContainerInfo instance
-func NewContainerInfo(name, id, podCgroupPath string) *ContainerInfo {
+func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *ContainerInfo {
+	requests, limits := rawContainer.GetResourceMaps()
 	return &ContainerInfo{
-		Name:       name,
-		ID:         id,
-		CgroupPath: filepath.Join(podCgroupPath, id),
+		Name:             rawContainer.status.Name,
+		ID:               id,
+		CgroupPath:       filepath.Join(podCgroupPath, id),
+		RequestResources: requests,
+		LimitResources:   limits,
 	}
 }
 
@@ -86,32 +95,41 @@ func fixContainerEngine(containerID string) {
 	currentContainerEngines = UNDEFINED
 }
 
-// getRealContainerID parses the containerID of k8s
-func (cont *RawContainer) getRealContainerID() string {
-	/*
-		Note:
-		An UNDEFINED container engine was used when the function was executed for the first time
-		it seems unlikely to support different container engines at runtime,
-		So we don't consider the case of midway container engine changes
-		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
-	*/
-	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
-
-	if !currentContainerEngines.Support(cont) {
-		log.Errorf("fatal error : unsupported container engine")
-		return ""
-	}
-
-	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]
-	// the container may be in the creation or deletion phase.
-	if len(cid) == 0 {
-		return ""
-	}
-	return cid
+// DeepCopy returns deepcopy object.
+func (cont *ContainerInfo) DeepCopy() *ContainerInfo {
+	copyObject := *cont
+	copyObject.LimitResources = util.DeepCopy(cont.LimitResources).(ResourceMap)
+	copyObject.RequestResources = util.DeepCopy(cont.RequestResources).(ResourceMap)
+	return &copyObject
 }
 
-// DeepCopy returns deepcopy object.
-func (info *ContainerInfo) DeepCopy() *ContainerInfo {
-	copyObject := *info
-	return &copyObject
+// SetCgroupAttr sets the container cgroup file
+func (cont *ContainerInfo) SetCgroupAttr(key *CgroupKey, value string) error {
+	if err := validateCgroupKey(key); err != nil {
+		return err
+	}
+	return util.WriteCgroupFile(key.subsys, cont.CgroupPath, key.filename, value)
+}
+
+// GetCgroupAttr gets container cgroup file content
+func (cont *ContainerInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
+	if err := validateCgroupKey(key); err != nil {
+		return "", err
+	}
+	data, err := util.ReadCgroupFile(key.subsys, cont.CgroupPath, key.filename)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// validateCgroupKey is used to verify the validity of the cgroup key
+func validateCgroupKey(key *CgroupKey) error {
+	if key == nil {
+		return fmt.Errorf("key cannot be empty")
+	}
+	if len(key.subsys) == 0 || len(key.filename) == 0 {
+		return fmt.Errorf("invalid key")
+	}
+	return nil
 }

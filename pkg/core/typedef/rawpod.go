@@ -19,8 +19,10 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 )
 
 const (
@@ -42,9 +44,17 @@ type (
 			such as saving the running state of the container.
 		*/
 		status corev1.ContainerStatus
+		spec   corev1.Container
 	}
 	// RawPod represents kubernetes pod structure
-	RawPod corev1.Pod
+	RawPod       corev1.Pod
+	ResourceType uint8
+	ResourceMap  map[ResourceType]float64
+)
+
+const (
+	ResourceCPU ResourceType = iota
+	ResourceMem
 )
 
 // ExtractPodInfo returns podInfo from RawPod
@@ -78,18 +88,26 @@ func (pod *RawPod) CgroupPath() string {
 		id = configHash
 	}
 
+	qosClassPath := ""
 	switch pod.Status.QOSClass {
 	case corev1.PodQOSGuaranteed:
-		return filepath.Join(constant.KubepodsCgroup, constant.PodCgroupNamePrefix+id)
 	case corev1.PodQOSBurstable:
-		return filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBurstable)),
-			constant.PodCgroupNamePrefix+id)
+		qosClassPath = strings.ToLower(string(corev1.PodQOSBurstable))
 	case corev1.PodQOSBestEffort:
-		return filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBestEffort)),
-			constant.PodCgroupNamePrefix+id)
+		qosClassPath = strings.ToLower(string(corev1.PodQOSBestEffort))
 	default:
 		return ""
 	}
+	/*
+		example:
+		1. Burstable: pod requests are less than the value of limits and not 0;
+		kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
+		2. BestEffort: pod requests and limits are both 0;
+		kubepods/bestEffort/pod34152897-dbaf-11ea-8cb9-0653660051c3
+		3. Guaranteed: pod requests are equal to the value set by limits;
+		kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
+	*/
+	return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
 }
 
 // ListRawContainers returns all RawContainers in the RawPod
@@ -103,6 +121,13 @@ func (pod *RawPod) ListRawContainers() map[string]*RawContainer {
 		nameRawContainersMap[containerStatus.Name] = &RawContainer{
 			status: containerStatus,
 		}
+	}
+	for _, container := range pod.Spec.Containers {
+		cont, ok := nameRawContainersMap[container.Name]
+		if !ok {
+			continue
+		}
+		cont.spec = container
 	}
 	return nameRawContainersMap
 }
@@ -119,11 +144,53 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 	// 2. generate ID-Container mapping
 	podCgroupPath := pod.CgroupPath()
 	for _, rawContainer := range nameRawContainersMap {
-		id := rawContainer.getRealContainerID()
+		id := rawContainer.GetRealContainerID()
 		if id == "" {
 			continue
 		}
-		idContainersMap[id] = NewContainerInfo(rawContainer.status.Name, id, podCgroupPath)
+		idContainersMap[id] = NewContainerInfo(id, podCgroupPath, rawContainer)
 	}
 	return idContainersMap
+}
+
+// GetRealContainerID parses the containerID of k8s
+func (cont *RawContainer) GetRealContainerID() string {
+	/*
+		Note:
+		An UNDEFINED container engine was used when the function was executed for the first time
+		it seems unlikely to support different container engines at runtime,
+		So we don't consider the case of midway container engine changes
+		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
+	*/
+	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
+
+	if !currentContainerEngines.Support(cont) {
+		log.Errorf("fatal error : unsupported container engine")
+		return ""
+	}
+
+	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]
+	// the container may be in the creation or deletion phase.
+	if len(cid) == 0 {
+		return ""
+	}
+	return cid
+}
+
+// GetResourceMaps returns the number of requests and limits of CPU and memory resources
+func (cont *RawContainer) GetResourceMaps() (ResourceMap, ResourceMap) {
+	const milli float64 = 1000
+	var (
+		// high precision
+		converter = func(value *resource.Quantity) float64 {
+			return float64(value.MilliValue()) / milli
+		}
+		iterator = func(resourceItems *corev1.ResourceList) ResourceMap {
+			results := make(ResourceMap)
+			results[ResourceCPU] = converter(resourceItems.Cpu())
+			results[ResourceMem] = converter(resourceItems.Memory())
+			return results
+		}
+	)
+	return iterator(&cont.spec.Resources.Requests), iterator(&cont.spec.Resources.Limits)
 }

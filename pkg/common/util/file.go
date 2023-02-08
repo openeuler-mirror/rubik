@@ -21,7 +21,6 @@ import (
 	"syscall"
 
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/pkg/common/log"
 )
 
 const (
@@ -29,20 +28,21 @@ const (
 )
 
 // CreateFile create full path including dir and file.
-func CreateFile(path string) error {
+func CreateFile(path string) (*os.File, error) {
+	path = filepath.Clean(path)
 	if err := os.MkdirAll(filepath.Dir(path), constant.DefaultDirMode); err != nil {
-		return err
+		return nil, err
 	}
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, constant.DefaultFileMode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return f.Close()
+	return f, nil
 }
 
-// IsDirectory returns true if the file exists and it is a dir
-func IsDirectory(path string) bool {
+// IsDir returns true if the file exists and it is a dir
+func IsDir(path string) bool {
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return false
@@ -53,14 +53,27 @@ func IsDirectory(path string) bool {
 
 // ReadSmallFile read small file less than 10MB
 func ReadSmallFile(path string) ([]byte, error) {
-	st, err := os.Lstat(path)
+	size, err := FileSize(path)
 	if err != nil {
 		return nil, err
 	}
-	if st.Size() > fileMaxSize {
+
+	if size > fileMaxSize {
 		return nil, fmt.Errorf("file too big")
 	}
-	return ioutil.ReadFile(path) // nolint: gosec
+	return ReadFile(path)
+}
+
+// FileSize returns the size of file
+func FileSize(path string) (int64, error) {
+	if !PathExist(path) {
+		return 0, fmt.Errorf("%v: No such file or directory", path)
+	}
+	st, err := os.Lstat(path)
+	if err != nil {
+		return 0, err
+	}
+	return st.Size(), nil
 }
 
 // PathExist returns true if the path exists
@@ -72,30 +85,72 @@ func PathExist(path string) bool {
 	return true
 }
 
-// CreateLockFile creates a lock file
-func CreateLockFile(p string) (*os.File, error) {
-	path := filepath.Clean(p)
-	if err := os.MkdirAll(filepath.Dir(path), constant.DefaultDirMode); err != nil {
-		return nil, err
-	}
-
-	lock, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, constant.DefaultFileMode)
+// LockFile locks a file, creating a file if it does not exist
+func LockFile(path string) (*os.File, error) {
+	lock, err := CreateFile(path)
 	if err != nil {
 		return nil, err
 	}
-
-	if err = syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		log.DropError(lock.Close())
-		return nil, err
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		return lock, err
 	}
-
 	return lock, nil
 }
 
-// RemoveLockFile removes lock file - this function used cleanup resource,
-// errors will ignored to make sure more source is cleaned.
-func RemoveLockFile(lock *os.File, path string) {
-	log.DropError(syscall.Flock(int(lock.Fd()), syscall.LOCK_UN))
-	log.DropError(lock.Close())
-	log.DropError(os.Remove(path))
+// UnlockFile unlock file - this function used cleanup resource,
+func UnlockFile(lock *os.File) error {
+	// errors will ignored to make sure more source is cleaned.
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_UN); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ReadFile reads a file
+func ReadFile(path string) ([]byte, error) {
+	if IsDir(path) {
+		return nil, fmt.Errorf("%v is not a file", path)
+	}
+	if !PathExist(path) {
+		return nil, fmt.Errorf("%v: No such file or directory", path)
+	}
+	return ioutil.ReadFile(path)
+}
+
+// WriteFile writes a file, if the file does not exist, create the file (including the upper directory)
+func WriteFile(path, content string) error {
+	if IsDir(path) {
+		return fmt.Errorf("%v is not a file", path)
+	}
+	// try to create Pparent directory
+	dirPath := filepath.Dir(path)
+	if !PathExist(dirPath) {
+		if err := os.MkdirAll(dirPath, constant.DefaultDirMode); err != nil {
+			return fmt.Errorf("error create dir %v: %v", dirPath, err)
+		}
+	}
+	return ioutil.WriteFile(path, []byte(content), constant.DefaultFileMode)
+}
+
+// AppendFile appends content to the file
+func AppendFile(path, content string) error {
+	if IsDir(path) {
+		return fmt.Errorf("%v is not a file", path)
+	}
+	if !PathExist(path) {
+		return fmt.Errorf("%v: No such file or directory", path)
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, constant.DefaultFileMode)
+	defer func() {
+		if err != f.Close() {
+			return
+		}
+	}()
+	if err != nil {
+		return fmt.Errorf("error open file: %v", err)
+	}
+	if _, err := f.WriteString(content); err != nil {
+		return fmt.Errorf("error write file: %v", err)
+	}
+	return nil
 }

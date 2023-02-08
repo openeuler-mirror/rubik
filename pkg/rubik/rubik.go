@@ -113,6 +113,7 @@ func runAgent(ctx context.Context) error {
 	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
 		return fmt.Errorf("error initializing log: %v", err)
 	}
+
 	util.CgroupRoot = c.Agent.CgroupRoot
 	agent := NewAgent(c)
 	if err := agent.Run(ctx); err != nil {
@@ -130,12 +131,16 @@ func Run() int {
 		return constant.ArgumentErrorExitCode
 	}
 	// 1. apply file locks, only one rubik process can run at the same time
-	lock, err := util.CreateLockFile(constant.LockFile)
+	lock, err := util.LockFile(constant.LockFile)
+	defer func() {
+		lock.Close()
+		os.Remove(constant.LockFile)
+	}()
 	if err != nil {
 		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
 		return constant.RepeatRunExitCode
 	}
-	defer util.RemoveLockFile(lock, constant.LockFile)
+	defer util.UnlockFile(lock)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// 2. handle external signals

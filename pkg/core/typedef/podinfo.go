@@ -14,6 +14,8 @@
 // Package typedef defines core struct and methods for rubik
 package typedef
 
+import "isula.org/rubik/pkg/common/util"
+
 // PodInfo represents pod
 type PodInfo struct {
 	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
@@ -37,25 +39,36 @@ func NewPodInfo(pod *RawPod) *PodInfo {
 }
 
 // DeepCopy returns deepcopy object
-func (pi *PodInfo) DeepCopy() *PodInfo {
-	if pi == nil {
+func (pod *PodInfo) DeepCopy() *PodInfo {
+	if pod == nil {
 		return nil
 	}
-	// deepcopy reference object
-	idContainersMap := make(map[string]*ContainerInfo, len(pi.IDContainersMap))
-	for key, value := range pi.IDContainersMap {
-		idContainersMap[key] = value.DeepCopy()
-	}
-	annotations := make(map[string]string)
-	for key, value := range pi.Annotations {
-		annotations[key] = value
-	}
 	return &PodInfo{
-		Name:            pi.Name,
-		UID:             pi.UID,
-		CgroupPath:      pi.CgroupPath,
-		Namespace:       pi.Namespace,
-		Annotations:     annotations,
-		IDContainersMap: idContainersMap,
+		Name:            pod.Name,
+		UID:             pod.UID,
+		CgroupPath:      pod.CgroupPath,
+		Namespace:       pod.Namespace,
+		Annotations:     util.DeepCopy(pod.Annotations).(map[string]string),
+		IDContainersMap: util.DeepCopy(pod.IDContainersMap).(map[string]*ContainerInfo),
 	}
+}
+
+// SetCgroupAttr sets the container cgroup file
+func (pod *PodInfo) SetCgroupAttr(key *CgroupKey, value string) error {
+	if err := validateCgroupKey(key); err != nil {
+		return err
+	}
+	return util.WriteCgroupFile(key.subsys, pod.CgroupPath, key.filename, value)
+}
+
+// GetCgroupAttr gets container cgroup file content
+func (pod *PodInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
+	if err := validateCgroupKey(key); err != nil {
+		return "", err
+	}
+	data, err := util.ReadCgroupFile(key.subsys, pod.CgroupPath, key.filename)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
