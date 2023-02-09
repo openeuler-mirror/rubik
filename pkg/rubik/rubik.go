@@ -36,19 +36,25 @@ import (
 
 // Agent runs a series of rubik services and manages data
 type Agent struct {
-	Config     *config.Config
-	PodManager *podmanager.PodManager
-	informer   api.Informer
+	config          *config.Config
+	podManager      *podmanager.PodManager
+	informer        api.Informer
+	servicesManager *services.ServiceManager
 }
 
 // NewAgent returns an agent for given configuration
-func NewAgent(cfg *config.Config) *Agent {
+func NewAgent(cfg *config.Config) (*Agent, error) {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.TYPE_GENERIC)
-	a := &Agent{
-		Config:     cfg,
-		PodManager: podmanager.NewPodManager(publisher),
+	serviceManager := services.NewServiceManager()
+	if err := serviceManager.InitServices(cfg.UnwarpServiceConfig(), cfg); err != nil {
+		return nil, err
 	}
-	return a
+	a := &Agent{
+		config:          cfg,
+		podManager:      podmanager.NewPodManager(publisher),
+		servicesManager: serviceManager,
+	}
+	return a, nil
 }
 
 // Run starts and runs the agent until receiving stop signal
@@ -72,7 +78,7 @@ func (a *Agent) startInformer(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("fail to set informer: %v", err)
 	}
-	if err := informer.Subscribe(a.PodManager); err != nil {
+	if err := informer.Subscribe(a.podManager); err != nil {
 		return fmt.Errorf("fail to subscribe informer: %v", err)
 	}
 	a.informer = informer
@@ -82,25 +88,23 @@ func (a *Agent) startInformer(ctx context.Context) error {
 
 // stopInformer stops the infomer
 func (a *Agent) stopInformer() {
-	a.informer.Unsubscribe(a.PodManager)
+	a.informer.Unsubscribe(a.podManager)
 }
 
 // startServiceHandler starts and runs the service
 func (a *Agent) startServiceHandler(ctx context.Context) error {
-	serviceManager := services.GetServiceManager()
-	if err := serviceManager.Setup(a.PodManager); err != nil {
+	if err := a.servicesManager.Setup(a.podManager); err != nil {
 		return fmt.Errorf("error setting service handler: %v", err)
 	}
-	serviceManager.Start(ctx)
-	a.PodManager.Subscribe(serviceManager)
+	a.servicesManager.Start(ctx)
+	a.podManager.Subscribe(a.servicesManager)
 	return nil
 }
 
 // stopServiceHandler stops sending data to the ServiceManager
 func (a *Agent) stopServiceHandler() {
-	serviceManager := services.GetServiceManager()
-	a.PodManager.Unsubscribe(serviceManager)
-	serviceManager.Stop()
+	a.podManager.Unsubscribe(a.servicesManager)
+	a.servicesManager.Stop()
 }
 
 // runAgent creates and runs rubik's agent
@@ -115,7 +119,10 @@ func runAgent(ctx context.Context) error {
 	}
 
 	util.CgroupRoot = c.Agent.CgroupRoot
-	agent := NewAgent(c)
+	agent, err := NewAgent(c)
+	if err != nil {
+		return fmt.Errorf("error new agent: %v", err)
+	}
 	if err := agent.Run(ctx); err != nil {
 		return fmt.Errorf("error running agent: %v", err)
 	}
