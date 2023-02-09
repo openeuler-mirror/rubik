@@ -34,28 +34,16 @@ metadata:
 data:
   config.json: |
     {
-        "autoCheck": false,
+      "agent": {
         "logDriver": "stdio",
         "logDir": "/var/log/rubik",
         "logSize": 1024,
-        "logLevel": "info",
-        "cgroupRoot": "/sys/fs/cgroup",
-        "cacheConfig": {
-            "enable": false,
-            "defaultLimitMode": "static",
-            "adjustInterval": 1000,
-            "perfDuration": 1000,
-            "l3Percent": {
-                "low": 20,
-                "mid": 30,
-                "high": 50
-            },
-            "memBandPercent": {
-                "low": 10,
-                "mid": 30,
-                "high": 50
-            }
-        }
+        "logLevel": "debug",
+        "cgroupRoot": "/sys/fs/cgroup"
+      },
+      "qos": {
+        "subSys": ["cpu", "memory"]
+      }
     }
 ---
 apiVersion: apps/v1

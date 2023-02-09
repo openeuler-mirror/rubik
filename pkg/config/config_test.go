@@ -28,6 +28,7 @@ import (
 	"isula.org/rubik/pkg/services"
 	_ "isula.org/rubik/pkg/services/blkio"
 	_ "isula.org/rubik/pkg/services/cachelimit"
+	_ "isula.org/rubik/pkg/services/qos"
 )
 
 var rubikConfig string = `
@@ -39,6 +40,9 @@ var rubikConfig string = `
 	  "logLevel": "info"
 	},
 	"blkio":{},
+	"qos": {
+		"subSys": ["cpu", "memory"]
+	},
 	"cacheLimit": {
 	  "defaultLimitMode": "static",
 	  "adjustInterval": 1000,

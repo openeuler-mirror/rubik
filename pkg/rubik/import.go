@@ -18,5 +18,6 @@ import (
 	// introduce packages to auto register service
 	_ "isula.org/rubik/pkg/services/blkio"
 	_ "isula.org/rubik/pkg/services/cachelimit"
+	_ "isula.org/rubik/pkg/services/qos"
 	_ "isula.org/rubik/pkg/version"
 )
