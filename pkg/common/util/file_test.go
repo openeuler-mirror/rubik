@@ -60,7 +60,7 @@ func TestIsDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsDirectory(tt.args.path); got != tt.want {
+			if got := IsDir(tt.args.path); got != tt.want {
 				t.Errorf("IsDirectory() = %v, want %v", got, tt.want)
 			}
 		})
@@ -117,7 +117,7 @@ func TestReadSmallFile(t *testing.T) {
 
 	// case2: too big
 	size := 20000000
-	big := make([]byte, size, size)
+	big := make([]byte, size)
 	err = ioutil.WriteFile(filepath.Join(filePath, "big"), big, constant.DefaultFileMode)
 	assert.NoError(t, err)
 	_, err = ReadSmallFile(filepath.Join(filePath, "big"))
@@ -134,9 +134,12 @@ func TestCreateLockFile(t *testing.T) {
 	err := os.RemoveAll(lockFile)
 	assert.NoError(t, err)
 
-	lock, err := CreateLockFile(lockFile)
+	lock, err := LockFile(lockFile)
 	assert.NoError(t, err)
-	RemoveLockFile(lock, lockFile)
+	UnlockFile(lock)
+	assert.NoError(t, lock.Close())
+	assert.NoError(t, os.Remove(lockFile))
+
 }
 
 // TestLockFail is CreateLockFile fail test
@@ -148,21 +151,21 @@ func TestLockFail(t *testing.T) {
 
 	_, err = os.Create(filepath.Join(constant.TmpTestDir, "rubik-lock"))
 	assert.NoError(t, err)
-	_, err = CreateLockFile(filepath.Join(constant.TmpTestDir, "rubik-lock", "rubik.lock"))
+	_, err = LockFile(filepath.Join(constant.TmpTestDir, "rubik-lock", "rubik.lock"))
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(filepath.Join(constant.TmpTestDir, "rubik-lock"))
 	assert.NoError(t, err)
 
 	err = os.MkdirAll(lockFile, constant.DefaultDirMode)
 	assert.NoError(t, err)
-	_, err = CreateLockFile(lockFile)
+	_, err = LockFile(lockFile)
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(lockFile)
 	assert.NoError(t, err)
 
-	_, err = CreateLockFile(lockFile)
+	_, err = LockFile(lockFile)
 	assert.NoError(t, err)
-	_, err = CreateLockFile(lockFile)
+	_, err = LockFile(lockFile)
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(lockFile)
 	assert.NoError(t, err)

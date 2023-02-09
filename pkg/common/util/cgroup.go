@@ -15,6 +15,7 @@
 package util
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"isula.org/rubik/pkg/common/constant"
@@ -31,4 +32,22 @@ func AbsoluteCgroupPath(subsys string, relativePath string) string {
 		return ""
 	}
 	return filepath.Join(CgroupRoot, subsys, relativePath)
+}
+
+// ReadCgroupFile reads data from cgroup files
+func ReadCgroupFile(subsys, cgroupParent, cgroupFileName string) ([]byte, error) {
+	cgfile := filepath.Join(CgroupRoot, subsys, cgroupParent, cgroupFileName)
+	if !PathExist(cgfile) {
+		return nil, fmt.Errorf("%v: no such file or diretory", cgfile)
+	}
+	return ReadFile(cgfile)
+}
+
+// WriteCgroupFile writes data to cgroup file
+func WriteCgroupFile(subsys, cgroupParent, cgroupFileName string, content string) error {
+	cgfile := filepath.Join(CgroupRoot, subsys, cgroupParent, cgroupFileName)
+	if !PathExist(cgfile) {
+		return fmt.Errorf("%v: no such file or diretory", cgfile)
+	}
+	return WriteFile(cgfile, content)
 }
