@@ -26,7 +26,7 @@ import (
 // ContainerEngineType indicates the type of container engine
 type ContainerEngineType int8
 type CgroupKey struct {
-	subsys, filename string
+	SubSys, FileName string
 }
 
 const (
@@ -108,7 +108,7 @@ func (cont *ContainerInfo) SetCgroupAttr(key *CgroupKey, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return util.WriteCgroupFile(key.subsys, cont.CgroupPath, key.filename, value)
+	return util.WriteCgroupFile(key.SubSys, cont.CgroupPath, key.FileName, value)
 }
 
 // GetCgroupAttr gets container cgroup file content
@@ -116,11 +116,11 @@ func (cont *ContainerInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
 	if err := validateCgroupKey(key); err != nil {
 		return "", err
 	}
-	data, err := util.ReadCgroupFile(key.subsys, cont.CgroupPath, key.filename)
+	data, err := util.ReadCgroupFile(key.SubSys, cont.CgroupPath, key.FileName)
 	if err != nil {
 		return "", err
 	}
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
 }
 
 // validateCgroupKey is used to verify the validity of the cgroup key
@@ -128,7 +128,7 @@ func validateCgroupKey(key *CgroupKey) error {
 	if key == nil {
 		return fmt.Errorf("key cannot be empty")
 	}
-	if len(key.subsys) == 0 || len(key.filename) == 0 {
+	if len(key.SubSys) == 0 || len(key.FileName) == 0 {
 		return fmt.Errorf("invalid key")
 	}
 	return nil

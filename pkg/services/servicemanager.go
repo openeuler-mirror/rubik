@@ -209,7 +209,7 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 	// 2. pre-start persistent services
 	for _, s := range manager.RunningPersistentServices {
 		if err := setupFunc(s.ID(), s); err != nil {
-			return manager.terminatingRunningServices(fmt.Errorf("error running services %s: %v", s.ID(), err))
+			return manager.terminatingRunningServices(fmt.Errorf("error running persistent services %s: %v", s.ID(), err))
 		}
 	}
 	return nil
@@ -258,7 +258,9 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 
 	runOnce := func(s api.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
-		s.AddFunc(podInfo)
+		if err := s.AddFunc(podInfo); err != nil {
+			log.Errorf("service %s add func failed: %v", s.ID(), err)
+		}
 		wg.Done()
 	}
 	manager.RLock()
@@ -284,7 +286,10 @@ func (manager *ServiceManager) updateFunc(event typedef.Event) {
 	}
 	runOnce := func(s api.Service, old, new *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
-		s.UpdateFunc(old, new)
+		log.Debugf("update Func with service: %s", s.ID())
+		if err := s.UpdateFunc(old, new); err != nil {
+			log.Errorf("service %s update func failed: %v", s.ID(), err)
+		}
 		wg.Done()
 	}
 	manager.RLock()
@@ -306,7 +311,9 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 
 	runOnce := func(s api.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
-		s.DeleteFunc(podInfo)
+		if err := s.DeleteFunc(podInfo); err != nil {
+			log.Errorf("service %s delete func failed: %v", s.ID(), err)
+		}
 		wg.Done()
 	}
 	manager.RLock()

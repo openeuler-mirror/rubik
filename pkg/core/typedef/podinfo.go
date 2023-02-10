@@ -14,7 +14,11 @@
 // Package typedef defines core struct and methods for rubik
 package typedef
 
-import "isula.org/rubik/pkg/common/util"
+import (
+	"strings"
+
+	"isula.org/rubik/pkg/common/util"
+)
 
 // PodInfo represents pod
 type PodInfo struct {
@@ -58,7 +62,7 @@ func (pod *PodInfo) SetCgroupAttr(key *CgroupKey, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return util.WriteCgroupFile(key.subsys, pod.CgroupPath, key.filename, value)
+	return util.WriteCgroupFile(key.SubSys, pod.CgroupPath, key.FileName, value)
 }
 
 // GetCgroupAttr gets container cgroup file content
@@ -66,9 +70,15 @@ func (pod *PodInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
 	if err := validateCgroupKey(key); err != nil {
 		return "", err
 	}
-	data, err := util.ReadCgroupFile(key.subsys, pod.CgroupPath, key.filename)
+	data, err := util.ReadCgroupFile(key.SubSys, pod.CgroupPath, key.FileName)
 	if err != nil {
 		return "", err
 	}
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
+}
+
+// CgroupSetterAndGetter is used for set and get value to/from cgroup file
+type CgroupSetterAndGetter interface {
+	SetCgroupAttr(*CgroupKey, string) error
+	GetCgroupAttr(*CgroupKey) (string, error)
 }

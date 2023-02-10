@@ -89,3 +89,18 @@ const (
 	// ErrorExitCode failed during run
 	ErrorExitCode
 )
+
+// qos level
+const (
+	Offline = -1
+	Online  = 0
+	// TODO: add more level
+)
+
+// cgroup file name
+const (
+	// CPUCgroupFileName is name of cgroup file used for cpu qos level setting
+	CPUCgroupFileName = "cpu.qos_level"
+	// MemoryCgroupFileName is name of cgroup file used for memory qos level setting
+	MemoryCgroupFileName = "memory.qos_level"
+)
