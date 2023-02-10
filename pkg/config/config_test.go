@@ -44,9 +44,9 @@ var rubikConfig string = `
 	  "adjustInterval": 1000,
 	  "perfDuration": 1000,
 	  "l3Percent": {
-		"low": 20,
-		"mid": 30,
-		"high": 50
+		"low": 0,
+		"mid": 10,
+		"high": 100
 	  },
 	  "memBandPercent": {
 		"low": 10,
@@ -57,8 +57,7 @@ var rubikConfig string = `
 }
 `
 
-func TestPrepareServices(t *testing.T) {
-
+func TestServices(t *testing.T) {
 	if !util.PathExist(constant.TmpTestDir) {
 		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
 			assert.NoError(t, err)
@@ -79,15 +78,17 @@ func TestPrepareServices(t *testing.T) {
 		assert.NoError(t, err)
 		return
 	}
-	if err := c.PrepareServices(); err != nil {
+	serviceManager := services.NewServiceManager()
+	if err := serviceManager.InitServices(c.UnwarpServiceConfig(), c.ConfigParser); err != nil {
 		assert.NoError(t, err)
 		return
 	}
+
 	fmt.Printf("agent: %v\n", c.Agent)
-	for name, service := range services.GetServiceManager().RunningServices {
+	for name, service := range serviceManager.RunningServices {
 		fmt.Printf("name: %s, service: %v\n", name, service)
 	}
-	for name, service := range services.GetServiceManager().RunningPersistentServices {
+	for name, service := range serviceManager.RunningPersistentServices {
 		fmt.Printf("name: %s, persistent service: %v\n", name, service)
 	}
 }

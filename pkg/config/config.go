@@ -15,14 +15,12 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/pkg/common/log"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/common/util"
 )
 
 const agentKey = "agent"
@@ -96,9 +94,6 @@ func (c *Config) LoadConfig(path string) error {
 	}
 	c.Fields = fields
 	c.parseAgentConfig()
-	if err := c.PrepareServices(); err != nil {
-		return fmt.Errorf("error preparing services: %s", err)
-	}
 	return nil
 }
 
@@ -109,39 +104,13 @@ func (c *Config) filterNonServiceKeys(name string) bool {
 	return ok
 }
 
-// PrepareServices parses the to-be-run services config and loads them to the ServiceManager
-func (c *Config) PrepareServices() error {
-	// TODO: Later, consider placing the function book in rubik.go
-	for name, config := range c.Fields {
-		if c.filterNonServiceKeys(name) {
+func (c *Config) UnwarpServiceConfig() map[string]interface{} {
+	serviceConfig := util.DeepCopy(c.Fields).(map[string]interface{})
+	for name := range c.Fields {
+		if !c.filterNonServiceKeys(name) {
 			continue
 		}
-		creator := services.GetServiceCreator(name)
-		if creator == nil {
-			return fmt.Errorf("no corresponding module %v, please check the module name", name)
-		}
-		service := creator()
-		if err := c.UnmarshalSubConfig(config, service); err != nil {
-			return fmt.Errorf("error unmarshaling %s config: %v", name, err)
-		}
-
-		if services.SetLoggerOnService(service,
-			log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), name))) {
-			log.Debugf("set logger for service: %s", name)
-		}
-
-		// try to verify configuration
-		if validator, ok := service.(Validator); ok {
-			if err := validator.Validate(); err != nil {
-				return fmt.Errorf("error configuring service %s: %v", name, err)
-			}
-		}
-		services.AddRunningService(name, service)
+		delete(serviceConfig, name)
 	}
-	return nil
-}
-
-// Validator is a function interface to verify whether the configuration is correct or not
-type Validator interface {
-	Validate() error
+	return serviceConfig
 }

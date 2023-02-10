@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/subscriber"
 	"isula.org/rubik/pkg/core/typedef"
@@ -31,24 +32,6 @@ import (
 
 // serviceManagerName is the unique ID of the service manager
 const serviceManagerName = "serviceManager"
-
-// AddRunningService adds a to-be-run service
-func AddRunningService(name string, service interface{}) {
-	serviceManager.RLock()
-	_, ok1 := serviceManager.RunningServices[name]
-	_, ok2 := serviceManager.RunningPersistentServices[name]
-	serviceManager.RUnlock()
-	if ok1 || ok2 {
-		log.Errorf("service name conflict : \"%s\"", name)
-		return
-	}
-
-	if !serviceManager.tryAddService(name, service) && !serviceManager.tryAddPersistentService(name, service) {
-		log.Errorf("invalid service : \"%s\", %T", name, service)
-		return
-	}
-	log.Debugf("pre-start service %s", name)
-}
 
 // ServiceManager is used to manage the lifecycle of services
 type ServiceManager struct {
@@ -60,10 +43,8 @@ type ServiceManager struct {
 	TerminateFuncs            map[string]Terminator
 }
 
-// serviceManager is the only global service manager
-var serviceManager = newServiceManager()
-
-func newServiceManager() *ServiceManager {
+// NewServiceManager creates a servicemanager object
+func NewServiceManager() *ServiceManager {
 	manager := &ServiceManager{
 		RunningServices:           make(map[string]api.Service),
 		RunningPersistentServices: make(map[string]api.PersistentService),
@@ -72,9 +53,51 @@ func newServiceManager() *ServiceManager {
 	return manager
 }
 
-// GetServiceManager returns the globally unique ServiceManager
-func GetServiceManager() *ServiceManager {
-	return serviceManager
+// InitServices parses the to-be-run services config and loads them to the ServiceManager
+func (manager *ServiceManager) InitServices(serviceConfig map[string]interface{}, parser api.ConfigParser) error {
+	for name, config := range serviceConfig {
+		creator := GetServiceCreator(name)
+		if creator == nil {
+			return fmt.Errorf("no corresponding module %v, please check the module name", name)
+		}
+		service := creator()
+		if err := parser.UnmarshalSubConfig(config, service); err != nil {
+			return fmt.Errorf("error unmarshaling %s config: %v", name, err)
+		}
+
+		if SetLoggerOnService(service,
+			log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), name))) {
+			log.Debugf("set logger for service: %s", name)
+		}
+
+		// try to verify configuration
+		if validator, ok := service.(Validator); ok {
+			if err := validator.Validate(); err != nil {
+				return fmt.Errorf("error configuring service %s: %v", name, err)
+			}
+		}
+		if err := manager.AddRunningService(name, service); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AddRunningService adds a to-be-run service
+func (manager *ServiceManager) AddRunningService(name string, service interface{}) error {
+	manager.RLock()
+	_, existed1 := manager.RunningServices[name]
+	_, existed2 := manager.RunningPersistentServices[name]
+	manager.RUnlock()
+	if existed1 || existed2 {
+		return fmt.Errorf("service name conflict : \"%s\"", name)
+	}
+
+	if !manager.tryAddService(name, service) && !manager.tryAddPersistentService(name, service) {
+		return fmt.Errorf("invalid service : \"%s\", %T", name, service)
+	}
+	log.Debugf("pre-start service %s", name)
+	return nil
 }
 
 // HandleEvent is used to handle PodInfo events pushed by the publisher
@@ -105,9 +128,9 @@ func (manager *ServiceManager) EventTypes() []typedef.EventType {
 func (manager *ServiceManager) tryAddService(name string, service interface{}) bool {
 	s, ok := service.(api.Service)
 	if ok {
-		serviceManager.Lock()
+		manager.Lock()
 		manager.RunningServices[name] = s
-		serviceManager.Unlock()
+		manager.Unlock()
 		log.Debugf("service %s will run", name)
 	}
 	return ok
@@ -117,9 +140,9 @@ func (manager *ServiceManager) tryAddService(name string, service interface{}) b
 func (manager *ServiceManager) tryAddPersistentService(name string, service interface{}) bool {
 	s, ok := service.(api.PersistentService)
 	if ok {
-		serviceManager.Lock()
+		manager.Lock()
 		manager.RunningPersistentServices[name] = s
-		serviceManager.Unlock()
+		manager.Unlock()
 		log.Debugf("persistent service %s will run", name)
 	}
 	return ok
@@ -303,4 +326,9 @@ type Terminator interface {
 // PreStarter is an interface for calling a collection of methods when the service is pre-started
 type PreStarter interface {
 	PreStart(api.Viewer) error
+}
+
+// Validator is a function interface to verify whether the configuration is correct or not
+type Validator interface {
+	Validate() error
 }
