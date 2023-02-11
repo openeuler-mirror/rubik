@@ -54,12 +54,6 @@ type PersistentService interface {
 	Run(ctx context.Context)
 }
 
-// ConfigParser is a configuration parser for different languages
-type ConfigParser interface {
-	ParseConfig(data []byte) (map[string]interface{}, error)
-	UnmarshalSubConfig(data interface{}, v interface{}) error
-}
-
 // Viewer collect on/offline pods info
 type Viewer interface {
 	ListOnlinePods() ([]*typedef.PodInfo, error)

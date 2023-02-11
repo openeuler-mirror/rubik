@@ -25,10 +25,6 @@ import (
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/util"
-	"isula.org/rubik/pkg/services"
-	_ "isula.org/rubik/pkg/services/blkio"
-	_ "isula.org/rubik/pkg/services/cachelimit"
-	_ "isula.org/rubik/pkg/services/qos"
 )
 
 var rubikConfig string = `
@@ -82,17 +78,5 @@ func TestServices(t *testing.T) {
 		assert.NoError(t, err)
 		return
 	}
-	serviceManager := services.NewServiceManager()
-	if err := serviceManager.InitServices(c.UnwarpServiceConfig(), c.ConfigParser); err != nil {
-		assert.NoError(t, err)
-		return
-	}
-
-	fmt.Printf("agent: %v\n", c.Agent)
-	for name, service := range serviceManager.RunningServices {
-		fmt.Printf("name: %s, service: %v\n", name, service)
-	}
-	for name, service := range serviceManager.RunningPersistentServices {
-		fmt.Printf("name: %s, persistent service: %v\n", name, service)
-	}
+	fmt.Printf("config: %v", c)
 }

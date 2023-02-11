@@ -22,32 +22,32 @@ type (
 )
 
 const (
-	// RAW_POD_ADD means Kubernetes starts a new Pod event
-	RAW_POD_ADD EventType = iota
-	// RAW_POD_UPDATE means Kubernetes updates Pod event
-	RAW_POD_UPDATE
-	// RAW_POD_DELETE means Kubernetes deletes Pod event
-	RAW_POD_DELETE
-	// INFO_ADD means PodManager adds pod information event
-	INFO_ADD
-	// INFO_UPDATE means PodManager updates pod information event
-	INFO_UPDATE
-	// INFO_DELETE means PodManager deletes pod information event
-	INFO_DELETE
-	// RAW_POD_SYNC_ALL means Full amount of kubernetes pods
-	RAW_POD_SYNC_ALL
+	// RAWPODADD means Kubernetes starts a new Pod event
+	RAWPODADD EventType = iota
+	// RAWPODUPDATE means Kubernetes updates Pod event
+	RAWPODUPDATE
+	// RAWPODDELETE means Kubernetes deletes Pod event
+	RAWPODDELETE
+	// INFOADD means PodManager adds pod information event
+	INFOADD
+	// INFOUPDATE means PodManager updates pod information event
+	INFOUPDATE
+	// INFODELETE means PodManager deletes pod information event
+	INFODELETE
+	// RAWPODSYNCALL means Full amount of kubernetes pods
+	RAWPODSYNCALL
 )
 
 const undefinedType = "undefined"
 
 var eventTypeToString = map[EventType]string{
-	RAW_POD_ADD:      "addrawpod",
-	RAW_POD_UPDATE:   "updaterawpod",
-	RAW_POD_DELETE:   "deleterawpod",
-	INFO_ADD:         "addinfo",
-	INFO_UPDATE:      "updateinfo",
-	INFO_DELETE:      "deleteinfo",
-	RAW_POD_SYNC_ALL: "syncallrawpods",
+	RAWPODADD:     "addrawpod",
+	RAWPODUPDATE:  "updaterawpod",
+	RAWPODDELETE:  "deleterawpod",
+	INFOADD:       "addinfo",
+	INFOUPDATE:    "updateinfo",
+	INFODELETE:    "deleteinfo",
+	RAWPODSYNCALL: "syncallrawpods",
 }
 
 // String returns the string of the current event type

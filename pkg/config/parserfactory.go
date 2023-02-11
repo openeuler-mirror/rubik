@@ -14,13 +14,16 @@
 // Package config is used to manage the configuration of rubik
 package config
 
-import "isula.org/rubik/pkg/api"
-
 type (
 	// parserType represents the parser type
 	parserType int8
 	// parserFactory is the factory class of the parser
 	parserFactory struct{}
+	// ConfigParser is a configuration parser for different languages
+	ConfigParser interface {
+		ParseConfig(data []byte) (map[string]interface{}, error)
+		UnmarshalSubConfig(data interface{}, v interface{}) error
+	}
 )
 
 const (
@@ -32,7 +35,7 @@ const (
 var defaultParserFactory = &parserFactory{}
 
 // getParser gets parser instance according to the parser type passed in
-func (factory *parserFactory) getParser(pType parserType) api.ConfigParser {
+func (factory *parserFactory) getParser(pType parserType) ConfigParser {
 	switch pType {
 	case JSON:
 		return getJsonParser()

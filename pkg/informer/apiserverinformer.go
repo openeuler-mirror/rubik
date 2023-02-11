@@ -94,7 +94,7 @@ func (informer *APIServerInformer) listFunc(fieldSelector string) {
 		log.Errorf("error listing all pods: %v", err)
 		return
 	}
-	informer.Publish(typedef.RAW_POD_SYNC_ALL, pods.Items)
+	informer.Publish(typedef.RAWPODSYNCALL, pods.Items)
 }
 
 func (informer *APIServerInformer) watchFunc(ctx context.Context, fieldSelector string) {
@@ -114,15 +114,15 @@ func (informer *APIServerInformer) watchFunc(ctx context.Context, fieldSelector 
 
 // AddFunc handles the raw pod increase event
 func (informer *APIServerInformer) AddFunc(obj interface{}) {
-	informer.Publish(typedef.RAW_POD_ADD, obj)
+	informer.Publish(typedef.RAWPODADD, obj)
 }
 
 // UpdateFunc handles the raw pod update event
 func (informer *APIServerInformer) UpdateFunc(oldObj, newObj interface{}) {
-	informer.Publish(typedef.RAW_POD_UPDATE, newObj)
+	informer.Publish(typedef.RAWPODUPDATE, newObj)
 }
 
 // DeleteFunc handles the raw pod deletion event
 func (informer *APIServerInformer) DeleteFunc(obj interface{}) {
-	informer.Publish(typedef.RAW_POD_DELETE, obj)
+	informer.Publish(typedef.RAWPODDELETE, obj)
 }

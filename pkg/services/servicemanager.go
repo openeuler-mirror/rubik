@@ -26,6 +26,7 @@ import (
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/subscriber"
 	"isula.org/rubik/pkg/core/typedef"
 )
@@ -54,7 +55,7 @@ func NewServiceManager() *ServiceManager {
 }
 
 // InitServices parses the to-be-run services config and loads them to the ServiceManager
-func (manager *ServiceManager) InitServices(serviceConfig map[string]interface{}, parser api.ConfigParser) error {
+func (manager *ServiceManager) InitServices(serviceConfig map[string]interface{}, parser config.ConfigParser) error {
 	for name, config := range serviceConfig {
 		creator := GetServiceCreator(name)
 		if creator == nil {
@@ -90,11 +91,11 @@ func (manager *ServiceManager) AddRunningService(name string, service interface{
 	_, existed2 := manager.RunningPersistentServices[name]
 	manager.RUnlock()
 	if existed1 || existed2 {
-		return fmt.Errorf("service name conflict : \"%s\"", name)
+		return fmt.Errorf("service name conflict: %s", name)
 	}
 
 	if !manager.tryAddService(name, service) && !manager.tryAddPersistentService(name, service) {
-		return fmt.Errorf("invalid service : \"%s\", %T", name, service)
+		return fmt.Errorf("invalid service %s (type %T)", name, service)
 	}
 	log.Debugf("pre-start service %s", name)
 	return nil
@@ -108,11 +109,11 @@ func (manager *ServiceManager) HandleEvent(eventType typedef.EventType, event ty
 		}
 	}()
 	switch eventType {
-	case typedef.INFO_ADD:
+	case typedef.INFOADD:
 		manager.addFunc(event)
-	case typedef.INFO_UPDATE:
+	case typedef.INFOUPDATE:
 		manager.updateFunc(event)
-	case typedef.INFO_DELETE:
+	case typedef.INFODELETE:
 		manager.deleteFunc(event)
 	default:
 		log.Infof("service manager fail to process %s type", eventType.String())
@@ -121,7 +122,7 @@ func (manager *ServiceManager) HandleEvent(eventType typedef.EventType, event ty
 
 // EventTypes returns the type of event the serviceManager is interested in
 func (manager *ServiceManager) EventTypes() []typedef.EventType {
-	return []typedef.EventType{typedef.INFO_ADD, typedef.INFO_UPDATE, typedef.INFO_DELETE}
+	return []typedef.EventType{typedef.INFOADD, typedef.INFOUPDATE, typedef.INFODELETE}
 }
 
 // tryAddService determines whether it is a api.Service and adds it to the queue to be run
