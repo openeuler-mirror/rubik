@@ -19,25 +19,25 @@ import "isula.org/rubik/pkg/api"
 type publihserType int8
 
 const (
-	// TYPE_GENERIC indicates the generic publisher type
-	TYPE_GENERIC publihserType = iota
+	// GENERIC indicates the generic publisher type
+	GENERIC publihserType = iota
 )
 
-// PublisherFactory is the factory class of the publisher entity
-type PublisherFactory struct {
+// Factory is the factory class of the publisher entity
+type Factory struct {
 }
 
-var publisherFactory = &PublisherFactory{}
+var publisherFactory = &Factory{}
 
 // GetPublisherFactory creates a publisher factory instance
-func GetPublisherFactory() *PublisherFactory {
+func GetPublisherFactory() *Factory {
 	return publisherFactory
 }
 
 // GetPublisher returns the publisher entity according to the publisher type
-func (f *PublisherFactory) GetPublisher(publisherType publihserType) api.Publisher {
+func (f *Factory) GetPublisher(publisherType publihserType) api.Publisher {
 	switch publisherType {
-	case TYPE_GENERIC:
+	case GENERIC:
 		return getGenericPublisher()
 	default:
 		return nil

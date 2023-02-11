@@ -15,7 +15,10 @@
 package util
 
 import (
+	"bufio"
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 // FormatInt64 convert the int 64 type to a string
@@ -37,6 +40,27 @@ func ParseInt64(str string) (int64, error) {
 func ParseFloat64(str string) (float64, error) {
 	const bitSize = 64
 	return strconv.ParseFloat(str, bitSize)
+}
+
+// ParseInt64Map converts string to map[string]Int64:
+// 1. multiple lines are allowed;
+// 2. a single line consists of only two strings separated by spaces
+func ParseInt64Map(data string) (map[string]int64, error) {
+	var res = make(map[string]int64)
+	scanner := bufio.NewScanner(strings.NewReader(data))
+	for scanner.Scan() {
+		arr := strings.Fields(scanner.Text())
+		const defaultLength = 2
+		if len(arr) != defaultLength {
+			return nil, fmt.Errorf(" fail to parse a single line into two strings")
+		}
+		value, err := ParseInt64(arr[1])
+		if err != nil {
+			return nil, err
+		}
+		res[arr[0]] = value
+	}
+	return res, nil
 }
 
 // FormatFloat64 convert the Float64 type to string

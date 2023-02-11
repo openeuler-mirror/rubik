@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"isula.org/rubik/pkg/common/util"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
 // PodInfo represents pod
@@ -58,27 +59,21 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 }
 
 // SetCgroupAttr sets the container cgroup file
-func (pod *PodInfo) SetCgroupAttr(key *CgroupKey, value string) error {
+func (pod *PodInfo) SetCgroupAttr(key *cgroup.Key, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return util.WriteCgroupFile(key.SubSys, pod.CgroupPath, key.FileName, value)
+	return cgroup.WriteCgroupFile(key.SubSys, pod.CgroupPath, key.FileName, value)
 }
 
 // GetCgroupAttr gets container cgroup file content
-func (pod *PodInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
+func (pod *PodInfo) GetCgroupAttr(key *cgroup.Key) *cgroup.Attr {
 	if err := validateCgroupKey(key); err != nil {
-		return "", err
+		return &cgroup.Attr{Err: err}
 	}
-	data, err := util.ReadCgroupFile(key.SubSys, pod.CgroupPath, key.FileName)
+	data, err := cgroup.ReadCgroupFile(key.SubSys, pod.CgroupPath, key.FileName)
 	if err != nil {
-		return "", err
+		return &cgroup.Attr{Err: err}
 	}
-	return strings.TrimSpace(string(data)), nil
-}
-
-// CgroupSetterAndGetter is used for set and get value to/from cgroup file
-type CgroupSetterAndGetter interface {
-	SetCgroupAttr(*CgroupKey, string) error
-	GetCgroupAttr(*CgroupKey) (string, error)
+	return &cgroup.Attr{Value: strings.TrimSpace(string(data)), Err: nil}
 }

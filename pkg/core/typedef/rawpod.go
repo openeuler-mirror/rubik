@@ -47,13 +47,17 @@ type (
 		spec   corev1.Container
 	}
 	// RawPod represents kubernetes pod structure
-	RawPod       corev1.Pod
+	RawPod corev1.Pod
+	// ResourceType indicates the resource type, such as memory or CPU
 	ResourceType uint8
-	ResourceMap  map[ResourceType]float64
+	// ResourceMap represents the available value of a certain type of resource
+	ResourceMap map[ResourceType]float64
 )
 
 const (
+	// ResourceCPU indicates CPU resources
 	ResourceCPU ResourceType = iota
+	// ResourceMem represents memory resources
 	ResourceMem
 )
 
