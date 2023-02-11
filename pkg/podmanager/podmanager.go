@@ -48,9 +48,9 @@ func NewPodManager(publisher api.Publisher) *PodManager {
 // HandleEvent handles the event from publisher
 func (manager *PodManager) HandleEvent(eventType typedef.EventType, event typedef.Event) {
 	switch eventType {
-	case typedef.RAW_POD_ADD, typedef.RAW_POD_UPDATE, typedef.RAW_POD_DELETE:
+	case typedef.RAWPODADD, typedef.RAWPODUPDATE, typedef.RAWPODDELETE:
 		manager.handleWatchEvent(eventType, event)
-	case typedef.RAW_POD_SYNC_ALL:
+	case typedef.RAWPODSYNCALL:
 		manager.handleListEvent(eventType, event)
 	default:
 		log.Infof("fail to process %s type event", eventType.String())
@@ -66,11 +66,11 @@ func (manager *PodManager) handleWatchEvent(eventType typedef.EventType, event t
 	}
 
 	switch eventType {
-	case typedef.RAW_POD_ADD:
+	case typedef.RAWPODADD:
 		manager.addFunc(pod)
-	case typedef.RAW_POD_UPDATE:
+	case typedef.RAWPODUPDATE:
 		manager.updateFunc(pod)
-	case typedef.RAW_POD_DELETE:
+	case typedef.RAWPODDELETE:
 		manager.deleteFunc(pod)
 	default:
 		log.Errorf("code problem, should not go here...")
@@ -85,7 +85,7 @@ func (manager *PodManager) handleListEvent(eventType typedef.EventType, event ty
 		return
 	}
 	switch eventType {
-	case typedef.RAW_POD_SYNC_ALL:
+	case typedef.RAWPODSYNCALL:
 		manager.sync(pods)
 	default:
 		log.Errorf("code problem, should not go here...")
@@ -94,10 +94,10 @@ func (manager *PodManager) handleListEvent(eventType typedef.EventType, event ty
 
 // EventTypes returns the intersted event types
 func (manager *PodManager) EventTypes() []typedef.EventType {
-	return []typedef.EventType{typedef.RAW_POD_ADD,
-		typedef.RAW_POD_UPDATE,
-		typedef.RAW_POD_DELETE,
-		typedef.RAW_POD_SYNC_ALL,
+	return []typedef.EventType{typedef.RAWPODADD,
+		typedef.RAWPODUPDATE,
+		typedef.RAWPODDELETE,
+		typedef.RAWPODSYNCALL,
 	}
 }
 
@@ -181,7 +181,7 @@ func (manager *PodManager) tryAdd(podInfo *typedef.PodInfo) {
 	// only add when pod is not existed
 	if !manager.pods.podExist(podInfo.UID) {
 		manager.pods.addPod(podInfo)
-		manager.Publish(typedef.INFO_ADD, podInfo.DeepCopy())
+		manager.Publish(typedef.INFOADD, podInfo.DeepCopy())
 	}
 }
 
@@ -191,7 +191,7 @@ func (manager *PodManager) tryUpdate(podInfo *typedef.PodInfo) {
 	if manager.pods.podExist(podInfo.UID) {
 		oldPod := manager.pods.getPod(podInfo.UID)
 		manager.pods.updatePod(podInfo)
-		manager.Publish(typedef.INFO_UPDATE, []*typedef.PodInfo{oldPod, podInfo.DeepCopy()})
+		manager.Publish(typedef.INFOUPDATE, []*typedef.PodInfo{oldPod, podInfo.DeepCopy()})
 	}
 }
 
@@ -201,7 +201,7 @@ func (manager *PodManager) tryDelete(id string) {
 	oldPod := manager.pods.getPod(id)
 	if oldPod != nil {
 		manager.pods.delPod(id)
-		manager.Publish(typedef.INFO_DELETE, oldPod)
+		manager.Publish(typedef.INFODELETE, oldPod)
 	}
 }
 

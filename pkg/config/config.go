@@ -18,9 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/pkg/common/util"
 )
 
 const agentKey = "agent"
@@ -32,7 +30,7 @@ var sysConfKeys = map[string]struct{}{
 
 // Config saves all configuration information of rubik
 type Config struct {
-	api.ConfigParser
+	ConfigParser
 	Agent  *AgentConfig
 	Fields map[string]interface{}
 }
@@ -104,13 +102,14 @@ func (c *Config) filterNonServiceKeys(name string) bool {
 	return ok
 }
 
+// UnwarpServiceConfig returns service configuration, indexed by service name
 func (c *Config) UnwarpServiceConfig() map[string]interface{} {
-	serviceConfig := util.DeepCopy(c.Fields).(map[string]interface{})
-	for name := range c.Fields {
-		if !c.filterNonServiceKeys(name) {
+	serviceConfig := make(map[string]interface{})
+	for name, conf := range c.Fields {
+		if c.filterNonServiceKeys(name) {
 			continue
 		}
-		delete(serviceConfig, name)
+		serviceConfig[name] = conf
 	}
 	return serviceConfig
 }
