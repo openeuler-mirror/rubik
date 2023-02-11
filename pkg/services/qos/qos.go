@@ -7,10 +7,11 @@ import (
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/services"
 )
 
-var supportCgroupTypes = map[string]*typedef.CgroupKey{
+var supportCgroupTypes = map[string]*cgroup.Key{
 	"cpu":    {SubSys: "cpu", FileName: constant.CPUCgroupFileName},
 	"memory": {SubSys: "memory", FileName: constant.MemoryCgroupFileName},
 }
@@ -38,16 +39,6 @@ func NewQoS() *QoS {
 	return &QoS{
 		Name: "qos",
 	}
-}
-
-// PreStart will do some pre-start actions
-func (q *QoS) PreStart(viewer api.Viewer) error {
-	return nil
-}
-
-// Terminate will do some clean-up actions
-func (q *QoS) Terminate(viewer api.Viewer) error {
-	return nil
 }
 
 // ID return qos service name
@@ -93,30 +84,13 @@ func (q *QoS) DeleteFunc(pod *typedef.PodInfo) error {
 // cgroup file and the one from pod info
 func (q *QoS) ValidateQoS(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
-	var compare = func(c typedef.CgroupSetterAndGetter, subSys string) bool {
-		value, err := c.GetCgroupAttr(supportCgroupTypes[subSys])
-		if err != nil {
-			q.Log.Errorf("failed to get cgroup attr: %v", err)
-			return false
-		}
-		level, err := strconv.Atoi(value)
-		if err != nil {
-			q.Log.Errorf("failed to convert value %s to int: %v", value, err)
-			return false
-		}
-		if level != targetLevel {
-			q.Log.Errorf("different qos value between annotation %d and cgroup file %d", targetLevel, level)
-			return false
-		}
-		return true
-	}
 	for _, subSys := range q.SubSys {
-		if !compare(pod, subSys) {
-			return fmt.Errorf("failed to validate pod %s", pod.Name)
+		if err := pod.GetCgroupAttr(supportCgroupTypes[subSys]).Expect(targetLevel); err != nil {
+			return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
 		}
 		for _, container := range pod.IDContainersMap {
-			if !compare(container, subSys) {
-				return fmt.Errorf("failed to validate container %s", container.Name)
+			if err := container.GetCgroupAttr(supportCgroupTypes[subSys]).Expect(targetLevel); err != nil {
+				return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
 			}
 		}
 	}

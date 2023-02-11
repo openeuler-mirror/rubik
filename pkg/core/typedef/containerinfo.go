@@ -21,13 +21,11 @@ import (
 	"sync"
 
 	"isula.org/rubik/pkg/common/util"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
 // ContainerEngineType indicates the type of container engine
 type ContainerEngineType int8
-type CgroupKey struct {
-	SubSys, FileName string
-}
 
 const (
 	// UNDEFINED means undefined container engine
@@ -98,33 +96,33 @@ func fixContainerEngine(containerID string) {
 // DeepCopy returns deepcopy object.
 func (cont *ContainerInfo) DeepCopy() *ContainerInfo {
 	copyObject := *cont
-	copyObject.LimitResources = util.DeepCopy(cont.LimitResources).(ResourceMap)
-	copyObject.RequestResources = util.DeepCopy(cont.RequestResources).(ResourceMap)
+	copyObject.LimitResources, _ = util.DeepCopy(cont.LimitResources).(ResourceMap)
+	copyObject.RequestResources, _ = util.DeepCopy(cont.RequestResources).(ResourceMap)
 	return &copyObject
 }
 
 // SetCgroupAttr sets the container cgroup file
-func (cont *ContainerInfo) SetCgroupAttr(key *CgroupKey, value string) error {
+func (cont *ContainerInfo) SetCgroupAttr(key *cgroup.Key, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return util.WriteCgroupFile(key.SubSys, cont.CgroupPath, key.FileName, value)
+	return cgroup.WriteCgroupFile(key.SubSys, cont.CgroupPath, key.FileName, value)
 }
 
 // GetCgroupAttr gets container cgroup file content
-func (cont *ContainerInfo) GetCgroupAttr(key *CgroupKey) (string, error) {
+func (cont *ContainerInfo) GetCgroupAttr(key *cgroup.Key) *cgroup.Attr {
 	if err := validateCgroupKey(key); err != nil {
-		return "", err
+		return &cgroup.Attr{Err: err}
 	}
-	data, err := util.ReadCgroupFile(key.SubSys, cont.CgroupPath, key.FileName)
+	data, err := cgroup.ReadCgroupFile(key.SubSys, cont.CgroupPath, key.FileName)
 	if err != nil {
-		return "", err
+		return &cgroup.Attr{Err: err}
 	}
-	return strings.TrimSpace(string(data)), nil
+	return &cgroup.Attr{Value: strings.TrimSpace(string(data)), Err: nil}
 }
 
 // validateCgroupKey is used to verify the validity of the cgroup key
-func validateCgroupKey(key *CgroupKey) error {
+func validateCgroupKey(key *cgroup.Key) error {
 	if key == nil {
 		return fmt.Errorf("key cannot be empty")
 	}

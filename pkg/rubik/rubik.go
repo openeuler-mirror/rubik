@@ -29,6 +29,7 @@ import (
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/publisher"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/informer"
 	"isula.org/rubik/pkg/podmanager"
 	"isula.org/rubik/pkg/services"
@@ -44,7 +45,7 @@ type Agent struct {
 
 // NewAgent returns an agent for given configuration
 func NewAgent(cfg *config.Config) (*Agent, error) {
-	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.TYPE_GENERIC)
+	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
 	serviceManager := services.NewServiceManager()
 	if err := serviceManager.InitServices(cfg.UnwarpServiceConfig(), cfg); err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func (a *Agent) Run(ctx context.Context) error {
 
 // startInformer starts informer to obtain external data
 func (a *Agent) startInformer(ctx context.Context) error {
-	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.TYPE_GENERIC)
+	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
 	informer, err := informer.GetInfomerFactory().GetInformerCreator(informer.APISERVER)(publisher)
 	if err != nil {
 		return fmt.Errorf("fail to set informer: %v", err)
@@ -109,16 +110,20 @@ func (a *Agent) stopServiceHandler() {
 
 // runAgent creates and runs rubik's agent
 func runAgent(ctx context.Context) error {
+	// 1. read configuration
 	c := config.NewConfig(config.JSON)
 	if err := c.LoadConfig(constant.ConfigFile); err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
-	// Agent parameter enable
+	// 2. enable log system
 	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
 		return fmt.Errorf("error initializing log: %v", err)
 	}
 
-	util.CgroupRoot = c.Agent.CgroupRoot
+	// 3. enable cgroup system
+	cgroup.InitMountDir(c.Agent.CgroupRoot)
+
+	// 4. Create and run the agent
 	agent, err := NewAgent(c)
 	if err != nil {
 		return fmt.Errorf("error new agent: %v", err)
@@ -141,7 +146,7 @@ func Run() int {
 	lock, err := util.LockFile(constant.LockFile)
 	defer func() {
 		lock.Close()
-		os.Remove(constant.LockFile)
+		log.DropError(os.Remove(constant.LockFile))
 	}()
 	if err != nil {
 		fmt.Printf("set rubik lock failed: %v, check if there is another rubik running\n", err)
