@@ -60,6 +60,8 @@ const (
 	QuotaBurstAnnotationKey = "volcano.sh/quota-burst-time"
 	// BlkioKey is annotation key to set blkio limit
 	BlkioKey = "volcano.sh/blkio-limit"
+	// QuotaAnnotationKey is annotation key to mark whether to enable the quota turbo
+	QuotaAnnotationKey = "volcano.sh/quota-turbo"
 )
 
 // log config

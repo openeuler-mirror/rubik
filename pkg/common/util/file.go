@@ -122,7 +122,7 @@ func WriteFile(path, content string) error {
 	if IsDir(path) {
 		return fmt.Errorf("%v is not a file", path)
 	}
-	// try to create Pparent directory
+	// try to create parent directory
 	dirPath := filepath.Dir(path)
 	if !PathExist(dirPath) {
 		if err := os.MkdirAll(dirPath, constant.DefaultDirMode); err != nil {
