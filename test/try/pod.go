@@ -31,7 +31,7 @@ import (
 type FakePod struct {
 	*typedef.PodInfo
 	// Keys is cgroup key list
-	Keys []*cgroup.Key
+	Keys map[*cgroup.Key]string
 }
 
 const idLen = 8
@@ -62,48 +62,44 @@ func genFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
 }
 
 // NewFakePod return fake pod info struct
-func NewFakePod(keys []*cgroup.Key, qosClass corev1.PodQOSClass) *FakePod {
+func NewFakePod(keys map[*cgroup.Key]string, qosClass corev1.PodQOSClass) *FakePod {
 	return &FakePod{
 		Keys:    keys,
 		PodInfo: genFakePodInfo(qosClass),
 	}
 }
 
-func (pod *FakePod) genFakePodCgroupPath() {
+func (pod *FakePod) genFakePodCgroupPath() Ret {
 	if !util.PathExist(TestRoot) {
 		MkdirAll(TestRoot, constant.DefaultDirMode).OrDie()
 	}
+	cgroup.InitMountDir(TestRoot)
 	// generate fake cgroup path
-	for _, key := range pod.Keys {
+	for key, value := range pod.Keys {
 		// generate pod absolute cgroup path
-		podCGPath := filepath.Join(TestRoot, key.SubSys, pod.CgroupPath)
-		MkdirAll(podCGPath, constant.DefaultDirMode).OrDie()
-		// create pod cgroup file, default qos level is "0"
-		podCGFilePath := filepath.Join(podCGPath, key.FileName)
-		WriteFile(podCGFilePath, []byte(string("0")), constant.DefaultFileMode).OrDie()
+		podCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, pod.CgroupPath, key.FileName)
+		if err := WriteFile(podCGFilePath, value); err.err != nil {
+			return err
+		}
 	}
-	pod.genFakeContainersCgroupPath()
+	return pod.genFakeContainersCgroupPath()
 }
 
-func (pod *FakePod) genFakeContainersCgroupPath() {
+func (pod *FakePod) genFakeContainersCgroupPath() Ret {
 	if len(pod.IDContainersMap) == 0 {
-		return
+		return newRet(nil)
 	}
 
-	for _, key := range pod.Keys {
-		podCGPath := filepath.Join(TestRoot, key.SubSys, pod.CgroupPath)
-		if !util.PathExist(podCGPath) {
-			return
-		}
+	for key, value := range pod.Keys {
 		for _, container := range pod.IDContainersMap {
 			// generate container absolute cgroup path
-			containerCGPath := filepath.Join(podCGPath, container.ID)
-			MkdirAll(containerCGPath, constant.DefaultDirMode).OrDie()
-			// create container cgroup file, default qos level is "0"
-			containerCGFilePath := filepath.Join(containerCGPath, key.FileName)
-			WriteFile(containerCGFilePath, []byte(string("0")), constant.DefaultFileMode).OrDie()
+			containerCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, container.CgroupPath, key.FileName)
+			if err := WriteFile(containerCGFilePath, value); err.err != nil {
+				return err
+			}
 		}
 	}
+	return newRet(nil)
 }
 
 // WithContainers will generate containers under pod with container num
@@ -117,49 +113,63 @@ func (pod *FakePod) WithContainers(containerNum int) *FakePod {
 	return pod
 }
 
+// CleanPath will delete fakepod's cgroup folders and files
+func (pod *FakePod) CleanPath() Ret {
+	if pod == nil {
+		return newRet(nil)
+	}
+	for key := range pod.Keys {
+		path := cgroup.AbsoluteCgroupPath(key.SubSys, pod.CgroupPath, key.FileName)
+		if err := RemoveAll(filepath.Dir(path)); err.err != nil {
+			return err
+		}
+	}
+	return newRet(nil)
+}
+
 func genContainerID() string {
 	const delimiter = "-"
-	const containerIDLenLimit = 64
+	// format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	// length: 36
+	// delimiter no: 4
 	uuid1 := uuid.New().String()
 	uuid2 := uuid.New().String()
+	// now one uuid length is 64 for sure
 	containerID := strings.ReplaceAll(uuid1, delimiter, "") + strings.ReplaceAll(uuid2, delimiter, "")
-	if len(containerID) < containerIDLenLimit {
-		containerID += strings.Repeat("a", containerIDLenLimit-len(containerID))
-	}
-	return containerID[:containerIDLenLimit]
+	return containerID
 }
 
 // GenFakePod gen fake pod info
-func GenFakePod(keys []*cgroup.Key, qosClass corev1.PodQOSClass) *FakePod {
+func GenFakePod(keys map[*cgroup.Key]string, qosClass corev1.PodQOSClass) *FakePod {
 	fakePod := NewFakePod(keys, qosClass)
-	fakePod.genFakePodCgroupPath()
+	fakePod.genFakePodCgroupPath().OrDie()
 	return fakePod
 }
 
 // GenFakeBurstablePod generate pod with qos class burstable
-func GenFakeBurstablePod(keys []*cgroup.Key) *FakePod {
+func GenFakeBurstablePod(keys map[*cgroup.Key]string) *FakePod {
 	return GenFakePod(keys, corev1.PodQOSBurstable)
 }
 
 // GenFakeBestEffortPod generate pod with qos class best effort
-func GenFakeBestEffortPod(keys []*cgroup.Key) *FakePod {
+func GenFakeBestEffortPod(keys map[*cgroup.Key]string) *FakePod {
 	return GenFakePod(keys, corev1.PodQOSBestEffort)
 }
 
 // GenFakeGuaranteedPod generate pod with qos class guaranteed
-func GenFakeGuaranteedPod(keys []*cgroup.Key) *FakePod {
+func GenFakeGuaranteedPod(keys map[*cgroup.Key]string) *FakePod {
 	return GenFakePod(keys, corev1.PodQOSGuaranteed)
 }
 
 // GenFakeOnlinePod generate online pod
-func GenFakeOnlinePod(keys []*cgroup.Key) *FakePod {
+func GenFakeOnlinePod(keys map[*cgroup.Key]string) *FakePod {
 	fakePod := GenFakeGuaranteedPod(keys)
 	fakePod.Annotations[constant.PriorityAnnotationKey] = "false"
 	return fakePod
 }
 
 // GenFakeOfflinePod generate offline pod
-func GenFakeOfflinePod(keys []*cgroup.Key) *FakePod {
+func GenFakeOfflinePod(keys map[*cgroup.Key]string) *FakePod {
 	fakePod := GenFakeBurstablePod(keys)
 	fakePod.Annotations[constant.PriorityAnnotationKey] = "true"
 	return fakePod
@@ -169,12 +179,29 @@ func genRelativeCgroupPath(qosClass corev1.PodQOSClass, id string) string {
 	path := ""
 	switch qosClass {
 	case corev1.PodQOSGuaranteed:
+		path = ""
 	case corev1.PodQOSBurstable:
 		path = strings.ToLower(string(corev1.PodQOSBurstable))
 	case corev1.PodQOSBestEffort:
 		path = strings.ToLower(string(corev1.PodQOSBestEffort))
-	default:
-		return ""
 	}
 	return filepath.Join(constant.KubepodsCgroup, path, constant.PodCgroupNamePrefix+id)
+}
+
+// DeepCopy returns fake pod deepcopy object
+func (pod *FakePod) DeepCopy() *FakePod {
+	if pod == nil || pod.PodInfo == nil {
+		return nil
+	}
+	return &FakePod{
+		Keys: util.DeepCopy(pod.Keys).(map[*cgroup.Key]string),
+		PodInfo: &typedef.PodInfo{
+			Name:            pod.Name,
+			UID:             pod.UID,
+			CgroupPath:      pod.CgroupPath,
+			Namespace:       pod.Namespace,
+			Annotations:     util.DeepCopy(pod.Annotations).(map[string]string),
+			IDContainersMap: util.DeepCopy(pod.IDContainersMap).(map[string]*typedef.ContainerInfo),
+		},
+	}
 }

@@ -25,7 +25,6 @@ package try
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/google/uuid"
 
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/util"
 )
 
 // Ret provide some action for error.
@@ -101,12 +101,23 @@ func RemoveAll(path string) Ret {
 }
 
 // WriteFile wrap error to Ret.
-func WriteFile(filename string, data []byte, perm os.FileMode) Ret {
+func WriteFile(filename string, data string) Ret {
 	ret := newRet(nil)
 	ret.val = filename
-	if err := ioutil.WriteFile(filename, data, perm); err != nil {
+	if err := util.WriteFile(filename, data); err != nil {
 		ret.err = err
 	}
+	return ret
+}
+
+// ReadFile wrap error to Ret
+func ReadFile(filename string) Ret {
+	ret := newRet(nil)
+	val, err := util.ReadFile(filename)
+	if err != nil {
+		ret.err = err
+	}
+	ret.val = string(val)
 	return ret
 }
 

@@ -20,8 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"isula.org/rubik/pkg/common/constant"
 )
 
 // Test_OrDie test try some-func or die.
@@ -29,7 +27,7 @@ func Test_OrDie(t *testing.T) {
 	ret := GenTestDir()
 	ret.OrDie()
 	dname := ret.String()
-	WriteFile(SecureJoin(dname, "die.txt").String(), []byte("ok"), constant.DefaultFileMode).OrDie()
+	WriteFile(SecureJoin(dname, "die.txt").String(), "ok").OrDie()
 	RemoveAll(dname).OrDie()
 }
 
@@ -38,6 +36,6 @@ func Test_ErrMessage(t *testing.T) {
 	ret := GenTestDir()
 	assert.Equal(t, ret.ErrMessage(), "")
 	dname := ret.String()
-	WriteFile(SecureJoin(dname, "log.txt").String(), []byte("ok"), constant.DefaultFileMode).ErrMessage()
+	WriteFile(SecureJoin(dname, "log.txt").String(), "ok").ErrMessage()
 	assert.Equal(t, RemoveAll(dname).ErrMessage(), "")
 }
