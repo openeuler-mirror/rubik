@@ -20,7 +20,6 @@ import (
 	"strings"
 	"sync"
 
-	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
@@ -96,8 +95,8 @@ func fixContainerEngine(containerID string) {
 // DeepCopy returns deepcopy object.
 func (cont *ContainerInfo) DeepCopy() *ContainerInfo {
 	copyObject := *cont
-	copyObject.LimitResources, _ = util.DeepCopy(cont.LimitResources).(ResourceMap)
-	copyObject.RequestResources, _ = util.DeepCopy(cont.RequestResources).(ResourceMap)
+	copyObject.LimitResources = cont.LimitResources.DeepCopy()
+	copyObject.RequestResources = cont.RequestResources.DeepCopy()
 	return &copyObject
 }
 

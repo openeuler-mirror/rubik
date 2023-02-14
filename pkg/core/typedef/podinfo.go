@@ -17,7 +17,6 @@ package typedef
 import (
 	"strings"
 
-	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
@@ -48,13 +47,21 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 	if pod == nil {
 		return nil
 	}
+	contMap := make(map[string]*ContainerInfo, len(pod.IDContainersMap))
+	for id, cont := range pod.IDContainersMap {
+		contMap[id] = cont.DeepCopy()
+	}
+	annoMap := make(map[string]string, len(pod.Annotations))
+	for k, v := range pod.Annotations {
+		annoMap[k] = v
+	}
 	return &PodInfo{
 		Name:            pod.Name,
 		UID:             pod.UID,
 		CgroupPath:      pod.CgroupPath,
 		Namespace:       pod.Namespace,
-		Annotations:     util.DeepCopy(pod.Annotations).(map[string]string),
-		IDContainersMap: util.DeepCopy(pod.IDContainersMap).(map[string]*ContainerInfo),
+		Annotations:     annoMap,
+		IDContainersMap: contMap,
 	}
 }
 
