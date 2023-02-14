@@ -25,6 +25,13 @@ import (
 
 var rootDir = constant.DefaultCgroupRoot
 
+func AbsoluteCgroupPath(subsys, cgroupParent, cgroupFileName string) string {
+	if subsys == "" {
+		return ""
+	}
+	return filepath.Join(rootDir, subsys, cgroupParent, cgroupFileName)
+}
+
 // ReadCgroupFile reads data from cgroup files
 func ReadCgroupFile(subsys, cgroupParent, cgroupFileName string) ([]byte, error) {
 	cgfile := filepath.Join(rootDir, subsys, cgroupParent, cgroupFileName)
