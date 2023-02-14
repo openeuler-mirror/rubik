@@ -1,3 +1,17 @@
+// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
+// rubik licensed under the Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+//     http://license.coscl.org.cn/MulanPSL2
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+// PURPOSE.
+// See the Mulan PSL v2 for more details.
+// Author: Xiang Li
+// Create: 2023-02-10
+// Description: This file implement qos level setting service
+
+// Package qos is the service used for qos level setting
 package qos
 
 import (
@@ -99,8 +113,11 @@ func (q *QoS) ValidateQoS(pod *typedef.PodInfo) error {
 
 // SetQoS set pod and all containers' qos level within it
 func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
+	if pod == nil {
+		return fmt.Errorf("pod info is empty")
+	}
 	qosLevel := getQoSLevel(pod)
-	if qosLevel != constant.Offline {
+	if qosLevel == constant.Online {
 		q.Log.Debugf("pod %s already online", pod.Name)
 		return nil
 	}
@@ -121,19 +138,19 @@ func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
 
 func getQoSLevel(pod *typedef.PodInfo) int {
 	if pod == nil {
-		return 0
+		return constant.Online
 	}
 	anno, ok := pod.Annotations[constant.PriorityAnnotationKey]
 	if !ok {
-		return 0
+		return constant.Online
 	}
 	switch anno {
 	case "true":
-		return -1
+		return constant.Offline
 	case "false":
-		return 0
+		return constant.Online
 	default:
-		return 0
+		return constant.Online
 	}
 }
 

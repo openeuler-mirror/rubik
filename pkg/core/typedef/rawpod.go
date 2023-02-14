@@ -15,6 +15,7 @@
 package typedef
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -22,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/pkg/common/log"
 )
 
 const (
@@ -148,8 +148,8 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 	// 2. generate ID-Container mapping
 	podCgroupPath := pod.CgroupPath()
 	for _, rawContainer := range nameRawContainersMap {
-		id := rawContainer.GetRealContainerID()
-		if id == "" {
+		id, err := rawContainer.GetRealContainerID()
+		if id == "" || err != nil {
 			continue
 		}
 		idContainersMap[id] = NewContainerInfo(id, podCgroupPath, rawContainer)
@@ -158,7 +158,7 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 }
 
 // GetRealContainerID parses the containerID of k8s
-func (cont *RawContainer) GetRealContainerID() string {
+func (cont *RawContainer) GetRealContainerID() (string, error) {
 	/*
 		Note:
 		An UNDEFINED container engine was used when the function was executed for the first time
@@ -169,16 +169,15 @@ func (cont *RawContainer) GetRealContainerID() string {
 	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
 
 	if !currentContainerEngines.Support(cont) {
-		log.Errorf("fatal error : unsupported container engine")
-		return ""
+		return "", fmt.Errorf("fatal error : unsupported container engine")
 	}
 
 	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]
 	// the container may be in the creation or deletion phase.
 	if len(cid) == 0 {
-		return ""
+		return "", nil
 	}
-	return cid
+	return cid, nil
 }
 
 // GetResourceMaps returns the number of requests and limits of CPU and memory resources

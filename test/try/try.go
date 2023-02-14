@@ -10,7 +10,7 @@
 // Author: jingrui
 // Create: 2022-04-17
 // Description: try provide some helper functions for unit-test.
-//
+
 // Package try provide some helper function for unit-test, if you want
 // to use try outside unit-test, please add notes.
 //
@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
 	"github.com/google/uuid"
@@ -110,18 +111,19 @@ func WriteFile(filename string, data []byte, perm os.FileMode) Ret {
 }
 
 const (
-	testdir = "/tmp/rubik-test"
+	// TestRoot is the root path for all test cases
+	TestRoot = "/tmp/rubik-test"
 )
 
 // GenTestDir gen testdir
 func GenTestDir() Ret {
-	name := fmt.Sprintf("%s/%s", testdir, uuid.New().String())
-	ret := MkdirAll(name, constant.DefaultDirMode)
-	ret.val = name
+	path := filepath.Join(TestRoot, uuid.New().String())
+	ret := MkdirAll(path, constant.DefaultDirMode)
+	ret.val = path
 	return ret
 }
 
 // DelTestDir del testdir, this function only need call once.
 func DelTestDir() Ret {
-	return RemoveAll(testdir)
+	return RemoveAll(TestRoot)
 }
