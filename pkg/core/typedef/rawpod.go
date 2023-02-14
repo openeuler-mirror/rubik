@@ -197,3 +197,14 @@ func (cont *RawContainer) GetResourceMaps() (ResourceMap, ResourceMap) {
 	)
 	return iterator(&cont.spec.Resources.Requests), iterator(&cont.spec.Resources.Limits)
 }
+
+func (m ResourceMap) DeepCopy() ResourceMap {
+	if m == nil {
+		return nil
+	}
+	res := make(ResourceMap, len(m))
+	for k, v := range m {
+		res[k] = v
+	}
+	return res
+}
