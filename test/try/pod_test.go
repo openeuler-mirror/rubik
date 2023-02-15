@@ -254,6 +254,7 @@ func TestFakePod_DeepCopy(t *testing.T) {
 				Keys:    tt.fields.Keys,
 			}
 			if got := pod.DeepCopy(); !reflect.DeepEqual(got, tt.want) {
+				assert.Equal(t, got, tt.want)
 				t.Errorf("FakePod.DeepCopy() = %v, want %v", got, tt.want)
 			}
 		})

@@ -71,4 +71,14 @@ func TestPodInfo_DeepCopy(t *testing.T) {
 	assert.Equal(t, oldLimitCPU, oldPod.IDContainersMap[contID].LimitResources[ResourceCPU])
 	assert.Equal(t, oldLimitMem, oldPod.IDContainersMap[contID].LimitResources[ResourceMem])
 
+	oldNilMapPod := &PodInfo{
+		Name: oldPodName,
+		UID:  oldPodID,
+		Annotations: map[string]string{
+			constant.QuotaAnnotationKey: oldQuota,
+		},
+	}
+	copyPod = oldNilMapPod.DeepCopy()
+	assert.Equal(t, copyPod, oldNilMapPod)
+
 }

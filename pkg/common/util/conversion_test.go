@@ -17,6 +17,8 @@ package util
 import (
 	"math"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestFormatInt64 is testcase for FormatInt64
@@ -159,4 +161,27 @@ func TestParseFloat64(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestDeepCopy tests DeepCopy
+func TestDeepCopy(t *testing.T) {
+	oldMap := map[string]string{
+		"a": "1",
+		"b": "2",
+	}
+	newMap := DeepCopy(oldMap).(map[string]string)
+	newMap["a"] = "3"
+	newMap["b"] = "4"
+	assert.Equal(t, oldMap["a"], "1")
+	assert.Equal(t, oldMap["b"], "2")
+	assert.Equal(t, newMap["a"], "3")
+	assert.Equal(t, newMap["b"], "4")
+
+	oldSlice := []string{"a", "b", "c"}
+	newSlice := DeepCopy(oldSlice).([]string)
+	for i, _ := range newSlice {
+		newSlice[i] += "z"
+	}
+	assert.Equal(t, oldSlice, []string{"a", "b", "c"})
+	assert.Equal(t, newSlice, []string{"az", "bz", "cz"})
 }
