@@ -17,6 +17,7 @@ package util
 import (
 	"bufio"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -77,4 +78,33 @@ func FormatFloat64(f float64) string {
 func PercentageToDecimal(num float64) float64 {
 	const percentageofOne float64 = 100
 	return Div(num, percentageofOne)
+}
+
+// DeepCopy deep copy slice or map data with basic type
+// DeepCopy is a simple deep copy function that only supports copying of basic types of maps and slices,
+// such as map[string]string, []int, etc., and does not support nesting.
+// **Since the reflection mechanism with poor performance is used,
+// please use this function with caution after balancing performance and ease of use**
+func DeepCopy(value interface{}) interface{} {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("err: %v\n", err)
+		}
+	}()
+	typ := reflect.TypeOf(value)
+	val := reflect.ValueOf(value)
+	switch typ.Kind() {
+	case reflect.Map:
+		newMap := reflect.MakeMapWithSize(typ, val.Len())
+		it := val.MapRange()
+		for it.Next() {
+			newMap.SetMapIndex(it.Key(), DeepCopy(it.Value()).(reflect.Value))
+		}
+		return newMap.Interface()
+	case reflect.Slice:
+		newSlice := reflect.MakeSlice(typ, val.Len(), val.Cap())
+		reflect.Copy(newSlice, val)
+		return newSlice.Interface()
+	}
+	return value
 }

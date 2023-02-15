@@ -47,14 +47,24 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 	if pod == nil {
 		return nil
 	}
-	contMap := make(map[string]*ContainerInfo, len(pod.IDContainersMap))
-	for id, cont := range pod.IDContainersMap {
-		contMap[id] = cont.DeepCopy()
+	var (
+		contMap map[string]*ContainerInfo
+		annoMap map[string]string
+	)
+	// nil is different from empty value in golang
+	if pod.IDContainersMap != nil {
+		contMap = make(map[string]*ContainerInfo, len(pod.IDContainersMap))
+		for id, cont := range pod.IDContainersMap {
+			contMap[id] = cont.DeepCopy()
+		}
 	}
-	annoMap := make(map[string]string, len(pod.Annotations))
-	for k, v := range pod.Annotations {
-		annoMap[k] = v
+	if pod.Annotations != nil {
+		annoMap = make(map[string]string, len(pod.Annotations))
+		for k, v := range pod.Annotations {
+			annoMap[k] = v
+		}
 	}
+
 	return &PodInfo{
 		Name:            pod.Name,
 		UID:             pod.UID,

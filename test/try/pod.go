@@ -193,15 +193,15 @@ func (pod *FakePod) DeepCopy() *FakePod {
 	if pod == nil || pod.PodInfo == nil {
 		return nil
 	}
+	var copyKeys map[*cgroup.Key]string
+	if pod.Keys != nil {
+		copyKeys = make(map[*cgroup.Key]string, len(pod.Keys))
+		for k, v := range pod.Keys {
+			copyKeys[k] = v
+		}
+	}
 	return &FakePod{
-		Keys: util.DeepCopy(pod.Keys).(map[*cgroup.Key]string),
-		PodInfo: &typedef.PodInfo{
-			Name:            pod.Name,
-			UID:             pod.UID,
-			CgroupPath:      pod.CgroupPath,
-			Namespace:       pod.Namespace,
-			Annotations:     util.DeepCopy(pod.Annotations).(map[string]string),
-			IDContainersMap: util.DeepCopy(pod.IDContainersMap).(map[string]*typedef.ContainerInfo),
-		},
+		Keys:    copyKeys,
+		PodInfo: pod.PodInfo.DeepCopy(),
 	}
 }
