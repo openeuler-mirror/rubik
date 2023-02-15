@@ -34,7 +34,7 @@ func TestInitConfigLogDriver(t *testing.T) {
 	logFilePath := filepath.Join(logDir, "rubik.log")
 
 	// case: rubik.log already exist.
-	try.WriteFile(logFilePath, []byte(""), constant.DefaultFileMode)
+	try.WriteFile(logFilePath, "")
 	err := InitConfig("file", logDir, "", logSize)
 	assert.NoError(t, err)
 
@@ -248,7 +248,7 @@ func TestDropError(t *testing.T) {
 // TestLogOthers is log other tests
 func TestLogOthers(t *testing.T) {
 	logDir := filepath.Join(try.GenTestDir().String(), "regular-file")
-	try.WriteFile(logDir, []byte{}, constant.DefaultFileMode)
+	try.WriteFile(logDir, "")
 
 	err := makeLogDir(logDir)
 	assert.Equal(t, true, err != nil)
