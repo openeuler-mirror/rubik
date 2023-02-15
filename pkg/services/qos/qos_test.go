@@ -54,59 +54,60 @@ var getCommonField = func(subSys []string) fields {
 		Config: Config{SubSys: subSys},
 	}
 }
-var addFuncTC = []test{
-	{
-		name:   "TC1-set offline pod qos ok",
-		fields: getCommonField([]string{"cpu", "memory"}),
-		args: args{
-			new: try.GenFakeOfflinePod(map[*cgroup.Key]string{
-				supportCgroupTypes["cpu"]:    "0",
-				supportCgroupTypes["memory"]: "0",
-			}),
-		},
-	},
-	{
-		name:   "TC2-set online pod qos ok",
-		fields: getCommonField([]string{"cpu", "memory"}),
-		args: args{
-			new: try.GenFakeOnlinePod(map[*cgroup.Key]string{
-				supportCgroupTypes["cpu"]:    "0",
-				supportCgroupTypes["memory"]: "0",
-			}).WithContainers(3),
-		},
-	},
-	{
-		name:    "TC3-empty pod info",
-		fields:  getCommonField([]string{"cpu", "memory"}),
-		wantErr: true,
-	},
-	{
-		name:   "TC4-invalid annotation key",
-		fields: getCommonField([]string{"cpu"}),
-		args: args{
-			new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
-		},
-		preHook: func(pod *try.FakePod) *try.FakePod {
-			newPod := pod.DeepCopy()
-			newPod.Annotations["undefine"] = "true"
-			return newPod
-		},
-	},
-	{
-		name:   "TC5-invalid annotation value",
-		fields: getCommonField([]string{"cpu"}),
-		args: args{
-			new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
-		},
-		preHook: func(pod *try.FakePod) *try.FakePod {
-			newPod := pod.DeepCopy()
-			newPod.Annotations[constant.PriorityAnnotationKey] = "undefine"
-			return newPod
-		},
-	},
-}
 
 func TestQoS_AddFunc(t *testing.T) {
+	var addFuncTC = []test{
+		{
+			name:   "TC1-set offline pod qos ok",
+			fields: getCommonField([]string{"cpu", "memory"}),
+			args: args{
+				new: try.GenFakeOfflinePod(map[*cgroup.Key]string{
+					supportCgroupTypes["cpu"]:    "0",
+					supportCgroupTypes["memory"]: "0",
+				}),
+			},
+		},
+		{
+			name:   "TC2-set online pod qos ok",
+			fields: getCommonField([]string{"cpu", "memory"}),
+			args: args{
+				new: try.GenFakeOnlinePod(map[*cgroup.Key]string{
+					supportCgroupTypes["cpu"]:    "0",
+					supportCgroupTypes["memory"]: "0",
+				}).WithContainers(3),
+			},
+		},
+		{
+			name:    "TC3-empty pod info",
+			fields:  getCommonField([]string{"cpu", "memory"}),
+			wantErr: true,
+		},
+		{
+			name:   "TC4-invalid annotation key",
+			fields: getCommonField([]string{"cpu"}),
+			args: args{
+				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
+			},
+			preHook: func(pod *try.FakePod) *try.FakePod {
+				newPod := pod.DeepCopy()
+				newPod.Annotations["undefine"] = "true"
+				return newPod
+			},
+		},
+		{
+			name:   "TC5-invalid annotation value",
+			fields: getCommonField([]string{"cpu"}),
+			args: args{
+				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
+			},
+			preHook: func(pod *try.FakePod) *try.FakePod {
+				newPod := pod.DeepCopy()
+				newPod.Annotations[constant.PriorityAnnotationKey] = "undefine"
+				return newPod
+			},
+		},
+	}
+
 	for _, tt := range addFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
@@ -128,44 +129,44 @@ func TestQoS_AddFunc(t *testing.T) {
 	}
 }
 
-var updateFuncTC = []test{
-	{
-		name:   "TC1-online to offline",
-		fields: getCommonField([]string{"cpu"}),
-		args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}).WithContainers(3)},
-		preHook: func(pod *try.FakePod) *try.FakePod {
-			newPod := pod.DeepCopy()
-			// TODO: need fix pod.DeepCopy
-			newAnnotation := make(map[string]string, 0)
-			newAnnotation[constant.PriorityAnnotationKey] = "true"
-			newPod.Annotations = newAnnotation
-			return newPod
-		},
-	},
-	{
-		name:   "TC2-offline to online",
-		fields: getCommonField([]string{"cpu"}),
-		args:   args{old: try.GenFakeOfflinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
-		preHook: func(pod *try.FakePod) *try.FakePod {
-			newPod := pod.DeepCopy()
-			newAnnotation := make(map[string]string, 0)
-			newAnnotation[constant.PriorityAnnotationKey] = "false"
-			newPod.Annotations = newAnnotation
-			return newPod
-		},
-		wantErr: true,
-	},
-	{
-		name:   "TC3-online to online",
-		fields: getCommonField([]string{"cpu"}),
-		args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
-		preHook: func(pod *try.FakePod) *try.FakePod {
-			return pod.DeepCopy()
-		},
-	},
-}
-
 func TestQoS_UpdateFunc(t *testing.T) {
+	var updateFuncTC = []test{
+		{
+			name:   "TC1-online to offline",
+			fields: getCommonField([]string{"cpu"}),
+			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}).WithContainers(3)},
+			preHook: func(pod *try.FakePod) *try.FakePod {
+				newPod := pod.DeepCopy()
+				// TODO: need fix pod.DeepCopy
+				newAnnotation := make(map[string]string, 0)
+				newAnnotation[constant.PriorityAnnotationKey] = "true"
+				newPod.Annotations = newAnnotation
+				return newPod
+			},
+		},
+		{
+			name:   "TC2-offline to online",
+			fields: getCommonField([]string{"cpu"}),
+			args:   args{old: try.GenFakeOfflinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
+			preHook: func(pod *try.FakePod) *try.FakePod {
+				newPod := pod.DeepCopy()
+				newAnnotation := make(map[string]string, 0)
+				newAnnotation[constant.PriorityAnnotationKey] = "false"
+				newPod.Annotations = newAnnotation
+				return newPod
+			},
+			wantErr: true,
+		},
+		{
+			name:   "TC3-online to online",
+			fields: getCommonField([]string{"cpu"}),
+			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
+			preHook: func(pod *try.FakePod) *try.FakePod {
+				return pod.DeepCopy()
+			},
+		},
+	}
+
 	for _, tt := range updateFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
@@ -185,31 +186,31 @@ func TestQoS_UpdateFunc(t *testing.T) {
 	}
 }
 
-var validateTC = []test{
-	{
-		name: "TC1-normal config",
-		fields: fields{
-			Name:   "qos",
-			Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
-			Config: Config{SubSys: []string{"cpu", "memory"}},
-		},
-	},
-	{
-		name: "TC2-abnormal config",
-		fields: fields{
-			Name:   "undefine",
-			Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
-			Config: Config{SubSys: []string{"undefine"}},
-		},
-		wantErr: true,
-	},
-	{
-		name:    "TC3-empty config",
-		wantErr: true,
-	},
-}
-
 func TestQoS_Validate(t *testing.T) {
+	var validateTC = []test{
+		{
+			name: "TC1-normal config",
+			fields: fields{
+				Name:   "qos",
+				Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
+				Config: Config{SubSys: []string{"cpu", "memory"}},
+			},
+		},
+		{
+			name: "TC2-abnormal config",
+			fields: fields{
+				Name:   "undefine",
+				Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
+				Config: Config{SubSys: []string{"undefine"}},
+			},
+			wantErr: true,
+		},
+		{
+			name:    "TC3-empty config",
+			wantErr: true,
+		},
+	}
+
 	for _, tt := range validateTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
