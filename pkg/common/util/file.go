@@ -108,6 +108,7 @@ func UnlockFile(lock *os.File) error {
 
 // ReadFile reads a file
 func ReadFile(path string) ([]byte, error) {
+	path = filepath.Clean(path)
 	if IsDir(path) {
 		return nil, fmt.Errorf("%v is not a file", path)
 	}
