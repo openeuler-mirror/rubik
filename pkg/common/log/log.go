@@ -305,3 +305,18 @@ func (e *Entry) Errorf(f string, args ...interface{}) {
 	}
 	output(e.level(logError), f, args...)
 }
+
+// EmptyLog is an empty log structure without any log processing
+type EmptyLog struct{}
+
+// Warnf write logs
+func (e *EmptyLog) Warnf(f string, args ...interface{}) {}
+
+// Infof write logs
+func (e *EmptyLog) Infof(f string, args ...interface{}) {}
+
+// Debugf write verbose logs
+func (e *EmptyLog) Debugf(f string, args ...interface{}) {}
+
+// Errorf write error logs
+func (e *EmptyLog) Errorf(f string, args ...interface{}) {}

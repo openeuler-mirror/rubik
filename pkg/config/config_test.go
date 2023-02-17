@@ -57,7 +57,7 @@ var rubikConfig string = `
 }
 `
 
-func TestServices(t *testing.T) {
+func TestNewConfig(t *testing.T) {
 	if !util.PathExist(constant.TmpTestDir) {
 		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
 			assert.NoError(t, err)

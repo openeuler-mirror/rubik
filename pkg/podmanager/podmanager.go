@@ -226,3 +226,37 @@ func (manager *PodManager) ListOfflinePods() ([]*typedef.PodInfo, error) {
 func (manager *PodManager) ListOnlinePods() ([]*typedef.PodInfo, error) {
 	return nil, nil
 }
+
+func withOption(pi *typedef.PodInfo, opts []api.ListOption) bool {
+	for _, opt := range opts {
+		if !opt(pi) {
+			return false
+		}
+	}
+	return true
+}
+
+// ListContainersWithOptions filters and returns deep copy objects of all containers
+func (manager *PodManager) ListContainersWithOptions(options ...api.ListOption) map[string]*typedef.ContainerInfo {
+	conts := make(map[string]*typedef.ContainerInfo)
+	for _, pod := range manager.ListPodsWithOptions(options...) {
+		for _, ci := range pod.IDContainersMap {
+			conts[ci.ID] = ci
+		}
+	}
+	return conts
+}
+
+// ListPodsWithOptions filters and returns deep copy objects of all pods
+func (manager *PodManager) ListPodsWithOptions(options ...api.ListOption) map[string]*typedef.PodInfo {
+	// already deep copied
+	allPods := manager.pods.listPod()
+	pods := make(map[string]*typedef.PodInfo, len(allPods))
+	for _, pod := range allPods {
+		if !withOption(pod, options) {
+			continue
+		}
+		pods[pod.UID] = pod
+	}
+	return pods
+}
