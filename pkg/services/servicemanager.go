@@ -94,11 +94,13 @@ func (manager *ServiceManager) AddRunningService(name string, service interface{
 		return fmt.Errorf("service name conflict: %s", name)
 	}
 
-	if !manager.tryAddService(name, service) && !manager.tryAddPersistentService(name, service) {
-		return fmt.Errorf("invalid service %s (type %T)", name, service)
+	addService := manager.tryAddService(name, service)
+	addPersistentService := manager.tryAddPersistentService(name, service)
+	if addPersistentService || addService {
+		log.Debugf("pre-start service %s", name)
+		return nil
 	}
-	log.Debugf("pre-start service %s", name)
-	return nil
+	return fmt.Errorf("invalid service %s (type %T)", name, service)
 }
 
 // HandleEvent is used to handle PodInfo events pushed by the publisher
@@ -164,13 +166,21 @@ func (manager *ServiceManager) terminatingRunningServices(err error) error {
 
 // SetLoggerOnService assigns a value to the variable Log member if there is a Log field
 func SetLoggerOnService(value interface{}, logger api.Logger) bool {
-	// look for a member variable named Log
-	field := reflect.ValueOf(value).Elem().FieldByName("Log")
-	if !field.IsValid() || !field.CanSet() || field.Type().String() != "api.Logger" {
-		return false
+	// 1. call the SetupLog function to set up the log
+	method := reflect.ValueOf(value).MethodByName("SetupLog")
+	if method.IsValid() && !method.IsZero() && !method.IsNil() {
+		method.Call([]reflect.Value{reflect.ValueOf(logger)})
+		return true
 	}
-	field.Set(reflect.ValueOf(logger))
-	return true
+
+	// 2. look for a member variable named Log
+	field := reflect.ValueOf(value).Elem().FieldByName("Log")
+	if field.IsValid() && field.CanSet() && field.Type().String() == "api.Logger" {
+		field.Set(reflect.ValueOf(logger))
+		return true
+	}
+
+	return false
 }
 
 // Setup pre-starts services, such as preparing the environment, etc.
@@ -179,6 +189,7 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 	if v == nil {
 		return nil
 	}
+	preStarted := make(map[string]struct{}, 0)
 	manager.Viewer = v
 	manager.TerminateFuncs = make(map[string]Terminator)
 	setupFunc := func(id string, s interface{}) error {
@@ -191,9 +202,14 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 		if !ok {
 			return nil
 		}
+		// execute the prestart method only once if the service is both a persistent service and a service
+		if _, ok := preStarted[id]; ok {
+			return nil
+		}
 		if err := p.PreStart(manager.Viewer); err != nil {
 			return err
 		}
+		preStarted[id] = struct{}{}
 		return nil
 	}
 

@@ -54,10 +54,13 @@ type PersistentService interface {
 	Run(ctx context.Context)
 }
 
+// ListOption is for filtering podInfo
+type ListOption func(pi *typedef.PodInfo) bool
+
 // Viewer collect on/offline pods info
 type Viewer interface {
-	ListOnlinePods() ([]*typedef.PodInfo, error)
-	ListOfflinePods() ([]*typedef.PodInfo, error)
+	ListContainersWithOptions(options ...ListOption) map[string]*typedef.ContainerInfo
+	ListPodsWithOptions(options ...ListOption) map[string]*typedef.PodInfo
 }
 
 // Publisher is a generic interface for Observables

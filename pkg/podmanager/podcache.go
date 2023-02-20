@@ -103,3 +103,14 @@ func (cache *podCache) substitute(pods []*typedef.PodInfo) {
 		log.Debugf("substituting pod %v", pod.UID)
 	}
 }
+
+// listPod returns the deepcopy object of all pod
+func (cache *podCache) listPod() map[string]*typedef.PodInfo {
+	res := make(map[string]*typedef.PodInfo, len(cache.Pods))
+	cache.RLock()
+	for id, pi := range cache.Pods {
+		res[id] = pi.DeepCopy()
+	}
+	cache.RUnlock()
+	return res
+}
