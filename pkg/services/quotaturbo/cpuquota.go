@@ -1,4 +1,4 @@
-// Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
+// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
 // rubik licensed under the Mulan PSL v2.
 // You can use this software according to the terms and conditions of the Mulan PSL v2.
 // You may obtain a copy of Mulan PSL v2 at:
@@ -8,7 +8,7 @@
 // PURPOSE.
 // See the Mulan PSL v2 for more details.
 // Author: Jiaqi Yang
-// Create: 2022-03-18
+// Date: 2023-02-20
 // Description: cpu container cpu quota data and methods
 
 // Package quotaturbo is for Quota Turbo
@@ -19,7 +19,6 @@ import (
 	"path"
 	"time"
 
-	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
@@ -28,7 +27,7 @@ import (
 const (
 	// numberOfRestrictedCycles is the number of periods in which the quota limits the CPU usage.
 	numberOfRestrictedCycles = 60
-	// default cfs_period_us = 100ms
+	// The default value of the cfs_period_us file is 100ms
 	defaultCFSPeriodUs int64 = 100000
 )
 
