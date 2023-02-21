@@ -32,13 +32,13 @@ const PodManagerName = "DefaultPodManager"
 type PodManager struct {
 	api.Subscriber
 	api.Publisher
-	pods *podCache
+	Pods *PodCache
 }
 
 // NewPodManager returns a PodManager pointer
 func NewPodManager(publisher api.Publisher) *PodManager {
 	manager := &PodManager{
-		pods:      NewPodCache(),
+		Pods:      NewPodCache(),
 		Publisher: publisher,
 	}
 	manager.Subscriber = subscriber.NewGenericSubscriber(manager, PodManagerName)
@@ -136,7 +136,7 @@ func (manager *PodManager) addFunc(pod *typedef.RawPod) {
 		return
 	}
 	// condition2: pod is not existed
-	if manager.pods.podExist(pod.ID()) {
+	if manager.Pods.podExist(pod.ID()) {
 		log.Debugf("pod %v has added", pod.UID)
 		return
 	}
@@ -179,8 +179,8 @@ func (manager *PodManager) deleteFunc(pod *typedef.RawPod) {
 // tryAdd tries to add pod info which is not added
 func (manager *PodManager) tryAdd(podInfo *typedef.PodInfo) {
 	// only add when pod is not existed
-	if !manager.pods.podExist(podInfo.UID) {
-		manager.pods.addPod(podInfo)
+	if !manager.Pods.podExist(podInfo.UID) {
+		manager.Pods.addPod(podInfo)
 		manager.Publish(typedef.INFOADD, podInfo.DeepCopy())
 	}
 }
@@ -188,9 +188,9 @@ func (manager *PodManager) tryAdd(podInfo *typedef.PodInfo) {
 // tryUpdate tries to update podinfo which is existed
 func (manager *PodManager) tryUpdate(podInfo *typedef.PodInfo) {
 	// only update when pod is existed
-	if manager.pods.podExist(podInfo.UID) {
-		oldPod := manager.pods.getPod(podInfo.UID)
-		manager.pods.updatePod(podInfo)
+	if manager.Pods.podExist(podInfo.UID) {
+		oldPod := manager.Pods.getPod(podInfo.UID)
+		manager.Pods.updatePod(podInfo)
 		manager.Publish(typedef.INFOUPDATE, []*typedef.PodInfo{oldPod, podInfo.DeepCopy()})
 	}
 }
@@ -198,9 +198,9 @@ func (manager *PodManager) tryUpdate(podInfo *typedef.PodInfo) {
 // tryDelete tries to delete podinfo which is existed
 func (manager *PodManager) tryDelete(id string) {
 	// only delete when pod is existed
-	oldPod := manager.pods.getPod(id)
+	oldPod := manager.Pods.getPod(id)
 	if oldPod != nil {
-		manager.pods.delPod(id)
+		manager.Pods.delPod(id)
 		manager.Publish(typedef.INFODELETE, oldPod)
 	}
 }
@@ -214,7 +214,7 @@ func (manager *PodManager) sync(pods []*typedef.RawPod) {
 		}
 		newPods = append(newPods, pod.ExtractPodInfo())
 	}
-	manager.pods.substitute(newPods)
+	manager.Pods.substitute(newPods)
 }
 
 // ListOfflinePods returns offline pods
@@ -250,7 +250,7 @@ func (manager *PodManager) ListContainersWithOptions(options ...api.ListOption) 
 // ListPodsWithOptions filters and returns deep copy objects of all pods
 func (manager *PodManager) ListPodsWithOptions(options ...api.ListOption) map[string]*typedef.PodInfo {
 	// already deep copied
-	allPods := manager.pods.listPod()
+	allPods := manager.Pods.listPod()
 	pods := make(map[string]*typedef.PodInfo, len(allPods))
 	for _, pod := range allPods {
 		if !withOption(pod, options) {

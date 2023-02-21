@@ -73,7 +73,6 @@ func NewNodeData() *NodeData {
 		containers: make(map[string]*CPUQuota, 0),
 		cpuUtils:   make([]cpuUtil, 0),
 	}
-
 }
 
 // getLastCPUUtil obtain the latest cpu utilization
@@ -194,6 +193,15 @@ func (d *NodeData) UpdateClusterContainers(conts map[string]*typedef.ContainerIn
 		}
 	}
 	return nil
+}
+
+// WriteQuota saves the quota value of the container
+func (d *NodeData) WriteQuota() {
+	for _, c := range d.containers {
+		if err := c.WriteQuota(); err != nil {
+			log.Errorf(err.Error())
+		}
+	}
 }
 
 // isAdjustmentAllowed judges whether quota adjustment is allowed

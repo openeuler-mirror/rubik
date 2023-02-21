@@ -166,8 +166,8 @@ func (c *CPUQuota) writeContainerQuota() error {
 	return c.ContainerInfo.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(c.curQuota))
 }
 
-// SaveQuota use to modify quota for container
-func (c *CPUQuota) SaveQuota() error {
+// WriteQuota use to modify quota for container
+func (c *CPUQuota) WriteQuota() error {
 	delta := c.nextQuota - c.curQuota
 	tmp := c.curQuota
 	c.curQuota = c.nextQuota

@@ -38,7 +38,7 @@ func TestPodManager_ListContainersWithOptions(t *testing.T) {
 	)
 
 	type fields struct {
-		pods *podCache
+		pods *PodCache
 	}
 	type args struct {
 		options []api.ListOption
@@ -60,7 +60,7 @@ func TestPodManager_ListContainersWithOptions(t *testing.T) {
 				},
 			},
 			fields: fields{
-				pods: &podCache{
+				pods: &PodCache{
 					Pods: map[string]*typedef.PodInfo{
 						"testPod1": {
 							UID: "testPod1",
@@ -89,7 +89,7 @@ func TestPodManager_ListContainersWithOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := &PodManager{
-				pods: tt.fields.pods,
+				Pods: tt.fields.pods,
 			}
 			if got := manager.ListContainersWithOptions(tt.args.options...); !reflect.DeepEqual(got, tt.want) {
 				assert.Equal(t, tt.want, got)
