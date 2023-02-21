@@ -21,28 +21,28 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 )
 
-// podCache is used to store PodInfo
-type podCache struct {
+// PodCache is used to store PodInfo
+type PodCache struct {
 	sync.RWMutex
 	Pods map[string]*typedef.PodInfo
 }
 
 // NewPodCache returns a PodCache object (pointer)
-func NewPodCache() *podCache {
-	return &podCache{
+func NewPodCache() *PodCache {
+	return &PodCache{
 		Pods: make(map[string]*typedef.PodInfo, 0),
 	}
 }
 
 // getPod returns the deepcopy object of pod
-func (cache *podCache) getPod(podID string) *typedef.PodInfo {
+func (cache *PodCache) getPod(podID string) *typedef.PodInfo {
 	cache.RLock()
 	defer cache.RUnlock()
 	return cache.Pods[podID].DeepCopy()
 }
 
 // podExist returns true if there is a pod whose key is podID in the pods
-func (cache *podCache) podExist(podID string) bool {
+func (cache *PodCache) podExist(podID string) bool {
 	cache.RLock()
 	_, ok := cache.Pods[podID]
 	cache.RUnlock()
@@ -50,7 +50,7 @@ func (cache *podCache) podExist(podID string) bool {
 }
 
 // addPod adds pod information
-func (cache *podCache) addPod(pod *typedef.PodInfo) {
+func (cache *PodCache) addPod(pod *typedef.PodInfo) {
 	if pod == nil || pod.UID == "" {
 		return
 	}
@@ -65,7 +65,7 @@ func (cache *podCache) addPod(pod *typedef.PodInfo) {
 }
 
 // delPod deletes pod information
-func (cache *podCache) delPod(podID string) {
+func (cache *PodCache) delPod(podID string) {
 	if ok := cache.podExist(podID); !ok {
 		log.Debugf("pod %v is not existed", string(podID))
 		return
@@ -77,7 +77,7 @@ func (cache *podCache) delPod(podID string) {
 }
 
 // updatePod updates pod information
-func (cache *podCache) updatePod(pod *typedef.PodInfo) {
+func (cache *PodCache) updatePod(pod *typedef.PodInfo) {
 	if pod == nil || pod.UID == "" {
 		return
 	}
@@ -88,7 +88,7 @@ func (cache *podCache) updatePod(pod *typedef.PodInfo) {
 }
 
 // substitute replaces all the data in the cache
-func (cache *podCache) substitute(pods []*typedef.PodInfo) {
+func (cache *PodCache) substitute(pods []*typedef.PodInfo) {
 	cache.Lock()
 	defer cache.Unlock()
 	cache.Pods = make(map[string]*typedef.PodInfo, 0)
@@ -105,7 +105,7 @@ func (cache *podCache) substitute(pods []*typedef.PodInfo) {
 }
 
 // listPod returns the deepcopy object of all pod
-func (cache *podCache) listPod() map[string]*typedef.PodInfo {
+func (cache *PodCache) listPod() map[string]*typedef.PodInfo {
 	res := make(map[string]*typedef.PodInfo, len(cache.Pods))
 	cache.RLock()
 	for id, pi := range cache.Pods {

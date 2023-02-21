@@ -76,10 +76,10 @@ func TestSaveQuota(t *testing.T) {
 		// None of the paths exist
 		cq.nextQuota = largerQuotaVal
 		cq.curQuota = smallerQuotaVal
-		assert.Error(t, cq.SaveQuota())
+		assert.Error(t, cq.WriteQuota())
 		cq.nextQuota = smallerQuotaVal
 		cq.curQuota = largerQuotaVal
-		assert.Error(t, cq.SaveQuota())
+		assert.Error(t, cq.WriteQuota())
 
 		// only Pod path existed
 		cq.nextQuota = largerQuotaVal
@@ -88,7 +88,7 @@ func TestSaveQuota(t *testing.T) {
 		try.WriteFile(podPeriodPath, periodUs)
 		try.RemoveAll(contQuotaPath)
 		try.RemoveAll(contPeriodPath)
-		assert.Error(t, cq.SaveQuota())
+		assert.Error(t, cq.WriteQuota())
 
 		// only container path existed
 		cq.nextQuota = smallerQuotaVal
@@ -97,7 +97,7 @@ func TestSaveQuota(t *testing.T) {
 		try.RemoveAll(podPeriodPath)
 		try.WriteFile(contQuotaPath, largerQuota)
 		try.WriteFile(contPeriodPath, periodUs)
-		assert.Error(t, cq.SaveQuota())
+		assert.Error(t, cq.WriteQuota())
 
 	}()
 
@@ -114,12 +114,12 @@ func TestSaveQuota(t *testing.T) {
 		// delta > 0
 		cq.nextQuota = largerQuotaVal
 		cq.curQuota = smallerQuotaVal
-		assert.NoError(t, cq.SaveQuota())
+		assert.NoError(t, cq.WriteQuota())
 		assertValue(t, []string{podQuotaPath, contQuotaPath}, largerQuota)
 		// delta < 0
 		cq.nextQuota = smallerQuotaVal
 		cq.curQuota = largerQuotaVal
-		assert.NoError(t, cq.SaveQuota())
+		assert.NoError(t, cq.WriteQuota())
 		assertValue(t, []string{podQuotaPath, contQuotaPath}, smallerQuota)
 	}()
 
