@@ -31,24 +31,27 @@ import (
 type FakePod struct {
 	*typedef.PodInfo
 	// Keys is cgroup key list
-	Keys map[*cgroup.Key]string
+	Keys   map[*cgroup.Key]string
+	CGRoot string
 }
 
 const idLen = 8
 
-func genFakeContainerInfo(parentCGPath string) *typedef.ContainerInfo {
+// GenFakeContainerInfo will only generate fake container info under specific pod
+func GenFakeContainerInfo(pod *FakePod) *typedef.ContainerInfo {
 	containerID := genContainerID()
 	var fakeContainer = &typedef.ContainerInfo{
 		Name:             fmt.Sprintf("fakeContainer-%s", containerID[:idLen]),
 		ID:               containerID,
-		CgroupPath:       filepath.Join(parentCGPath, containerID),
+		CgroupPath:       filepath.Join(pod.CgroupPath, containerID),
 		RequestResources: make(typedef.ResourceMap, 0),
 		LimitResources:   make(typedef.ResourceMap, 0),
 	}
 	return fakeContainer
 }
 
-func genFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
+// GenFakePodInfo will only generate fake pod info but no cgroup files been
+func GenFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
 	podID := uuid.New().String()
 	// generate fake pod info
 	var fakePod = &typedef.PodInfo{
@@ -65,7 +68,8 @@ func genFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
 func NewFakePod(keys map[*cgroup.Key]string, qosClass corev1.PodQOSClass) *FakePod {
 	return &FakePod{
 		Keys:    keys,
-		PodInfo: genFakePodInfo(qosClass),
+		PodInfo: GenFakePodInfo(qosClass),
+		CGRoot:  GetTestCGRoot(),
 	}
 }
 
@@ -73,7 +77,7 @@ func (pod *FakePod) genFakePodCgroupPath() Ret {
 	if !util.PathExist(TestRoot) {
 		MkdirAll(TestRoot, constant.DefaultDirMode).OrDie()
 	}
-	cgroup.InitMountDir(TestRoot)
+	cgroup.InitMountDir(pod.CGRoot)
 	// generate fake cgroup path
 	for key, value := range pod.Keys {
 		// generate pod absolute cgroup path
@@ -106,7 +110,7 @@ func (pod *FakePod) genFakeContainersCgroupPath() Ret {
 func (pod *FakePod) WithContainers(containerNum int) *FakePod {
 	pod.IDContainersMap = make(map[string]*typedef.ContainerInfo, containerNum)
 	for i := 0; i < containerNum; i++ {
-		fakeContainer := genFakeContainerInfo(pod.CgroupPath)
+		fakeContainer := GenFakeContainerInfo(pod)
 		pod.IDContainersMap[fakeContainer.ID] = fakeContainer
 	}
 	pod.genFakeContainersCgroupPath()
@@ -120,7 +124,10 @@ func (pod *FakePod) CleanPath() Ret {
 	}
 	for key := range pod.Keys {
 		path := cgroup.AbsoluteCgroupPath(key.SubSys, pod.CgroupPath, key.FileName)
-		if err := RemoveAll(filepath.Dir(path)); err.err != nil {
+		if len(key.FileName) != 0 {
+			path = filepath.Dir(path)
+		}
+		if err := RemoveAll(path); err.err != nil {
 			return err
 		}
 	}

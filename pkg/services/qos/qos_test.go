@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	cgroup.InitMountDir(try.TestRoot)
+	try.InitTestCGRoot(try.TestRoot)
 }
 
 type fields struct {
