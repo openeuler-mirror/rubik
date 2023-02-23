@@ -379,7 +379,7 @@ func TestSharpFluctuates(t *testing.T) {
 						util: 90,
 					},
 					{
-						util: 90 - limitOfNodeCPUUsageChangeWithin1Minute - 1,
+						util: 90 - cpuUtilMaxChange - 1,
 					},
 				},
 			},
@@ -393,7 +393,7 @@ func TestSharpFluctuates(t *testing.T) {
 						util: 90,
 					},
 					{
-						util: 90 - limitOfNodeCPUUsageChangeWithin1Minute + 1,
+						util: 90 - cpuUtilMaxChange + 1,
 					},
 				},
 			},
@@ -438,7 +438,7 @@ func TestEventDriverAdjustQuota(t *testing.T) {
 						util: 1,
 					},
 					{
-						util: -limitOfNodeCPUUsageChangeWithin1Minute,
+						util: -cpuUtilMaxChange,
 					},
 				},
 			},

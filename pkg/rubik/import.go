@@ -19,5 +19,6 @@ import (
 	_ "isula.org/rubik/pkg/services/blkio"
 	_ "isula.org/rubik/pkg/services/cachelimit"
 	_ "isula.org/rubik/pkg/services/qos"
+	_ "isula.org/rubik/pkg/services/quotaturbo"
 	_ "isula.org/rubik/pkg/version"
 )
