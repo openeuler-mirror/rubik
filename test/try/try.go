@@ -126,6 +126,18 @@ const (
 	TestRoot = "/tmp/rubik-test"
 )
 
+var rootDir = TestRoot
+
+// InitTestCGRoot sets the directory of the cgroup file system for testcases
+func InitTestCGRoot(arg string) {
+	rootDir = arg
+}
+
+// GetTestCGRoot return the directory of the cgroup file system for testcases
+func GetTestCGRoot() string {
+	return rootDir
+}
+
 // GenTestDir gen testdir
 func GenTestDir() Ret {
 	path := filepath.Join(TestRoot, uuid.New().String())
