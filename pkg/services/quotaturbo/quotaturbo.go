@@ -54,6 +54,7 @@ type QuotaTurbo struct {
 func NewQuotaTurbo() *QuotaTurbo {
 	return &QuotaTurbo{
 		NodeData: NewNodeData(),
+		Driver:   &EventDriver{},
 	}
 }
 

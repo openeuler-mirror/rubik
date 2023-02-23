@@ -34,8 +34,8 @@ const (
 	upperLimitOfIncrease = 1.0
 	// slowFallbackRatio is the rate of slow fallback.
 	slowFallbackRatio = 0.1
-	// limitOfNodeCPUUsageChangeWithin1Minute is the upper limit of the node change rate in one minute.
-	limitOfNodeCPUUsageChangeWithin1Minute float64 = 10
+	// cpuUtilMaxChange is the upper limit of the node change rate in one minute.
+	cpuUtilMaxChange float64 = 10
 )
 
 // EventDriver event based quota adjustment driver.
@@ -51,7 +51,7 @@ func (e *EventDriver) adjustQuota(data *NodeData) {
 		e.elevate(data)
 	} else {
 		log.Infof("the CPU usage changes by more than %.2f, "+
-			"the quota will not adjusted in this round", limitOfNodeCPUUsageChangeWithin1Minute)
+			"the quota will not adjusted in this round", cpuUtilMaxChange)
 	}
 	for _, c := range data.containers {
 		// get height limit
@@ -146,7 +146,7 @@ func sharpFluctuates(data *NodeData) bool {
 		min = math.Min(min, u.util)
 		max = math.Max(max, u.util)
 	}
-	if max-min > limitOfNodeCPUUsageChangeWithin1Minute {
+	if max-min > cpuUtilMaxChange {
 		log.Debugf("The resources changed drastically, and no adjustment will be made this time")
 		return true
 	}

@@ -15,11 +15,15 @@
 package quotaturbo
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"isula.org/rubik/pkg/common/constant"
+	Log "isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/podmanager"
@@ -217,6 +221,7 @@ func TestQuotaTurbo_Terminate(t *testing.T) {
 	}
 }
 
+// TestQuotaTurbo_AdjustQuota tests AdjustQuota function
 func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 	type fields struct {
 		NodeData *NodeData
@@ -327,4 +332,54 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 			qt.AdjustQuota(tt.args.cc)
 		})
 	}
+}
+
+// TestNewQuotaTurbo tests NewQuotaTurbo
+func TestNewQuotaTurbo(t *testing.T) {
+	testName := "TC1-test otherv functions"
+	t.Run(testName, func(t *testing.T) {
+		got := NewQuotaTurbo()
+		got.SetupLog(&Log.EmptyLog{})
+		assert.Equal(t, moduleName, got.ID())
+		got.Viewer = &podmanager.PodManager{
+			Pods: &podmanager.PodCache{
+				Pods: map[string]*typedef.PodInfo{
+					"testPod1": {
+						UID:        "testPod1",
+						CgroupPath: "kubepods/testPod1",
+						Annotations: map[string]string{
+							constant.QuotaAnnotationKey: "true",
+						},
+					},
+				},
+			},
+		}
+
+		ctx, cancle := context.WithCancel(context.Background())
+		go got.Run(ctx)
+		time.Sleep(time.Second)
+		cancle()
+	})
+}
+
+// TestQuotaTurbo_PreStart tests PreStart
+func TestQuotaTurbo_PreStart(t *testing.T) {
+	var (
+		pm = &podmanager.PodManager{
+			Pods: &podmanager.PodCache{
+				Pods: map[string]*typedef.PodInfo{
+					"testPod1": {
+						UID:             "testPod1",
+						CgroupPath:      "kubepods/testPod1",
+						IDContainersMap: make(map[string]*typedef.ContainerInfo),
+					},
+				},
+			},
+		}
+		qt = &QuotaTurbo{}
+	)
+	testName := "TC1- test Prestart"
+	t.Run(testName, func(t *testing.T) {
+		qt.PreStart(pm)
+	})
 }
