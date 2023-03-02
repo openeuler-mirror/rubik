@@ -49,7 +49,7 @@ func NewConfig(pType parserType) *Config {
 	c := &Config{
 		ConfigParser: defaultParserFactory.getParser(pType),
 		Agent: &AgentConfig{
-			LogDriver:  constant.DefaultLogDir,
+			LogDriver:  constant.LogDriverStdio,
 			LogSize:    constant.DefaultLogSize,
 			LogLevel:   constant.DefaultLogLevel,
 			LogDir:     constant.DefaultLogDir,
