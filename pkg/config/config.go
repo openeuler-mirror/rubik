@@ -15,6 +15,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 
@@ -93,6 +94,14 @@ func (c *Config) LoadConfig(path string) error {
 	c.Fields = fields
 	c.parseAgentConfig()
 	return nil
+}
+
+func (c *Config) String() string {
+	data, err := json.MarshalIndent(c.Fields, "", "  ")
+	if err != nil {
+		return "{}"
+	}
+	return fmt.Sprintf("%s", string(data))
 }
 
 // filterNonServiceKeys returns true when inputting a non-service name
