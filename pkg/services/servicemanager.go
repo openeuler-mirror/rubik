@@ -273,10 +273,15 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 		return
 	}
 
+	const retryCount = 5
 	runOnce := func(s api.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
-		if err := s.AddFunc(podInfo); err != nil {
-			log.Errorf("service %s add func failed: %v", s.ID(), err)
+		for i := 0; i < retryCount; i++ {
+			if err := s.AddFunc(podInfo); err != nil {
+				log.Errorf("service %s add func failed: %v", s.ID(), err)
+			} else {
+				break
+			}
 		}
 		wg.Done()
 	}
