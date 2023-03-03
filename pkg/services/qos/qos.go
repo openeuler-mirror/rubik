@@ -60,6 +60,16 @@ func (q *QoS) ID() string {
 	return q.Name
 }
 
+// PreStart is the pre-start action
+func (q *QoS) PreStart(viewer api.Viewer) error {
+	for _, pod := range viewer.ListPodsWithOptions() {
+		if err := q.SetQoS(pod); err != nil {
+			q.Log.Errorf("error prestart pod %v: %v", pod.Name, err)
+		}
+	}
+	return nil
+}
+
 // AddFunc implement add function when pod is added in k8s
 func (q *QoS) AddFunc(pod *typedef.PodInfo) error {
 	if err := q.SetQoS(pod); err != nil {
