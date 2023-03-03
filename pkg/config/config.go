@@ -17,9 +17,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/util"
 )
 
 const agentKey = "agent"
@@ -62,7 +62,7 @@ func NewConfig(pType parserType) *Config {
 
 // loadConfigFile loads data from configuration file
 func loadConfigFile(config string) ([]byte, error) {
-	buffer, err := ioutil.ReadFile(config)
+	buffer, err := util.ReadSmallFile(config)
 	if err != nil {
 		return nil, err
 	}
