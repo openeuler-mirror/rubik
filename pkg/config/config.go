@@ -70,12 +70,16 @@ func loadConfigFile(config string) ([]byte, error) {
 }
 
 // parseAgentConfig parses config as AgentConfig
-func (c *Config) parseAgentConfig() {
+func (c *Config) parseAgentConfig() error {
 	content, ok := c.Fields[agentKey]
 	if !ok {
-		return
+		// not setting agent means using the default configuration file
+		return nil
 	}
-	c.UnmarshalSubConfig(content, c.Agent)
+	if err := c.UnmarshalSubConfig(content, c.Agent); err != nil {
+		return err
+	}
+	return nil
 }
 
 // LoadConfig loads and parses configuration data from the file, and save it to the Config
@@ -89,10 +93,12 @@ func (c *Config) LoadConfig(path string) error {
 	}
 	fields, err := c.ParseConfig(data)
 	if err != nil {
-		return fmt.Errorf("error parsing data: %s", err)
+		return fmt.Errorf("error parsing config: %v", err)
 	}
 	c.Fields = fields
-	c.parseAgentConfig()
+	if err := c.parseAgentConfig(); err != nil {
+		return fmt.Errorf("error parsing agent config: %v", err)
+	}
 	return nil
 }
 
