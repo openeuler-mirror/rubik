@@ -55,7 +55,7 @@ const (
 var (
 	logDriver            = stdio
 	logFname             = filepath.Join(constant.DefaultLogDir, "rubik.log")
-	logLevel             = 0
+	logLevel             = logInfo
 	logSize        int64 = 1024
 	logFileMaxSize int64
 	logFileSize    int64

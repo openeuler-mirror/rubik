@@ -16,8 +16,6 @@ package services
 
 import (
 	"sync"
-
-	"isula.org/rubik/pkg/common/log"
 )
 
 type (
@@ -41,7 +39,6 @@ func Register(name string, creator Creator) {
 	servicesRegistry.Lock()
 	servicesRegistry.services[name] = creator
 	servicesRegistry.Unlock()
-	log.Debugf("func register (%s)", name)
 }
 
 // GetServiceCreator returns the service creator based on the incoming service name

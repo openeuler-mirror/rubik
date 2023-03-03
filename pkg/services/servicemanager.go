@@ -97,7 +97,6 @@ func (manager *ServiceManager) AddRunningService(name string, service interface{
 	addService := manager.tryAddService(name, service)
 	addPersistentService := manager.tryAddPersistentService(name, service)
 	if addPersistentService || addService {
-		log.Debugf("pre-start service %s", name)
 		return nil
 	}
 	return fmt.Errorf("invalid service %s (type %T)", name, service)
@@ -134,7 +133,7 @@ func (manager *ServiceManager) tryAddService(name string, service interface{}) b
 		manager.Lock()
 		manager.RunningServices[name] = s
 		manager.Unlock()
-		log.Debugf("service %s will run", name)
+		log.Infof("service %s will run", name)
 	}
 	return ok
 }
@@ -146,7 +145,7 @@ func (manager *ServiceManager) tryAddPersistentService(name string, service inte
 		manager.Lock()
 		manager.RunningPersistentServices[name] = s
 		manager.Unlock()
-		log.Debugf("persistent service %s will run", name)
+		log.Infof("persistent service %s will run", name)
 	}
 	return ok
 }
