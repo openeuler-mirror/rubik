@@ -60,6 +60,7 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 
 // Run starts and runs the agent until receiving stop signal
 func (a *Agent) Run(ctx context.Context) error {
+	log.Infof("agent run with config:\n%s", a.config.String())
 	if err := a.startServiceHandler(ctx); err != nil {
 		return err
 	}
