@@ -1,4 +1,4 @@
-package blkio
+package blkcg
 
 import (
 	"isula.org/rubik/pkg/api"
@@ -12,50 +12,50 @@ type DeviceConfig struct {
 	DeviceValue string `json:"value,omitempty"`
 }
 
-type BlkioConfig struct {
+type BlkioThrottleConfig struct {
 	DeviceReadBps   []DeviceConfig `json:"device_read_bps,omitempty"`
 	DeviceWriteBps  []DeviceConfig `json:"device_write_bps,omitempty"`
 	DeviceReadIops  []DeviceConfig `json:"device_read_iops,omitempty"`
 	DeviceWriteIops []DeviceConfig `json:"device_write_iops,omitempty"`
 }
 
-type Blkio struct {
+type BlkioThrottle struct {
 	Name string `json:"-"`
 	Log  api.Logger
 }
 
 func init() {
 	services.Register("blkio", func() interface{} {
-		return NewBlkio()
+		return NewBlkioThrottle()
 	})
 }
 
-func NewBlkio() *Blkio {
-	return &Blkio{Name: "blkio"}
+func NewBlkioThrottle() *BlkioThrottle {
+	return &BlkioThrottle{Name: "blkiothrottle"}
 }
 
-func (b *Blkio) PreStart(viewer api.Viewer) error {
-	b.Log.Debugf("blkio prestart")
+func (b *BlkioThrottle) PreStart(viewer api.Viewer) error {
+	b.Log.Debugf("blkiothrottle prestart")
 	return nil
 }
 
-func (b *Blkio) Terminate(viewer api.Viewer) error {
-	b.Log.Infof("blkio Terminate")
+func (b *BlkioThrottle) Terminate(viewer api.Viewer) error {
+	b.Log.Infof("blkiothrottle Terminate")
 	return nil
 }
 
-func (b *Blkio) ID() string {
+func (b *BlkioThrottle) ID() string {
 	return b.Name
 }
 
-func (b *Blkio) AddFunc(podInfo *typedef.PodInfo) error {
+func (b *BlkioThrottle) AddFunc(podInfo *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *Blkio) UpdateFunc(old, new *typedef.PodInfo) error {
+func (b *BlkioThrottle) UpdateFunc(old, new *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *Blkio) DeleteFunc(podInfo *typedef.PodInfo) error {
+func (b *BlkioThrottle) DeleteFunc(podInfo *typedef.PodInfo) error {
 	return nil
 }

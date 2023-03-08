@@ -25,16 +25,14 @@ import (
 
 var rootDir = constant.DefaultCgroupRoot
 
-func AbsoluteCgroupPath(subsys, cgroupParent, cgroupFileName string) string {
-	if subsys == "" {
-		return ""
-	}
-	return filepath.Join(rootDir, subsys, cgroupParent, cgroupFileName)
+func AbsoluteCgroupPath(elem ...string) string {
+	elem = append([]string{rootDir}, elem...)
+	return filepath.Join(elem...)
 }
 
 // ReadCgroupFile reads data from cgroup files
-func ReadCgroupFile(subsys, cgroupParent, cgroupFileName string) ([]byte, error) {
-	cgfile := filepath.Join(rootDir, subsys, cgroupParent, cgroupFileName)
+func ReadCgroupFile(elem ...string) ([]byte, error) {
+	cgfile := AbsoluteCgroupPath(elem...)
 	if !util.PathExist(cgfile) {
 		return nil, fmt.Errorf("%v: no such file or diretory", cgfile)
 	}
@@ -42,8 +40,8 @@ func ReadCgroupFile(subsys, cgroupParent, cgroupFileName string) ([]byte, error)
 }
 
 // WriteCgroupFile writes data to cgroup file
-func WriteCgroupFile(subsys, cgroupParent, cgroupFileName string, content string) error {
-	cgfile := filepath.Join(rootDir, subsys, cgroupParent, cgroupFileName)
+func WriteCgroupFile(content string, elem ...string) error {
+	cgfile := AbsoluteCgroupPath(elem...)
 	if !util.PathExist(cgfile) {
 		return fmt.Errorf("%v: no such file or diretory", cgfile)
 	}
