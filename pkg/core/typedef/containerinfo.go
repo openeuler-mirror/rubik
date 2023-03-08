@@ -105,7 +105,7 @@ func (cont *ContainerInfo) SetCgroupAttr(key *cgroup.Key, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return cgroup.WriteCgroupFile(key.SubSys, cont.CgroupPath, key.FileName, value)
+	return cgroup.WriteCgroupFile(value, key.SubSys, cont.CgroupPath, key.FileName)
 }
 
 // GetCgroupAttr gets container cgroup file content

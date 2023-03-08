@@ -98,7 +98,7 @@ func (d *NodeData) removeContainer(id string) error {
 		return nil
 	}
 
-	if !util.PathExist(cgroup.AbsoluteCgroupPath("cpu", cq.CgroupPath, "")) {
+	if !util.PathExist(cgroup.AbsoluteCgroupPath("cpu", cq.CgroupPath)) {
 		return safeDel(id)
 	}
 	// cq.Period ranges from 1000(us) to 1000000(us) and does not overflow.
