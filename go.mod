@@ -6,6 +6,7 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/cyphar/filepath-securejoin v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.1.2
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/sys v0.0.0-20201112073958-5cba982894dd

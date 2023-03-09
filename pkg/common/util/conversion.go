@@ -53,7 +53,7 @@ func ParseInt64Map(data string) (map[string]int64, error) {
 		arr := strings.Fields(scanner.Text())
 		const defaultLength = 2
 		if len(arr) != defaultLength {
-			return nil, fmt.Errorf(" fail to parse a single line into two strings")
+			return nil, fmt.Errorf("fail to parse a single line into two strings %v", arr)
 		}
 		value, err := ParseInt64(arr[1])
 		if err != nil {
