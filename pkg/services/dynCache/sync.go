@@ -12,7 +12,7 @@
 // Description: This file is used for cache limit sync setting
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"fmt"
@@ -46,7 +46,7 @@ var validLevel = map[string]bool{
 }
 
 // SyncCacheLimit will continuously set cache limit with corresponding offline pods
-func (c *CacheLimit) SyncCacheLimit() {
+func (c *DynCache) SyncCacheLimit() {
 	for _, p := range c.listOfflinePods() {
 		if err := c.syncLevel(p); err != nil {
 			log.Errorf("sync cache limit level err: %v", err)
@@ -60,7 +60,7 @@ func (c *CacheLimit) SyncCacheLimit() {
 }
 
 // writeTasksToResctrl will write tasks running in containers into resctrl group
-func (c *CacheLimit) writeTasksToResctrl(pod *typedef.PodInfo) error {
+func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
 	if !util.PathExist(cgroup.AbsoluteCgroupPath("cpu", pod.CgroupPath, "")) {
 		// just return since pod maybe deleted
 		return nil
@@ -93,7 +93,7 @@ func (c *CacheLimit) writeTasksToResctrl(pod *typedef.PodInfo) error {
 }
 
 // syncLevel sync cache limit level
-func (c *CacheLimit) syncLevel(pod *typedef.PodInfo) error {
+func (c *DynCache) syncLevel(pod *typedef.PodInfo) error {
 	if pod.Annotations[constant.CacheLimitAnnotationKey] == "" {
 		if c.Config.DefaultLimitMode == modeStatic {
 			pod.Annotations[constant.CacheLimitAnnotationKey] = levelMax
@@ -109,7 +109,7 @@ func (c *CacheLimit) syncLevel(pod *typedef.PodInfo) error {
 	return nil
 }
 
-func (c *CacheLimit) listOfflinePods() map[string]*typedef.PodInfo {
+func (c *DynCache) listOfflinePods() map[string]*typedef.PodInfo {
 	offlineValue := "true"
 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
 		return pi.Annotations[constant.PriorityAnnotationKey] == offlineValue

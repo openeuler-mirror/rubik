@@ -12,7 +12,7 @@
 // Description: This file is testcases for dynamic cache limit level setting
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"fmt"
@@ -40,8 +40,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 	tests := []struct {
 		name     string
 		fields   fields
-		preHook  func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod)
-		postHook func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod)
+		preHook  func(t *testing.T, c *DynCache, fakePods []*try.FakePod)
+		postHook func(t *testing.T, c *DynCache, fakePods []*try.FakePod)
 	}{
 		{
 			name: "TC-normal dynamic setting",
@@ -60,7 +60,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 					MinMiss: 10,
 				},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				resctrlDir := try.GenTestDir().String()
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
@@ -77,7 +77,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				manager := genPodManager(fakePods)
 				c.Viewer = manager
 			},
-			postHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			postHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
@@ -102,7 +102,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 					MinMiss: 0,
 				},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				resctrlDir := try.GenTestDir().String()
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
@@ -119,7 +119,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				manager := genPodManager(fakePods)
 				c.Viewer = manager
 			},
-			postHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			postHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
@@ -144,7 +144,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 					MinMiss: math.MaxInt64,
 				},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				resctrlDir := try.GenTestDir().String()
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
@@ -161,7 +161,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				manager := genPodManager(fakePods)
 				c.Viewer = manager
 			},
-			postHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			postHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
@@ -186,7 +186,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 					MinMiss: 0,
 				},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				resctrlDir := try.GenTestDir().String()
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
@@ -203,7 +203,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				manager := genPodManager(fakePods)
 				c.Viewer = manager
 			},
-			postHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			postHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
@@ -228,7 +228,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 					MinMiss: 10,
 				},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				resctrlDir := try.GenTestDir().String()
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
@@ -245,7 +245,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				manager := genPodManager(fakePods)
 				c.Viewer = manager
 			},
-			postHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			postHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
@@ -256,7 +256,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,

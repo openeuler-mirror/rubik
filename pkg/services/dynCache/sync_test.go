@@ -12,7 +12,7 @@
 // Description: This file is testcase for cache limit sync function
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"path/filepath"
@@ -71,7 +71,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		preHook func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod)
+		preHook func(t *testing.T, c *DynCache, fakePods []*try.FakePod)
 	}{
 		{
 			name: "TC1-normal case",
@@ -84,7 +84,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
@@ -104,7 +104,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
@@ -123,7 +123,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
@@ -143,7 +143,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "invalid"
@@ -163,7 +163,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
@@ -183,7 +183,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
@@ -203,7 +203,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
@@ -223,7 +223,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				Config: defaultConfig,
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit, fakePods []*try.FakePod) {
+			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
@@ -235,7 +235,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,

@@ -16,9 +16,9 @@ package rubik
 
 import (
 	// introduce packages to auto register service
-	_ "isula.org/rubik/pkg/services/blkcg"
-	_ "isula.org/rubik/pkg/services/cachelimit"
-	_ "isula.org/rubik/pkg/services/qos"
+	_ "isula.org/rubik/pkg/services/dynCache"
+	_ "isula.org/rubik/pkg/services/iocost"
+	_ "isula.org/rubik/pkg/services/preemption"
 	_ "isula.org/rubik/pkg/services/quotaburst"
 	_ "isula.org/rubik/pkg/services/quotaturbo"
 	_ "isula.org/rubik/pkg/version"

@@ -1,4 +1,4 @@
-package blkcg
+package iocost
 
 import (
 	"os"
@@ -43,14 +43,13 @@ type IOCostConfig struct {
 // NodeConfig define the config of node, include iocost
 type NodeConfig struct {
 	NodeName     string         `json:"nodeName,omitempty"`
-	IOCostEnable bool           `json:"iocostEnable,omitempty"`
 	IOCostConfig []IOCostConfig `json:"iocostConfig,omitempty"`
 }
 
 // IOCost for iocost class
 type IOCost struct {
-	name       string
-	nodeConfig []NodeConfig
+	name string
+	nodeConfigs  []NodeConfig
 }
 
 var (
@@ -87,7 +86,7 @@ func (b *IOCost) PreStart(viewer api.Viewer) error {
 func (b *IOCost) loadConfig() error {
 	var nodeConfig *NodeConfig
 	// global will set all node
-	for _, config := range b.nodeConfig {
+	for _, config := range b.nodeConfigs {
 		if config.NodeName == nodeName {
 			nodeConfig = &config
 			break
@@ -97,20 +96,15 @@ func (b *IOCost) loadConfig() error {
 		}
 	}
 
-	// no config, return
-	if nodeConfig == nil {
-		log.Warnf("no matching node exist:%v", nodeName)
-		return nil
-	}
-
 	// ensure that previous configuration is cleared.
 	if err := b.clearIOCost(); err != nil {
 		log.Errorf("clear iocost err:%v", err)
 		return err
 	}
 
-	if !nodeConfig.IOCostEnable {
-		// clear iocost before
+	// no config, return
+	if nodeConfig == nil {
+		log.Warnf("no matching node exist:%v", nodeName)
 		return nil
 	}
 

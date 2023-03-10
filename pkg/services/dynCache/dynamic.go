@@ -12,7 +12,7 @@
 // Description: This file is used for dynamic cache limit level setting
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ import (
 
 // StartDynamic will continuously run to detect online pod cache miss and
 // limit offline pod cache usage
-func (c *CacheLimit) StartDynamic() {
+func (c *DynCache) StartDynamic() {
 	if !c.dynamicExist() {
 		return
 	}
@@ -75,7 +75,7 @@ func getPodCacheMiss(pod *typedef.PodInfo, perfDu int) (int, int) {
 		int(100.0 * float64(stat.LLCMiss) / (1.0 + float64(stat.LLCAccess)))
 }
 
-func (c *CacheLimit) dynamicExist() bool {
+func (c *DynCache) dynamicExist() bool {
 	for _, pod := range c.listOfflinePods() {
 		if err := c.syncLevel(pod); err != nil {
 			continue
@@ -87,7 +87,7 @@ func (c *CacheLimit) dynamicExist() bool {
 	return false
 }
 
-func (c *CacheLimit) flush(limitSet *limitSet, step int) error {
+func (c *DynCache) flush(limitSet *limitSet, step int) error {
 	var nextPercent = func(value, min, max, step int) int {
 		value += step
 		if value < min {
@@ -109,7 +109,7 @@ func (c *CacheLimit) flush(limitSet *limitSet, step int) error {
 	return c.doFlush(limitSet)
 }
 
-func (c *CacheLimit) doFlush(limitSet *limitSet) error {
+func (c *DynCache) doFlush(limitSet *limitSet) error {
 	if err := limitSet.writeResctrlSchemata(c.Attr.NumaNum); err != nil {
 		return fmt.Errorf("adjust dynamic cache limit to l3:%v mb:%v error: %v",
 			limitSet.l3Percent, limitSet.mbPercent, err)
@@ -120,7 +120,7 @@ func (c *CacheLimit) doFlush(limitSet *limitSet) error {
 	return nil
 }
 
-func (c *CacheLimit) listOnlinePods() map[string]*typedef.PodInfo {
+func (c *DynCache) listOnlinePods() map[string]*typedef.PodInfo {
 	onlineValue := "false"
 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
 		return pi.Annotations[constant.PriorityAnnotationKey] == onlineValue

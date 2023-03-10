@@ -12,7 +12,7 @@
 // Description: This file will init cache limit directories before services running
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"fmt"
@@ -54,8 +54,8 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 		name     string
 		fields   fields
 		wantErr  bool
-		preHook  func(t *testing.T, c *CacheLimit)
-		postHook func(t *testing.T, c *CacheLimit)
+		preHook  func(t *testing.T, c *DynCache)
+		postHook func(t *testing.T, c *DynCache)
 	}{
 		{
 			name: "TC1-normal cache limit dir setting",
@@ -63,7 +63,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Config.DefaultResctrlDir = try.GenTestDir().String()
 				c.Config.DefaultLimitMode = modeStatic
 				setMaskFile(t, c.Config.DefaultResctrlDir, "7fff")
@@ -71,7 +71,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				resctrlLevelMap := map[string]string{
 					"rubik_max":     "L3:0=7fff;1=7fff;2=7fff;3=7fff\nMB:0=100;1=100;2=100;3=100\n",
 					"rubik_high":    "L3:0=7f;1=7f;2=7f;3=7f\nMB:0=50;1=50;2=50;3=50\n",
@@ -95,7 +95,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				pidNameSpaceDir := try.GenTestDir().String()
 				pidNameSpaceFileOri := try.WriteFile(filepath.Join(pidNameSpaceDir, "pid:[4026531836x]"), "")
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
@@ -103,7 +103,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				os.Symlink(pidNameSpaceFileOri.String(), pidNameSpace)
 				c.Config.DefaultPidNameSpace = pidNameSpace
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				try.RemoveAll(filepath.Dir(c.DefaultPidNameSpace))
 			},
 		},
@@ -114,7 +114,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				pidNameSpaceDir := try.GenTestDir().String()
 				pidNameSpaceFileOri := try.WriteFile(filepath.Join(pidNameSpaceDir, "pid:[4026531836x]"), "")
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
@@ -122,7 +122,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				os.Link(pidNameSpaceFileOri.String(), pidNameSpace)
 				c.Config.DefaultPidNameSpace = pidNameSpace
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				try.RemoveAll(filepath.Dir(c.DefaultPidNameSpace))
 			},
 		},
@@ -133,7 +133,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Config.DefaultResctrlDir = "/resctrl/path/is/not/exist"
 			},
 		},
@@ -144,10 +144,10 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Config.DefaultResctrlDir = try.GenTestDir().String()
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				try.RemoveAll(c.DefaultResctrlDir)
 			},
 		},
@@ -158,7 +158,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Attr.NumaNodeDir = "/numa/node/path/is/not/exist"
 			},
 		},
@@ -169,7 +169,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Config.DefaultResctrlDir = try.GenTestDir().String()
 				c.Config.DefaultLimitMode = modeStatic
 				setMaskFile(t, c.Config.DefaultResctrlDir, "")
@@ -177,7 +177,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 0)
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				try.RemoveAll(c.Config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
@@ -188,7 +188,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Config: genDefaultConfig(),
 				Attr:   &Attr{},
 			},
-			preHook: func(t *testing.T, c *CacheLimit) {
+			preHook: func(t *testing.T, c *DynCache) {
 				c.Config.DefaultResctrlDir = try.GenTestDir().String()
 				c.Config.DefaultLimitMode = modeStatic
 				setMaskFile(t, c.Config.DefaultResctrlDir, "1")
@@ -196,7 +196,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 0)
 			},
-			postHook: func(t *testing.T, c *CacheLimit) {
+			postHook: func(t *testing.T, c *DynCache) {
 				try.RemoveAll(c.Config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
@@ -204,7 +204,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,

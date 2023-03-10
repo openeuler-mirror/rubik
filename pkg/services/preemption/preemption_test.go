@@ -12,7 +12,7 @@
 // Description: This file test qos level setting service
 
 // Package qos is the service used for qos level setting
-package qos
+package preemption
 
 import (
 	"testing"
@@ -46,11 +46,11 @@ type test struct {
 var getCommonField = func(subSys []string) fields {
 	return fields{
 		Name:   "qos",
-		Config: Config{SubSys: subSys},
+		Config: Config{Resource: subSys},
 	}
 }
 
-func TestQoS_AddFunc(t *testing.T) {
+func TestPreemptionAddFunc(t *testing.T) {
 	var addFuncTC = []test{
 		{
 			name:   "TC1-set offline pod qos ok",
@@ -105,7 +105,7 @@ func TestQoS_AddFunc(t *testing.T) {
 
 	for _, tt := range addFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &QoS{
+			q := &Preemption{
 				Name:   tt.fields.Name,
 				Config: tt.fields.Config,
 			}
@@ -123,7 +123,7 @@ func TestQoS_AddFunc(t *testing.T) {
 	}
 }
 
-func TestQoS_UpdateFunc(t *testing.T) {
+func TestPreemptionUpdateFunc(t *testing.T) {
 	var updateFuncTC = []test{
 		{
 			name:   "TC1-online to offline",
@@ -163,7 +163,7 @@ func TestQoS_UpdateFunc(t *testing.T) {
 
 	for _, tt := range updateFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &QoS{
+			q := &Preemption{
 				Name:   tt.fields.Name,
 				Config: tt.fields.Config,
 			}
@@ -179,20 +179,20 @@ func TestQoS_UpdateFunc(t *testing.T) {
 	}
 }
 
-func TestQoS_Validate(t *testing.T) {
+func TestPreemptionValidate(t *testing.T) {
 	var validateTC = []test{
 		{
 			name: "TC1-normal config",
 			fields: fields{
 				Name:   "qos",
-				Config: Config{SubSys: []string{"cpu", "memory"}},
+				Config: Config{Resource: []string{"cpu", "memory"}},
 			},
 		},
 		{
 			name: "TC2-abnormal config",
 			fields: fields{
 				Name:   "undefine",
-				Config: Config{SubSys: []string{"undefine"}},
+				Config: Config{Resource: []string{"undefine"}},
 			},
 			wantErr: true,
 		},
@@ -204,7 +204,7 @@ func TestQoS_Validate(t *testing.T) {
 
 	for _, tt := range validateTC {
 		t.Run(tt.name, func(t *testing.T) {
-			q := &QoS{
+			q := &Preemption{
 				Name:   tt.fields.Name,
 				Config: tt.fields.Config,
 			}

@@ -12,7 +12,7 @@
 // Description: This file implement qos level setting service
 
 // Package qos is the service used for qos level setting
-package qos
+package preemption
 
 import (
 	"fmt"
@@ -31,15 +31,15 @@ var supportCgroupTypes = map[string]*cgroup.Key{
 	"memory": {SubSys: "memory", FileName: constant.MemoryCgroupFileName},
 }
 
-// QoS define service which related to qos level setting
-type QoS struct {
+// Preemption define service which related to qos level setting
+type Preemption struct {
 	Name string `json:"-"`
 	Config
 }
 
 // Config contains sub-system that need to set qos level
 type Config struct {
-	SubSys []string `json:"subSys"`
+	Resource []string `json:"resource,omitempty"`
 }
 
 func init() {
@@ -49,21 +49,21 @@ func init() {
 }
 
 // NewQoS return qos instance
-func NewQoS() *QoS {
-	return &QoS{
+func NewQoS() *Preemption {
+	return &Preemption{
 		Name: "qos",
 	}
 }
 
 // ID return qos service name
-func (q *QoS) ID() string {
+func (q *Preemption) ID() string {
 	return q.Name
 }
 
 // PreStart is the pre-start action
-func (q *QoS) PreStart(viewer api.Viewer) error {
+func (q *Preemption) PreStart(viewer api.Viewer) error {
 	for _, pod := range viewer.ListPodsWithOptions() {
-		if err := q.SetQoS(pod); err != nil {
+		if err := q.SetQoSLevel(pod); err != nil {
 			log.Errorf("error prestart pod %v: %v", pod.Name, err)
 		}
 	}
@@ -71,18 +71,18 @@ func (q *QoS) PreStart(viewer api.Viewer) error {
 }
 
 // AddFunc implement add function when pod is added in k8s
-func (q *QoS) AddFunc(pod *typedef.PodInfo) error {
-	if err := q.SetQoS(pod); err != nil {
+func (q *Preemption) AddFunc(pod *typedef.PodInfo) error {
+	if err := q.SetQoSLevel(pod); err != nil {
 		return err
 	}
-	if err := q.ValidateQoS(pod); err != nil {
+	if err := q.ValidateConfig(pod); err != nil {
 		return err
 	}
 	return nil
 }
 
 // UpdateFunc implement update function when pod info is changed
-func (q *QoS) UpdateFunc(old, new *typedef.PodInfo) error {
+func (q *Preemption) UpdateFunc(old, new *typedef.PodInfo) error {
 	oldQos, newQos := getQoSLevel(old), getQoSLevel(new)
 	switch {
 	case newQos == oldQos:
@@ -90,8 +90,8 @@ func (q *QoS) UpdateFunc(old, new *typedef.PodInfo) error {
 	case newQos > oldQos:
 		return fmt.Errorf("not support change qos level from low to high")
 	default:
-		if err := q.ValidateQoS(new); err != nil {
-			if err := q.SetQoS(new); err != nil {
+		if err := q.ValidateConfig(new); err != nil {
+			if err := q.SetQoSLevel(new); err != nil {
 				return fmt.Errorf("update qos for pod %s(%s) failed: %v", new.Name, new.UID, err)
 			}
 		}
@@ -100,20 +100,20 @@ func (q *QoS) UpdateFunc(old, new *typedef.PodInfo) error {
 }
 
 // DeleteFunc implement delete function when pod is deleted by k8s
-func (q *QoS) DeleteFunc(pod *typedef.PodInfo) error {
+func (q *Preemption) DeleteFunc(pod *typedef.PodInfo) error {
 	return nil
 }
 
-// ValidateQoS will validate pod's qos level between value from
+// ValidateConfig will validate pod's qos level between value from
 // cgroup file and the one from pod info
-func (q *QoS) ValidateQoS(pod *typedef.PodInfo) error {
+func (q *Preemption) ValidateConfig(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
-	for _, subSys := range q.SubSys {
-		if err := pod.GetCgroupAttr(supportCgroupTypes[subSys]).Expect(targetLevel); err != nil {
+	for _, r := range q.Resource {
+		if err := pod.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
 			return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
 		}
 		for _, container := range pod.IDContainersMap {
-			if err := container.GetCgroupAttr(supportCgroupTypes[subSys]).Expect(targetLevel); err != nil {
+			if err := container.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
 				return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
 			}
 		}
@@ -121,8 +121,8 @@ func (q *QoS) ValidateQoS(pod *typedef.PodInfo) error {
 	return nil
 }
 
-// SetQoS set pod and all containers' qos level within it
-func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
+// SetQoSLevel set pod and all containers' qos level within it
+func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 	if pod == nil {
 		return fmt.Errorf("pod info is empty")
 	}
@@ -132,12 +132,12 @@ func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
 		return nil
 	}
 
-	for _, sys := range q.SubSys {
-		if err := pod.SetCgroupAttr(supportCgroupTypes[sys], strconv.Itoa(qosLevel)); err != nil {
+	for _, r := range q.Resource {
+		if err := pod.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
 			return err
 		}
 		for _, container := range pod.IDContainersMap {
-			if err := container.SetCgroupAttr(supportCgroupTypes[sys], strconv.Itoa(qosLevel)); err != nil {
+			if err := container.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
 				return err
 			}
 		}
@@ -165,13 +165,13 @@ func getQoSLevel(pod *typedef.PodInfo) int {
 }
 
 // Validate will validate the qos service config
-func (q *QoS) Validate() error {
-	if len(q.SubSys) == 0 {
+func (q *Preemption) Validate() error {
+	if len(q.Resource) == 0 {
 		return fmt.Errorf("empty qos config")
 	}
-	for _, subSys := range q.SubSys {
-		if _, ok := supportCgroupTypes[subSys]; !ok {
-			return fmt.Errorf("not support sub system %s", subSys)
+	for _, r := range q.Resource {
+		if _, ok := supportCgroupTypes[r]; !ok {
+			return fmt.Errorf("not support sub system %s", r)
 		}
 	}
 	return nil
