@@ -143,7 +143,7 @@ func (d *NodeData) updateCPUUtils() error {
 	return nil
 }
 
-//  UpdateClusterContainers synchronizes data from given containers
+// UpdateClusterContainers synchronizes data from given containers
 func (d *NodeData) UpdateClusterContainers(conts map[string]*typedef.ContainerInfo) error {
 	var toBeDeletedList []string
 	for _, cont := range conts {
