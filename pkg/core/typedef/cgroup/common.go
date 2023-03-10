@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/util"
@@ -32,20 +33,26 @@ func AbsoluteCgroupPath(elem ...string) string {
 
 // ReadCgroupFile reads data from cgroup files
 func ReadCgroupFile(elem ...string) ([]byte, error) {
-	cgfile := AbsoluteCgroupPath(elem...)
-	if !util.PathExist(cgfile) {
-		return nil, fmt.Errorf("%v: no such file or diretory", cgfile)
-	}
-	return util.ReadFile(cgfile)
+	return readCgroupFile(filepath.Join(AbsoluteCgroupPath(elem...)))
 }
 
 // WriteCgroupFile writes data to cgroup file
 func WriteCgroupFile(content string, elem ...string) error {
-	cgfile := AbsoluteCgroupPath(elem...)
-	if !util.PathExist(cgfile) {
-		return fmt.Errorf("%v: no such file or diretory", cgfile)
+	return writeCgroupFile(AbsoluteCgroupPath(elem...), content)
+}
+
+func readCgroupFile(cgPath string) ([]byte, error) {
+	if !util.PathExist(cgPath) {
+		return nil, fmt.Errorf("%v: no such file or diretory", cgPath)
 	}
-	return util.WriteFile(cgfile, content)
+	return util.ReadFile(cgPath)
+}
+
+func writeCgroupFile(cgPath, content string) error {
+	if !util.PathExist(cgPath) {
+		return fmt.Errorf("%v: no such file or diretory", cgPath)
+	}
+	return util.WriteFile(cgPath, content)
 }
 
 // InitMountDir sets the mount directory of the cgroup file system
@@ -136,4 +143,47 @@ func (attr *Attr) CPUStat() (*CPUStat, error) {
 		return nil, attr.Err
 	}
 	return NewCPUStat(attr.Value)
+}
+
+type Hierarchy struct {
+	MountPoint string
+	Path       string
+}
+
+func NewHierarchy(mountPoint, path string) *Hierarchy {
+	return &Hierarchy{
+		MountPoint: mountPoint,
+		Path:       path,
+	}
+}
+
+// SetCgroupAttr sets value to the cgroup file
+func (h *Hierarchy) SetCgroupAttr(key *Key, value string) error {
+	if err := validateCgroupKey(key); err != nil {
+		return err
+	}
+	return writeCgroupFile(filepath.Join(h.MountPoint, key.SubSys, h.Path, key.FileName), value)
+}
+
+// GetCgroupAttr gets cgroup file content
+func (h *Hierarchy) GetCgroupAttr(key *Key) *Attr {
+	if err := validateCgroupKey(key); err != nil {
+		return &Attr{Err: err}
+	}
+	data, err := readCgroupFile(filepath.Join(h.MountPoint, key.SubSys, h.Path, key.FileName))
+	if err != nil {
+		return &Attr{Err: err}
+	}
+	return &Attr{Value: strings.TrimSpace(string(data)), Err: nil}
+}
+
+// validateCgroupKey is used to verify the validity of the cgroup key
+func validateCgroupKey(key *Key) error {
+	if key == nil {
+		return fmt.Errorf("key cannot be empty")
+	}
+	if len(key.SubSys) == 0 || len(key.FileName) == 0 {
+		return fmt.Errorf("invalid key")
+	}
+	return nil
 }
