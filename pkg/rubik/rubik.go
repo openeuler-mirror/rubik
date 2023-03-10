@@ -40,14 +40,15 @@ type Agent struct {
 	config          *config.Config
 	podManager      *podmanager.PodManager
 	informer        api.Informer
-	servicesManager *services.ServiceManager
+	servicesManager *ServiceManager
 }
 
 // NewAgent returns an agent for given configuration
 func NewAgent(cfg *config.Config) (*Agent, error) {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
-	serviceManager := services.NewServiceManager()
-	if err := serviceManager.InitServices(cfg.UnwarpServiceConfig(), cfg); err != nil {
+	serviceManager := NewServiceManager()
+	if err := serviceManager.InitServices( cfg.Agent.EnabledFeatures,
+		cfg.UnwarpServiceConfig(), cfg); err != nil {
 		return nil, err
 	}
 	a := &Agent{
@@ -116,6 +117,7 @@ func runAgent(ctx context.Context) error {
 	if err := c.LoadConfig(constant.ConfigFile); err != nil {
 		return fmt.Errorf("error loading config: %v", err)
 	}
+
 	// 2. enable log system
 	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
 		return fmt.Errorf("error initializing log: %v", err)
@@ -124,7 +126,10 @@ func runAgent(ctx context.Context) error {
 	// 3. enable cgroup system
 	cgroup.InitMountDir(c.Agent.CgroupRoot)
 
-	// 4. Create and run the agent
+	// 4. init service components
+	services.InitServiceComponents(defaultRubikFeature)
+
+	// 5. Create and run the agent
 	agent, err := NewAgent(c)
 	if err != nil {
 		return fmt.Errorf("error new agent: %v", err)

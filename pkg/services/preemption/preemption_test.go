@@ -28,7 +28,7 @@ func init() {
 
 type fields struct {
 	Name   string
-	Config Config
+	Config PreemptionConfig
 }
 type args struct {
 	old *try.FakePod
@@ -46,7 +46,7 @@ type test struct {
 var getCommonField = func(subSys []string) fields {
 	return fields{
 		Name:   "qos",
-		Config: Config{Resource: subSys},
+		Config: PreemptionConfig{Resource: subSys},
 	}
 }
 
@@ -106,8 +106,8 @@ func TestPreemptionAddFunc(t *testing.T) {
 	for _, tt := range addFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				Name:   tt.fields.Name,
-				Config: tt.fields.Config,
+				name:   tt.fields.Name,
+				config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
 				tt.preHook(tt.args.new)
@@ -164,8 +164,8 @@ func TestPreemptionUpdateFunc(t *testing.T) {
 	for _, tt := range updateFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				Name:   tt.fields.Name,
-				Config: tt.fields.Config,
+				name:   tt.fields.Name,
+				config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
 				tt.args.new = tt.preHook(tt.args.old)
@@ -185,14 +185,14 @@ func TestPreemptionValidate(t *testing.T) {
 			name: "TC1-normal config",
 			fields: fields{
 				Name:   "qos",
-				Config: Config{Resource: []string{"cpu", "memory"}},
+				Config: PreemptionConfig{Resource: []string{"cpu", "memory"}},
 			},
 		},
 		{
 			name: "TC2-abnormal config",
 			fields: fields{
 				Name:   "undefine",
-				Config: Config{Resource: []string{"undefine"}},
+				Config: PreemptionConfig{Resource: []string{"undefine"}},
 			},
 			wantErr: true,
 		},
@@ -205,8 +205,8 @@ func TestPreemptionValidate(t *testing.T) {
 	for _, tt := range validateTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				Name:   tt.fields.Name,
-				Config: tt.fields.Config,
+				name:   tt.fields.Name,
+				config: tt.fields.Config,
 			}
 			if err := q.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("QoS.Validate() error = %v, wantErr %v", err, tt.wantErr)

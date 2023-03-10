@@ -28,6 +28,8 @@ import (
 	"isula.org/rubik/pkg/podmanager"
 )
 
+const moduleName = "quotaturbo"
+
 // TestQuotaTurbo_Validatec test Validate function
 func TestQuotaTurbo_Validate(t *testing.T) {
 	tests := []struct {
@@ -337,7 +339,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 func TestNewQuotaTurbo(t *testing.T) {
 	testName := "TC1-test otherv functions"
 	t.Run(testName, func(t *testing.T) {
-		got := NewQuotaTurbo()
+		got := NewQuotaTurbo(moduleName)
 		assert.Equal(t, moduleName, got.ID())
 		got.Viewer = &podmanager.PodManager{
 			Pods: &podmanager.PodCache{

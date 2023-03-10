@@ -26,20 +26,25 @@ import (
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/services/helper"
 )
 
-const moduleName = "quotaturbo"
+type QuotaTurboFactory struct {
+	ObjName string
+}
 
+func (i QuotaTurboFactory) Name() string {
+	return "BlkioThrottleFactory"
+}
 
-func init() {
-	services.Register(moduleName, func() interface{} {
-		return NewQuotaTurbo()
-	})
+func (i QuotaTurboFactory) NewObj() (interface{}, error) {
+	return NewQuotaTurbo(i.ObjName), nil
 }
 
 // QuotaTurbo manages all container CPU quota data on the current node.
 type QuotaTurbo struct {
+	helper.ServiceBase
+	name string
 	// NodeData including the container data, CPU usage, and QuotaTurbo configuration of the local node
 	*NodeData
 	// interfaces with different policies
@@ -49,8 +54,9 @@ type QuotaTurbo struct {
 }
 
 // NewQuotaTurbo generate quota turbo objects
-func NewQuotaTurbo() *QuotaTurbo {
+func NewQuotaTurbo(n string) *QuotaTurbo {
 	return &QuotaTurbo{
+		name:     n,
 		NodeData: NewNodeData(),
 		Driver:   &EventDriver{},
 	}
@@ -58,7 +64,7 @@ func NewQuotaTurbo() *QuotaTurbo {
 
 // ID returns the module name
 func (qt *QuotaTurbo) ID() string {
-	return moduleName
+	return qt.name
 }
 
 // AdjustQuota adjusts the quota of a container at a time

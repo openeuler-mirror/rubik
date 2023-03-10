@@ -23,7 +23,7 @@ import (
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/services/helper"
 )
 
 var supportCgroupTypes = map[string]*cgroup.Key{
@@ -33,31 +33,40 @@ var supportCgroupTypes = map[string]*cgroup.Key{
 
 // Preemption define service which related to qos level setting
 type Preemption struct {
-	Name string `json:"-"`
-	Config
+	helper.ServiceBase
+	name   string
+	config PreemptionConfig
 }
 
 // Config contains sub-system that need to set qos level
-type Config struct {
+type PreemptionConfig struct {
 	Resource []string `json:"resource,omitempty"`
 }
 
-func init() {
-	services.Register("qos", func() interface{} {
-		return NewQoS()
-	})
+type PreemptionFactory struct {
+	ObjName string
 }
 
-// NewQoS return qos instance
-func NewQoS() *Preemption {
-	return &Preemption{
-		Name: "qos",
-	}
+func (i PreemptionFactory) Name() string {
+	return "PreemptionFactory"
+}
+
+func (i PreemptionFactory) NewObj() (interface{}, error) {
+	return &Preemption{name: i.ObjName}, nil
 }
 
 // ID return qos service name
 func (q *Preemption) ID() string {
-	return q.Name
+	return q.name
+}
+
+func (q *Preemption) SetConfig(f helper.HandlerConfig) error {
+	var c PreemptionConfig
+	if err := f(q.name, c); err != nil {
+		return err
+	}
+	q.config = c
+	return nil
 }
 
 // PreStart is the pre-start action
@@ -108,7 +117,7 @@ func (q *Preemption) DeleteFunc(pod *typedef.PodInfo) error {
 // cgroup file and the one from pod info
 func (q *Preemption) ValidateConfig(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
-	for _, r := range q.Resource {
+	for _, r := range q.config.Resource {
 		if err := pod.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
 			return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
 		}
@@ -132,7 +141,7 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 		return nil
 	}
 
-	for _, r := range q.Resource {
+	for _, r := range q.config.Resource {
 		if err := pod.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
 			return err
 		}
@@ -166,10 +175,10 @@ func getQoSLevel(pod *typedef.PodInfo) int {
 
 // Validate will validate the qos service config
 func (q *Preemption) Validate() error {
-	if len(q.Resource) == 0 {
+	if len(q.config.Resource) == 0 {
 		return fmt.Errorf("empty qos config")
 	}
-	for _, r := range q.Resource {
+	for _, r := range q.config.Resource {
 		if _, ok := supportCgroupTypes[r]; !ok {
 			return fmt.Errorf("not support sub system %s", r)
 		}

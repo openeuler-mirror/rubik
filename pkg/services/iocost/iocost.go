@@ -1,6 +1,7 @@
 package iocost
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"unicode"
@@ -11,7 +12,7 @@ import (
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/services/helper"
 )
 
 const (
@@ -48,19 +49,28 @@ type NodeConfig struct {
 
 // IOCost for iocost class
 type IOCost struct {
+	helper.ServiceBase
 	name string
-	nodeConfigs  []NodeConfig
 }
 
 var (
 	nodeName string
 )
 
-// init iocost: register service and ensure this platform support iocost.
-func init() {
-	services.Register("iocost", func() interface{} {
-		return &IOCost{name: "iocost"}
-	})
+type IOCostFactory struct {
+	ObjName string
+}
+
+func (i IOCostFactory) Name() string {
+	return "IOCostFactory"
+}
+
+func (i IOCostFactory) NewObj() (interface{}, error) {
+	if IOCostSupport() {
+		nodeName = os.Getenv(constant.NodeNameEnvKey)
+		return &IOCost{name: i.ObjName}, nil
+	}
+	return nil, fmt.Errorf("this machine not support iocost")
 }
 
 // IOCostSupport tell if the os support iocost.
@@ -71,22 +81,18 @@ func IOCostSupport() bool {
 }
 
 // ID for get the name of iocost
-func (b *IOCost) ID() string {
-	return b.name
+func (io *IOCost) ID() string {
+	return io.name
 }
 
-func (b *IOCost) PreStart(viewer api.Viewer) error {
-	nodeName = os.Getenv(constant.NodeNameEnvKey)
-	if err := b.loadConfig(); err != nil {
+func (io *IOCost) SetConfig(f helper.HandlerConfig) error {
+	var nodeConfigs []NodeConfig
+	var nodeConfig *NodeConfig
+	if err := f(io.name, nodeConfigs); err != nil {
 		return err
 	}
-	return b.dealExistedPods(viewer)
-}
 
-func (b *IOCost) loadConfig() error {
-	var nodeConfig *NodeConfig
-	// global will set all node
-	for _, config := range b.nodeConfigs {
+	for _, config := range nodeConfigs {
 		if config.NodeName == nodeName {
 			nodeConfig = &config
 			break
@@ -95,9 +101,12 @@ func (b *IOCost) loadConfig() error {
 			nodeConfig = &config
 		}
 	}
+	return io.loadConfig(nodeConfig)
+}
 
+func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 	// ensure that previous configuration is cleared.
-	if err := b.clearIOCost(); err != nil {
+	if err := io.clearIOCost(); err != nil {
 		log.Errorf("clear iocost err:%v", err)
 		return err
 	}
@@ -108,8 +117,13 @@ func (b *IOCost) loadConfig() error {
 		return nil
 	}
 
-	b.configIOCost(nodeConfig.IOCostConfig)
+	io.configIOCost(nodeConfig.IOCostConfig)
 	return nil
+
+}
+
+func (io *IOCost) PreStart(viewer api.Viewer) error {
+	return io.dealExistedPods(viewer)
 }
 
 func (b *IOCost) Terminate(viewer api.Viewer) error {

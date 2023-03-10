@@ -23,6 +23,10 @@ import (
 	"isula.org/rubik/pkg/api"
 )
 
+const (
+	moduleName = "dynCache"
+)
+
 func TestCacheLimit_Validate(t *testing.T) {
 	type fields struct {
 		Config *Config
@@ -225,7 +229,7 @@ func TestNewCacheLimit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewCacheLimit(); !reflect.DeepEqual(got, tt.want) {
+			if got := NewDynCache(moduleName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewCacheLimit() = %v, want %v", got, tt.want)
 			}
 		})

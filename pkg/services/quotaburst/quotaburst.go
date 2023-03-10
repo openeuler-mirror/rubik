@@ -28,34 +28,30 @@ import (
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/services/helper"
 )
-
-const (
-	moduleName = "quotaburst"
-)
-
-func init() {
-	services.Register(moduleName, func() interface{} {
-		return NewBurst()
-	})
-}
 
 // Burst is used to control cpu burst
 type Burst struct {
-	Name string `json:"-"`
+	helper.ServiceBase
+	name string
 }
 
-// NewBurst return an new Burst pointer
-func NewBurst() *Burst {
-	return &Burst{
-		Name: moduleName,
-	}
+type BurstFactory struct {
+	ObjName string
+}
+
+func (i BurstFactory) Name() string {
+	return "BurstFactory"
+}
+
+func (i BurstFactory) NewObj() (interface{}, error) {
+	return &Burst{name: i.ObjName}, nil
 }
 
 // ID returns the module name
 func (b *Burst) ID() string {
-	return moduleName
+	return b.name
 }
 
 // AddFunc implement add function when pod is added in k8s

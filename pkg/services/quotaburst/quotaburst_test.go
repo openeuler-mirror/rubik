@@ -27,6 +27,10 @@ import (
 	"isula.org/rubik/test/try"
 )
 
+const (
+	moduleName = "quotaburst"
+)
+
 var (
 	cfsBurstUs  = &cgroup.Key{SubSys: "cpu", FileName: "cpu.cfs_burst_us"}
 	cfsQuotaUs  = &cgroup.Key{SubSys: "cpu", FileName: "cpu.cfs_quota_us"}
@@ -151,7 +155,7 @@ func TestBurst_AddFunc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := NewBurst()
+			conf := Burst{name: moduleName}
 			if tt.args.burst != "" {
 				tt.args.pod.Annotations[constant.QuotaBurstAnnotationKey] = tt.args.burst
 			}
@@ -168,7 +172,7 @@ func TestBurst_AddFunc(t *testing.T) {
 func TestOther(t *testing.T) {
 	const tcName = "TC1-test Other"
 	t.Run(tcName, func(t *testing.T) {
-		got := NewBurst()
+		got := Burst{name: moduleName}
 		assert.NoError(t, got.DeleteFunc(&typedef.PodInfo{}))
 		assert.Equal(t, moduleName, got.ID())
 	})
@@ -216,7 +220,7 @@ func TestBurst_UpdateFunc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := NewBurst()
+			conf := Burst{name: moduleName}
 			if err := conf.UpdateFunc(tt.args.oldPod, tt.args.newPod); (err != nil) != tt.wantErr {
 				t.Errorf("Burst.UpdateFunc() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -250,7 +254,7 @@ func TestBurst_PreStart(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := NewBurst()
+			conf := Burst{name: moduleName}
 			if err := conf.PreStart(tt.args.viewer); (err != nil) != tt.wantErr {
 				t.Errorf("Burst.PreStart() error = %v, wantErr %v", err, tt.wantErr)
 			}

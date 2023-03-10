@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"isula.org/rubik/pkg/api"
-	"isula.org/rubik/pkg/services"
+	"isula.org/rubik/pkg/services/helper"
 )
 
 // default value
@@ -37,7 +37,6 @@ const (
 	defaultHighMB       = 50
 	defaultMaxMiss      = 20
 	defaultMinMiss      = 10
-	moduleName          = "cacheLimit"
 	defaultResctrlDir   = "/sys/fs/resctrl"
 	defaultNumaNodeDir  = "/sys/devices/system/node"
 	defaultPidNameSpace = "/proc/self/ns/pid"
@@ -88,6 +87,7 @@ type Config struct {
 
 // DynCache is cache limit service structure
 type DynCache struct {
+	helper.ServiceBase
 	*Config
 	Attr   *Attr
 	Viewer api.Viewer
@@ -112,16 +112,22 @@ type Attr struct {
 	MinMiss int
 }
 
-func init() {
-	services.Register(moduleName, func() interface{} {
-		return NewCacheLimit()
-	})
+type DynCacheFactory struct {
+	ObjName string
 }
 
-// NewCacheLimit return cache limit instance with default settings
-func NewCacheLimit() *DynCache {
+func (i DynCacheFactory) Name() string {
+	return "DynCacheFactory"
+}
+
+func (i DynCacheFactory) NewObj() (interface{}, error) {
+	return NewDynCache(i.ObjName), nil
+}
+
+// NewDynCache return cache limit instance with default settings
+func NewDynCache(name string) *DynCache {
 	return &DynCache{
-		Name: moduleName,
+		Name: name,
 		Attr: &Attr{
 			NumaNodeDir: defaultNumaNodeDir,
 			MaxMiss:     defaultMaxMiss,

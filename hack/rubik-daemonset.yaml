@@ -39,10 +39,16 @@ data:
         "logDir": "/var/log/rubik",
         "logSize": 1024,
         "logLevel": "info",
-        "cgroupRoot": "/sys/fs/cgroup"
+        "cgroupRoot": "/sys/fs/cgroup",
+        "enabledFeatures": [
+          "preemption"
+        ]
       },
-      "qos": {
-        "subSys": ["cpu", "memory"]
+      "preemption": {
+        "resource": [
+          "cpu",
+          "memory"
+        ]
       }
     }
 ---
