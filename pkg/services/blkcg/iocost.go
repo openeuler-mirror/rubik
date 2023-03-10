@@ -7,13 +7,12 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/services"
 )
-
-var log api.Logger
 
 const (
 	blkcgRootDir  = "blkio"
@@ -70,10 +69,6 @@ func IOCostSupport() bool {
 	qosFile := cgroup.AbsoluteCgroupPath(blkcgRootDir, iocostQosFile)
 	modelFile := cgroup.AbsoluteCgroupPath(blkcgRootDir, iocostModelFile)
 	return util.PathExist(qosFile) && util.PathExist(modelFile)
-}
-
-func SetLogger(l api.Logger) {
-	log = l
 }
 
 // ID for get the name of iocost

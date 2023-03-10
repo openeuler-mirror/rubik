@@ -20,6 +20,7 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/services"
@@ -33,7 +34,6 @@ var supportCgroupTypes = map[string]*cgroup.Key{
 // QoS define service which related to qos level setting
 type QoS struct {
 	Name string `json:"-"`
-	Log  api.Logger
 	Config
 }
 
@@ -64,7 +64,7 @@ func (q *QoS) ID() string {
 func (q *QoS) PreStart(viewer api.Viewer) error {
 	for _, pod := range viewer.ListPodsWithOptions() {
 		if err := q.SetQoS(pod); err != nil {
-			q.Log.Errorf("error prestart pod %v: %v", pod.Name, err)
+			log.Errorf("error prestart pod %v: %v", pod.Name, err)
 		}
 	}
 	return nil
@@ -128,7 +128,7 @@ func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
 	}
 	qosLevel := getQoSLevel(pod)
 	if qosLevel == constant.Online {
-		q.Log.Debugf("pod %s already online", pod.Name)
+		log.Debugf("pod %s already online", pod.Name)
 		return nil
 	}
 
@@ -142,7 +142,7 @@ func (q *QoS) SetQoS(pod *typedef.PodInfo) error {
 			}
 		}
 	}
-	q.Log.Debugf("set pod %s(%s) qos level %d ok", pod.Name, pod.UID, qosLevel)
+	log.Debugf("set pod %s(%s) qos level %d ok", pod.Name, pod.UID, qosLevel)
 	return nil
 }
 

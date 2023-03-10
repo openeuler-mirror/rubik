@@ -17,14 +17,12 @@ package services
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"isula.org/rubik/pkg/api"
-	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/subscriber"
@@ -64,11 +62,6 @@ func (manager *ServiceManager) InitServices(serviceConfig map[string]interface{}
 		service := creator()
 		if err := parser.UnmarshalSubConfig(config, service); err != nil {
 			return fmt.Errorf("error unmarshaling %s config: %v", name, err)
-		}
-
-		if SetLoggerOnService(service,
-			log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), name))) {
-			log.Debugf("set logger for service: %s", name)
 		}
 
 		// try to verify configuration
@@ -161,25 +154,6 @@ func (manager *ServiceManager) terminatingRunningServices(err error) error {
 		}
 	}
 	return err
-}
-
-// SetLoggerOnService assigns a value to the variable Log member if there is a Log field
-func SetLoggerOnService(value interface{}, logger api.Logger) bool {
-	// 1. call the SetupLog function to set up the log
-	method := reflect.ValueOf(value).MethodByName("SetupLog")
-	if method.IsValid() && !method.IsZero() && !method.IsNil() {
-		method.Call([]reflect.Value{reflect.ValueOf(logger)})
-		return true
-	}
-
-	// 2. look for a member variable named Log
-	field := reflect.ValueOf(value).Elem().FieldByName("Log")
-	if field.IsValid() && field.CanSet() && field.Type().String() == "api.Logger" {
-		field.Set(reflect.ValueOf(logger))
-		return true
-	}
-
-	return false
 }
 
 // Setup pre-starts services, such as preparing the environment, etc.

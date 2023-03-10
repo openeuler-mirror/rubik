@@ -23,7 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"isula.org/rubik/pkg/common/constant"
-	Log "isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/podmanager"
@@ -339,7 +338,6 @@ func TestNewQuotaTurbo(t *testing.T) {
 	testName := "TC1-test otherv functions"
 	t.Run(testName, func(t *testing.T) {
 		got := NewQuotaTurbo()
-		got.SetupLog(&Log.EmptyLog{})
 		assert.Equal(t, moduleName, got.ID())
 		got.Viewer = &podmanager.PodManager{
 			Pods: &podmanager.PodCache{

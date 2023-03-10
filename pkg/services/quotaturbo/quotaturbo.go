@@ -23,7 +23,7 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	Log "isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services"
@@ -31,10 +31,8 @@ import (
 
 const moduleName = "quotaturbo"
 
-var log api.Logger
 
 func init() {
-	log = &Log.EmptyLog{}
 	services.Register(moduleName, func() interface{} {
 		return NewQuotaTurbo()
 	})
@@ -56,11 +54,6 @@ func NewQuotaTurbo() *QuotaTurbo {
 		NodeData: NewNodeData(),
 		Driver:   &EventDriver{},
 	}
-}
-
-// SetupLog initializes the log interface for the module
-func (qt *QuotaTurbo) SetupLog(logger api.Logger) {
-	log = logger
 }
 
 // ID returns the module name

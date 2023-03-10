@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -26,7 +24,7 @@ func getBlkDeviceNo(devName string) (string, error) {
 
 	st, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
-		return "", errors.Errorf("failed to get Sys(), %v has type %v", devName, st)
+		return "", fmt.Errorf("failed to get Sys(), %v has type %v", devName, st)
 	}
 
 	devno := st.Rdev
@@ -41,7 +39,7 @@ func getDirInode(file string) (uint64, error) {
 	}
 	st, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
-		return 0, errors.Errorf("failed to get Sys(), %v has type %v", file, st)
+		return 0, fmt.Errorf("failed to get Sys(), %v has type %v", file, st)
 	}
 	return st.Ino, nil
 }
