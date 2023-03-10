@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"isula.org/rubik/pkg/api"
-	Log "isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/services"
 )
 
@@ -113,19 +112,10 @@ type Attr struct {
 	MinMiss int
 }
 
-// log is global logger for cache limit service
-var log api.Logger
-
 func init() {
-	log = &Log.EmptyLog{}
 	services.Register(moduleName, func() interface{} {
 		return NewCacheLimit()
 	})
-}
-
-// SetupLog initializes the log interface for the module
-func (c *CacheLimit) SetupLog(logger api.Logger) {
-	log = logger
 }
 
 // NewCacheLimit return cache limit instance with default settings

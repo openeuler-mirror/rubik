@@ -15,12 +15,9 @@
 package qos
 
 import (
-	"context"
 	"testing"
 
-	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/test/try"
 )
@@ -31,7 +28,6 @@ func init() {
 
 type fields struct {
 	Name   string
-	Log    api.Logger
 	Config Config
 }
 type args struct {
@@ -50,7 +46,6 @@ type test struct {
 var getCommonField = func(subSys []string) fields {
 	return fields{
 		Name:   "qos",
-		Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
 		Config: Config{SubSys: subSys},
 	}
 }
@@ -112,7 +107,6 @@ func TestQoS_AddFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
 				Name:   tt.fields.Name,
-				Log:    tt.fields.Log,
 				Config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
@@ -171,7 +165,6 @@ func TestQoS_UpdateFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
 				Name:   tt.fields.Name,
-				Log:    tt.fields.Log,
 				Config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
@@ -192,7 +185,6 @@ func TestQoS_Validate(t *testing.T) {
 			name: "TC1-normal config",
 			fields: fields{
 				Name:   "qos",
-				Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
 				Config: Config{SubSys: []string{"cpu", "memory"}},
 			},
 		},
@@ -200,7 +192,6 @@ func TestQoS_Validate(t *testing.T) {
 			name: "TC2-abnormal config",
 			fields: fields{
 				Name:   "undefine",
-				Log:    log.WithCtx(context.WithValue(context.Background(), log.CtxKey(constant.LogEntryKey), "qos")),
 				Config: Config{SubSys: []string{"undefine"}},
 			},
 			wantErr: true,
@@ -215,7 +206,6 @@ func TestQoS_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &QoS{
 				Name:   tt.fields.Name,
-				Log:    tt.fields.Log,
 				Config: tt.fields.Config,
 			}
 			if err := q.Validate(); (err != nil) != tt.wantErr {

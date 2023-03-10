@@ -21,7 +21,6 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	Log "isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/podmanager"
@@ -170,7 +169,6 @@ func TestOther(t *testing.T) {
 	const tcName = "TC1-test Other"
 	t.Run(tcName, func(t *testing.T) {
 		got := NewBurst()
-		got.SetupLog(&Log.EmptyLog{})
 		assert.NoError(t, got.DeleteFunc(&typedef.PodInfo{}))
 		assert.Equal(t, moduleName, got.ID())
 	})

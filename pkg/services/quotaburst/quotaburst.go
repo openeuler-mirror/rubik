@@ -24,7 +24,7 @@ import (
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
-	Log "isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
@@ -35,10 +35,7 @@ const (
 	moduleName = "quotaburst"
 )
 
-var log api.Logger
-
 func init() {
-	log = &Log.EmptyLog{}
 	services.Register(moduleName, func() interface{} {
 		return NewBurst()
 	})
@@ -54,11 +51,6 @@ func NewBurst() *Burst {
 	return &Burst{
 		Name: moduleName,
 	}
-}
-
-// SetupLog initializes the log interface for the module
-func (b *Burst) SetupLog(logger api.Logger) {
-	log = logger
 }
 
 // ID returns the module name

@@ -2,6 +2,7 @@ package blkcg
 
 import (
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services"
 )
@@ -21,7 +22,6 @@ type BlkioThrottleConfig struct {
 
 type BlkioThrottle struct {
 	Name string `json:"-"`
-	Log  api.Logger
 }
 
 func init() {
@@ -35,12 +35,12 @@ func NewBlkioThrottle() *BlkioThrottle {
 }
 
 func (b *BlkioThrottle) PreStart(viewer api.Viewer) error {
-	b.Log.Debugf("blkiothrottle prestart")
+	log.Infof("blkiothrottle prestart")
 	return nil
 }
 
 func (b *BlkioThrottle) Terminate(viewer api.Viewer) error {
-	b.Log.Infof("blkiothrottle Terminate")
+	log.Infof("blkiothrottle Terminate")
 	return nil
 }
 
