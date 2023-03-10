@@ -13,49 +13,49 @@ type DeviceConfig struct {
 	DeviceValue string `json:"value,omitempty"`
 }
 
-type BlkioThrottleConfig struct {
+type IOLimitAnnoConfig struct {
 	DeviceReadBps   []DeviceConfig `json:"device_read_bps,omitempty"`
 	DeviceWriteBps  []DeviceConfig `json:"device_write_bps,omitempty"`
 	DeviceReadIops  []DeviceConfig `json:"device_read_iops,omitempty"`
 	DeviceWriteIops []DeviceConfig `json:"device_write_iops,omitempty"`
 }
 
-type BlkioThrottle struct {
+type IOLimit struct {
 	Name string `json:"-"`
 }
 
 func init() {
-	services.Register("blkio", func() interface{} {
+	services.Register("ioLimit", func() interface{} {
 		return NewBlkioThrottle()
 	})
 }
 
-func NewBlkioThrottle() *BlkioThrottle {
-	return &BlkioThrottle{Name: "blkiothrottle"}
+func NewBlkioThrottle() *IOLimit {
+	return &IOLimit{Name: "ioLimit"}
 }
 
-func (b *BlkioThrottle) PreStart(viewer api.Viewer) error {
-	log.Infof("blkiothrottle prestart")
+func (i *IOLimit) PreStart(viewer api.Viewer) error {
+	log.Infof("ioLimit prestart")
 	return nil
 }
 
-func (b *BlkioThrottle) Terminate(viewer api.Viewer) error {
-	log.Infof("blkiothrottle Terminate")
+func (i *IOLimit) Terminate(viewer api.Viewer) error {
+	log.Infof("ioLimit Terminate")
 	return nil
 }
 
-func (b *BlkioThrottle) ID() string {
-	return b.Name
+func (i *IOLimit) ID() string {
+	return i.Name
 }
 
-func (b *BlkioThrottle) AddFunc(podInfo *typedef.PodInfo) error {
+func (i *IOLimit) AddFunc(podInfo *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *BlkioThrottle) UpdateFunc(old, new *typedef.PodInfo) error {
+func (i *IOLimit) UpdateFunc(old, new *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *BlkioThrottle) DeleteFunc(podInfo *typedef.PodInfo) error {
+func (i *IOLimit) DeleteFunc(podInfo *typedef.PodInfo) error {
 	return nil
 }

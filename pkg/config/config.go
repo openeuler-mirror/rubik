@@ -38,11 +38,12 @@ type Config struct {
 
 // AgentConfig is the configuration of rubik, including important basic configurations such as logs
 type AgentConfig struct {
-	LogDriver  string `json:"logDriver,omitempty"`
-	LogLevel   string `json:"logLevel,omitempty"`
-	LogSize    int64  `json:"logSize,omitempty"`
-	LogDir     string `json:"logDir,omitempty"`
-	CgroupRoot string `json:"cgroupRoot,omitempty"`
+	LogDriver       string   `json:"logDriver,omitempty"`
+	LogLevel        string   `json:"logLevel,omitempty"`
+	LogSize         int64    `json:"logSize,omitempty"`
+	LogDir          string   `json:"logDir,omitempty"`
+	CgroupRoot      string   `json:"cgroupRoot,omitempty"`
+	EnabledFeatures []string `json:"enabledFeatures,omitempty"`
 }
 
 // NewConfig returns an config object pointer

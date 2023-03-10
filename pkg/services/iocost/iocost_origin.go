@@ -1,4 +1,4 @@
-package blkcg
+package iocost
 
 import (
 	"fmt"

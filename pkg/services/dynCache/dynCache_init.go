@@ -12,7 +12,7 @@
 // Description: This file will init cache limit directories before services running
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ type limitSet struct {
 }
 
 // InitCacheLimitDir init multi-level cache limit directories
-func (c *CacheLimit) InitCacheLimitDir() error {
+func (c *DynCache) InitCacheLimitDir() error {
 	log.Debugf("init cache limit directory")
 	const (
 		defaultL3PercentMax = 100
@@ -80,7 +80,7 @@ func (c *CacheLimit) InitCacheLimitDir() error {
 	return nil
 }
 
-func (c *CacheLimit) newCacheLimitSet(level string, l3Per, mbPer int) *limitSet {
+func (c *DynCache) newCacheLimitSet(level string, l3Per, mbPer int) *limitSet {
 	return &limitSet{
 		level:     level,
 		l3Percent: l3Per,

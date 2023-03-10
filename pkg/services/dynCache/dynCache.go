@@ -12,7 +12,7 @@
 // Description: This file is cache limit service
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"context"
@@ -86,8 +86,8 @@ type Config struct {
 	MemBandPercent MultiLvlPercent `json:"memBandPercent,omitempty"`
 }
 
-// CacheLimit is cache limit service structure
-type CacheLimit struct {
+// DynCache is cache limit service structure
+type DynCache struct {
 	*Config
 	Attr   *Attr
 	Viewer api.Viewer
@@ -119,8 +119,8 @@ func init() {
 }
 
 // NewCacheLimit return cache limit instance with default settings
-func NewCacheLimit() *CacheLimit {
-	return &CacheLimit{
+func NewCacheLimit() *DynCache {
+	return &DynCache{
 		Name: moduleName,
 		Attr: &Attr{
 			NumaNodeDir: defaultNumaNodeDir,
@@ -148,7 +148,7 @@ func NewCacheLimit() *CacheLimit {
 }
 
 // PreStart will do some pre-setting actions
-func (c *CacheLimit) PreStart(viewer api.Viewer) error {
+func (c *DynCache) PreStart(viewer api.Viewer) error {
 	c.Viewer = viewer
 
 	if err := c.InitCacheLimitDir(); err != nil {
@@ -158,18 +158,18 @@ func (c *CacheLimit) PreStart(viewer api.Viewer) error {
 }
 
 // ID returns service's name
-func (c *CacheLimit) ID() string {
+func (c *DynCache) ID() string {
 	return c.Name
 }
 
 // Run implement service run function
-func (c *CacheLimit) Run(ctx context.Context) {
+func (c *DynCache) Run(ctx context.Context) {
 	go wait.Until(c.SyncCacheLimit, time.Second, ctx.Done())
 	wait.Until(c.StartDynamic, time.Millisecond*time.Duration(c.Config.AdjustInterval), ctx.Done())
 }
 
 // Validate validate service's config
-func (c *CacheLimit) Validate() error {
+func (c *DynCache) Validate() error {
 	defaultLimitMode := c.Config.DefaultLimitMode
 	if defaultLimitMode != modeStatic && defaultLimitMode != modeDynamic {
 		return fmt.Errorf("invalid cache limit mode: %s, should be %s or %s",

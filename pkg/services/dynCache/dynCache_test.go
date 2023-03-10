@@ -12,7 +12,7 @@
 // Description: This file is testcase for cache limit service
 
 // Package cachelimit is the service used for cache limit setting
-package cachelimit
+package dynCache
 
 import (
 	"reflect"
@@ -173,7 +173,7 @@ func TestCacheLimit_Validate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,
@@ -192,11 +192,11 @@ func TestCacheLimit_Validate(t *testing.T) {
 func TestNewCacheLimit(t *testing.T) {
 	tests := []struct {
 		name string
-		want *CacheLimit
+		want *DynCache
 	}{
 		{
 			name: "TC-do nothing",
-			want: &CacheLimit{
+			want: &DynCache{
 				Name: moduleName,
 				Attr: &Attr{
 					NumaNodeDir: defaultNumaNodeDir,
@@ -247,8 +247,8 @@ func TestCacheLimit_PreStart(t *testing.T) {
 		fields   fields
 		args     args
 		wantErr  bool
-		preHook  func(t *testing.T, c *CacheLimit)
-		postHook func(t *testing.T, c *CacheLimit)
+		preHook  func(t *testing.T, c *DynCache)
+		postHook func(t *testing.T, c *DynCache)
 	}{
 		{
 			name:    "TC-just call function",
@@ -261,7 +261,7 @@ func TestCacheLimit_PreStart(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
@@ -296,7 +296,7 @@ func TestCacheLimit_ID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CacheLimit{
+			c := &DynCache{
 				Config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
