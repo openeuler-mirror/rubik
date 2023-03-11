@@ -1,18 +1,16 @@
 package iolimit
 
 import (
-	"isula.org/rubik/pkg/api"
-	"isula.org/rubik/pkg/common/log"
-	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services/helper"
 )
 
-// DeviceConfig defines blkio device configurations
+// DeviceConfig defines blkio device configurations.
 type DeviceConfig struct {
 	DeviceName  string `json:"device,omitempty"`
 	DeviceValue string `json:"value,omitempty"`
 }
 
+// IOLimitAnnoConfig defines the annotation config of iolimit.
 type IOLimitAnnoConfig struct {
 	DeviceReadBps   []DeviceConfig `json:"device_read_bps,omitempty"`
 	DeviceWriteBps  []DeviceConfig `json:"device_write_bps,omitempty"`
@@ -20,47 +18,28 @@ type IOLimitAnnoConfig struct {
 	DeviceWriteIops []DeviceConfig `json:"device_write_iops,omitempty"`
 }
 
+// IOLimit is the class of IOLimit.
 type IOLimit struct {
 	helper.ServiceBase
 	name string
 }
 
+// IOLimitFactory is the factory of IOLimit.
 type IOLimitFactory struct {
 	ObjName string
 }
 
+// Name to get the IOLimit factory name.
 func (i IOLimitFactory) Name() string {
 	return "IOLimitFactory"
 }
 
+// NewObj to create object of IOLimit.
 func (i IOLimitFactory) NewObj() (interface{}, error) {
 	return &IOLimit{name: i.ObjName}, nil
 }
 
-// =========================
-
+// ID to get the name of IOLimit.
 func (i *IOLimit) ID() string {
 	return i.name
-}
-
-func (i *IOLimit) PreStart(viewer api.Viewer) error {
-	log.Infof("ioLimit prestart")
-	return nil
-}
-
-func (i *IOLimit) Terminate(viewer api.Viewer) error {
-	log.Infof("ioLimit Terminate")
-	return nil
-}
-
-func (i *IOLimit) AddFunc(podInfo *typedef.PodInfo) error {
-	return nil
-}
-
-func (i *IOLimit) UpdateFunc(old, new *typedef.PodInfo) error {
-	return nil
-}
-
-func (i *IOLimit) DeleteFunc(podInfo *typedef.PodInfo) error {
-	return nil
 }

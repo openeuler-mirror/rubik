@@ -11,8 +11,8 @@
 // Create: 2023-02-21
 // Description: This file is testcase for cache limit sync function
 
-// Package cachelimit is the service used for cache limit setting
-package dynCache
+// Package dyncache is the service used for cache limit setting
+package dyncache
 
 import (
 	"path/filepath"

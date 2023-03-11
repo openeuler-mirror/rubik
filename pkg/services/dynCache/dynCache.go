@@ -11,8 +11,8 @@
 // Create: 2023-02-21
 // Description: This file is cache limit service
 
-// Package cachelimit is the service used for cache limit setting
-package dynCache
+// Package dyncache is the service used for cache limit setting
+package dyncache
 
 import (
 	"context"
@@ -112,14 +112,17 @@ type Attr struct {
 	MinMiss int
 }
 
+// DynCacheFactory is the factory os dyncache.
 type DynCacheFactory struct {
 	ObjName string
 }
 
+// Name to get the dyncache factory name.
 func (i DynCacheFactory) Name() string {
 	return "DynCacheFactory"
 }
 
+// NewObj to create object of dyncache.
 func (i DynCacheFactory) NewObj() (interface{}, error) {
 	return NewDynCache(i.ObjName), nil
 }
@@ -188,7 +191,9 @@ func (c *DynCache) Validate() error {
 	if c.Config.PerfDuration < minPerfDur || c.Config.PerfDuration > maxPerfDur {
 		return fmt.Errorf("perf duration %d out of range [%d,%d]", c.Config.PerfDuration, minPerfDur, maxPerfDur)
 	}
-	for _, per := range []int{c.Config.L3Percent.Low, c.Config.L3Percent.Mid, c.Config.L3Percent.High, c.Config.MemBandPercent.Low,
+	for _, per := range []int{
+		c.Config.L3Percent.Low, c.Config.L3Percent.Mid,
+		c.Config.L3Percent.High, c.Config.MemBandPercent.Low,
 		c.Config.MemBandPercent.Mid, c.Config.MemBandPercent.High} {
 		if per < minPercent || per > maxPercent {
 			return fmt.Errorf("cache limit percentage %d out of range [%d,%d]", per, minPercent, maxPercent)

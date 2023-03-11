@@ -11,8 +11,8 @@
 // Create: 2023-02-21
 // Description: This file will init cache limit directories before services running
 
-// Package cachelimit is the service used for cache limit setting
-package dynCache
+// Package dyncache is the service used for cache limit setting
+package dyncache
 
 import (
 	"fmt"

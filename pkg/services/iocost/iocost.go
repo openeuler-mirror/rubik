@@ -1,3 +1,17 @@
+// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
+// rubik licensed under the Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+//     http://license.coscl.org.cn/MulanPSL2
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+// PURPOSE.
+// See the Mulan PSL v2 for more details.
+// Author: hanchao
+// Create: 2023-03-11
+// Description: This file is used to implement iocost
+
+// Package iocost
 package iocost
 
 import (
@@ -75,6 +89,17 @@ func (i IOCostFactory) NewObj() (interface{}, error) {
 
 // IOCostSupport tell if the os support iocost.
 func IOCostSupport() bool {
+	cmdLine, err := os.ReadFile("/proc/cmdline")
+	if err != nil {
+		log.Warnf("get /pro/cmdline error")
+		return false
+	}
+
+	if !strings.Contains(string(cmdLine), "cgroup1_writeback") {
+		log.Warnf("this machine not support writeback, please add 'cgroup1_writeback' to cmdline")
+		return false
+	}
+
 	qosFile := cgroup.AbsoluteCgroupPath(blkcgRootDir, iocostQosFile)
 	modelFile := cgroup.AbsoluteCgroupPath(blkcgRootDir, iocostModelFile)
 	return util.PathExist(qosFile) && util.PathExist(modelFile)
@@ -85,7 +110,7 @@ func (io *IOCost) ID() string {
 	return io.name
 }
 
-func (io *IOCost) SetConfig(f helper.HandlerConfig) error {
+func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	var nodeConfigs []NodeConfig
 	var nodeConfig *NodeConfig
 	if err := f(io.name, nodeConfigs); err != nil {

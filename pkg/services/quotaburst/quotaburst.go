@@ -37,14 +37,17 @@ type Burst struct {
 	name string
 }
 
+// BurstFactory is the factory os Burst.
 type BurstFactory struct {
 	ObjName string
 }
 
+// Name to get the Burst factory name.
 func (i BurstFactory) Name() string {
 	return "BurstFactory"
 }
 
+// NewObj to create object of Burst.
 func (i BurstFactory) NewObj() (interface{}, error) {
 	return &Burst{name: i.ObjName}, nil
 }

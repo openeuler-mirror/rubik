@@ -11,8 +11,8 @@
 // Create: 2023-02-21
 // Description: This file is used for cache limit sync setting
 
-// Package cachelimit is the service used for cache limit setting
-package dynCache
+// Package dyncache is the service used for cache limit setting
+package dyncache
 
 import (
 	"fmt"
@@ -78,7 +78,8 @@ func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
 		return nil
 	}
 
-	resctrlTaskFile := filepath.Join(c.Config.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks")
+	resctrlTaskFile := filepath.Join(c.Config.DefaultResctrlDir,
+		resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks")
 	for _, task := range taskList {
 		if err := util.WriteFile(resctrlTaskFile, task); err != nil {
 			if strings.Contains(err.Error(), "no such process") {

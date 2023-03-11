@@ -1,8 +1,22 @@
+// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
+// rubik licensed under the Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+//     http://license.coscl.org.cn/MulanPSL2
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+// PURPOSE.
+// See the Mulan PSL v2 for more details.
+// Author: hanchao
+// Create: 2023-03-11
+// Description: This file is used to initilize all components
+
+// Package services
 package services
 
 import (
 	"isula.org/rubik/pkg/feature"
-	"isula.org/rubik/pkg/services/dynCache"
+	dyncache "isula.org/rubik/pkg/services/dynCache"
 	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/pkg/services/iocost"
 	"isula.org/rubik/pkg/services/iolimit"
@@ -11,6 +25,7 @@ import (
 	"isula.org/rubik/pkg/services/quotaturbo"
 )
 
+// ServiceComponent is the handler function of initialization.
 type ServiceComponent func(name string) error
 
 var (
@@ -26,31 +41,25 @@ var (
 )
 
 func initIOLimitFactory(name string) error {
-	helper.AddFactory(name, iolimit.IOLimitFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, iolimit.IOLimitFactory{ObjName: name})
 }
 
 func initIOCostFactory(name string) error {
-	helper.AddFactory(name, iocost.IOCostFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, iocost.IOCostFactory{ObjName: name})
 }
 
 func initDynCacheFactory(name string) error {
-	helper.AddFactory(name, dynCache.DynCacheFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, dyncache.DynCacheFactory{ObjName: name})
 }
 
 func initQuotaTurboFactory(name string) error {
-	helper.AddFactory(name, quotaturbo.QuotaTurboFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, quotaturbo.QuotaTurboFactory{ObjName: name})
 }
 
 func initQuotaBurstFactory(name string) error {
-	helper.AddFactory(name, quotaburst.BurstFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, quotaburst.BurstFactory{ObjName: name})
 }
 
 func initPreemptionFactory(name string) error {
-	helper.AddFactory(name, preemption.PreemptionFactory{ObjName: name})
-	return nil
+	return helper.AddFactory(name, preemption.PreemptionFactory{ObjName: name})
 }
