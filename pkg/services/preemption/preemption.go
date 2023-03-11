@@ -38,19 +38,22 @@ type Preemption struct {
 	config PreemptionConfig
 }
 
-// Config contains sub-system that need to set qos level
+// PreemptionConfig define which resources need to use the preemption
 type PreemptionConfig struct {
 	Resource []string `json:"resource,omitempty"`
 }
 
+// PreemptionFactory is the factory os Preemption.
 type PreemptionFactory struct {
 	ObjName string
 }
 
+// Name to get the Preemption factory name.
 func (i PreemptionFactory) Name() string {
 	return "PreemptionFactory"
 }
 
+// NewObj to create object of Preemption.
 func (i PreemptionFactory) NewObj() (interface{}, error) {
 	return &Preemption{name: i.ObjName}, nil
 }
@@ -60,7 +63,8 @@ func (q *Preemption) ID() string {
 	return q.name
 }
 
-func (q *Preemption) SetConfig(f helper.HandlerConfig) error {
+// SetConfig to config Preemption configure
+func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
 	var c PreemptionConfig
 	if err := f(q.name, c); err != nil {
 		return err

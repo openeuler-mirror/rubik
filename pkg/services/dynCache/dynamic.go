@@ -11,8 +11,8 @@
 // Create: 2023-02-21
 // Description: This file is used for dynamic cache limit level setting
 
-// Package cachelimit is the service used for cache limit setting
-package dynCache
+// Package dyncache is the service used for cache limit setting
+package dyncache
 
 import (
 	"fmt"
