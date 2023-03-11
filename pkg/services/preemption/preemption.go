@@ -83,8 +83,8 @@ func (q *Preemption) PreStart(viewer api.Viewer) error {
 	return nil
 }
 
-// AddFunc implement add function when pod is added in k8s
-func (q *Preemption) AddFunc(pod *typedef.PodInfo) error {
+// AddPod implement add function when pod is added in k8s
+func (q *Preemption) AddPod(pod *typedef.PodInfo) error {
 	if err := q.SetQoSLevel(pod); err != nil {
 		return err
 	}
@@ -94,8 +94,8 @@ func (q *Preemption) AddFunc(pod *typedef.PodInfo) error {
 	return nil
 }
 
-// UpdateFunc implement update function when pod info is changed
-func (q *Preemption) UpdateFunc(old, new *typedef.PodInfo) error {
+// UpdatePod implement update function when pod info is changed
+func (q *Preemption) UpdatePod(old, new *typedef.PodInfo) error {
 	oldQos, newQos := getQoSLevel(old), getQoSLevel(new)
 	switch {
 	case newQos == oldQos:
@@ -112,8 +112,8 @@ func (q *Preemption) UpdateFunc(old, new *typedef.PodInfo) error {
 	return nil
 }
 
-// DeleteFunc implement delete function when pod is deleted by k8s
-func (q *Preemption) DeleteFunc(pod *typedef.PodInfo) error {
+// DeletePod implement delete function when pod is deleted by k8s
+func (q *Preemption) DeletePod(pod *typedef.PodInfo) error {
 	return nil
 }
 

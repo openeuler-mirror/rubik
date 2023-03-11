@@ -37,8 +37,8 @@ var (
 	cfsPeriodUs = &cgroup.Key{SubSys: "cpu", FileName: "cpu.cfs_period_us"}
 )
 
-// TestBurst_AddFunc tests AddFunc
-func TestBurst_AddFunc(t *testing.T) {
+// TestBurst_AddPod tests AddPod
+func TestBurst_AddPod(t *testing.T) {
 	type args struct {
 		pod   *try.FakePod
 		burst string
@@ -159,8 +159,8 @@ func TestBurst_AddFunc(t *testing.T) {
 			if tt.args.burst != "" {
 				tt.args.pod.Annotations[constant.QuotaBurstAnnotationKey] = tt.args.burst
 			}
-			if err := conf.AddFunc(tt.args.pod.PodInfo); (err != nil) != tt.wantErr {
-				t.Errorf("Burst.AddFunc() error = %v, wantErr %v", err, tt.wantErr)
+			if err := conf.AddPod(tt.args.pod.PodInfo); (err != nil) != tt.wantErr {
+				t.Errorf("Burst.AddPod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			tt.args.pod.CleanPath().OrDie()
 		})
@@ -173,13 +173,13 @@ func TestOther(t *testing.T) {
 	const tcName = "TC1-test Other"
 	t.Run(tcName, func(t *testing.T) {
 		got := Burst{name: moduleName}
-		assert.NoError(t, got.DeleteFunc(&typedef.PodInfo{}))
+		assert.NoError(t, got.DeletePod(&typedef.PodInfo{}))
 		assert.Equal(t, moduleName, got.ID())
 	})
 }
 
-// TestBurst_UpdateFunc tests UpdateFunc
-func TestBurst_UpdateFunc(t *testing.T) {
+// TestBurst_UpdatePod tests UpdatePod
+func TestBurst_UpdatePod(t *testing.T) {
 	type args struct {
 		oldPod *typedef.PodInfo
 		newPod *typedef.PodInfo
@@ -221,8 +221,8 @@ func TestBurst_UpdateFunc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := Burst{name: moduleName}
-			if err := conf.UpdateFunc(tt.args.oldPod, tt.args.newPod); (err != nil) != tt.wantErr {
-				t.Errorf("Burst.UpdateFunc() error = %v, wantErr %v", err, tt.wantErr)
+			if err := conf.UpdatePod(tt.args.oldPod, tt.args.newPod); (err != nil) != tt.wantErr {
+				t.Errorf("Burst.UpdatePod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

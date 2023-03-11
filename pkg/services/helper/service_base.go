@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 )
 
@@ -35,11 +36,13 @@ func (s *ServiceBase) SetConfig(ConfigHandler) error {
 
 // PreStarter is an interface for calling a collection of methods when the service is pre-started
 func (s *ServiceBase) PreStart(api.Viewer) error {
+	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
 // Terminator is an interface that calls a collection of methods when the service terminates
 func (s *ServiceBase) Terminate(api.Viewer) error {
+	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
@@ -53,20 +56,23 @@ func (s *ServiceBase) Run(context.Context) {}
 
 // Stop to stop runner
 func (s *ServiceBase) Stop() error {
-	return fmt.Errorf("i am not runner")
+	return fmt.Errorf("this interface is not implemented")
 }
 
 // AddPod to deal the event of adding a pod.
 func (s *ServiceBase) AddPod(*typedef.PodInfo) error {
+	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
 // UpdatePod to deal the pod update event.
 func (S *ServiceBase) UpdatePod(old, new *typedef.PodInfo) error {
+	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
 // DeletePod to deal the pod deletion event.
 func (s *ServiceBase) DeletePod(*typedef.PodInfo) error {
+	log.Warnf("this interface is not implemented.")
 	return nil
 }
