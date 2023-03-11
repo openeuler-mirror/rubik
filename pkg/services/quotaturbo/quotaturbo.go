@@ -17,6 +17,7 @@ package quotaturbo
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,39 +27,68 @@ import (
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
+	"isula.org/rubik/pkg/lib/cpu/quotaturbo"
 	"isula.org/rubik/pkg/services/helper"
 )
 
+const (
+	defaultHightWaterMark         = 60
+	defaultAlarmWaterMark         = 80
+	defaultQuotaTurboSyncInterval = 100
+)
+
+var (
+	cpuPeriodKey = &cgroup.Key{SubSys: "cpu", FileName: "cpu.cfs_period_us"}
+	cpuQuotaKey  = &cgroup.Key{SubSys: "cpu", FileName: "cpu.cfs_quota_us"}
+)
+
+// QuotaTurboFactory is the QuotaTurbo factory class
 type QuotaTurboFactory struct {
 	ObjName string
 }
 
+// Name returns the factory class name
 func (i QuotaTurboFactory) Name() string {
-	return "BlkioThrottleFactory"
+	return "QuotaTurboFactory"
 }
 
+// NewObj returns a QuotaTurbo object
 func (i QuotaTurboFactory) NewObj() (interface{}, error) {
 	return NewQuotaTurbo(i.ObjName), nil
 }
 
+// Config is the config of QuotaTurbo
+type Config struct {
+	HighWaterMark  int `json:"highWaterMark,omitempty"`
+	AlarmWaterMark int `json:"alarmWaterMark,omitempty"`
+	SyncInterval   int `json:"syncInterval,omitempty"`
+}
+
+// NewConfig returns quotaTurbo config instance
+func NewConfig() *Config {
+	return &Config{
+		HighWaterMark:  defaultHightWaterMark,
+		AlarmWaterMark: defaultAlarmWaterMark,
+		SyncInterval:   defaultQuotaTurboSyncInterval,
+	}
+}
+
 // QuotaTurbo manages all container CPU quota data on the current node.
 type QuotaTurbo struct {
-	helper.ServiceBase
-	name string
-	// NodeData including the container data, CPU usage, and QuotaTurbo configuration of the local node
-	*NodeData
-	// interfaces with different policies
-	Driver
-	// referenced object to list pods
+	name   string
+	conf   *Config
+	client *quotaturbo.Client
 	Viewer api.Viewer
+	helper.ServiceBase
 }
 
 // NewQuotaTurbo generate quota turbo objects
 func NewQuotaTurbo(n string) *QuotaTurbo {
 	return &QuotaTurbo{
-		name:     n,
-		NodeData: NewNodeData(),
-		Driver:   &EventDriver{},
+		name:   n,
+		conf:   NewConfig(),
+		client: quotaturbo.NewClient(),
 	}
 }
 
@@ -67,18 +97,43 @@ func (qt *QuotaTurbo) ID() string {
 	return qt.name
 }
 
+// syncCgroups updates the cgroup in cilent according to the current whitelist pod list
+func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
+	var (
+		existedCgroupPaths   = qt.client.GetAllCgroup()
+		existedCgroupPathMap = make(map[string]struct{}, len(existedCgroupPaths))
+	)
+	// delete containers marked as no need to adjust quota
+	for _, path := range existedCgroupPaths {
+		id := filepath.Base(path)
+		existedCgroupPathMap[id] = struct{}{}
+		if _, found := conts[id]; !found {
+			if err := qt.client.RemoveCgroup(path); err != nil {
+				log.Errorf("error removing container %v: %v", id, err)
+			}
+		}
+	}
+	for id, cont := range conts {
+		/*
+			Currently, modifying the cpu limit and container id of the container will cause the container to restart,
+			so it is considered that the cgroup path and cpulimit will not change during the life cycle of the container
+		*/
+		if _, ok := existedCgroupPathMap[id]; ok {
+			continue
+		}
+		// add container to quotaturbo
+		if err := qt.client.AddCgroup(cont.CgroupPath, cont.LimitResources[typedef.ResourceCPU]); err != nil {
+			log.Errorf("error adding container %v: %v", cont.Name, err)
+		}
+	}
+}
+
 // AdjustQuota adjusts the quota of a container at a time
-func (qt *QuotaTurbo) AdjustQuota(cc map[string]*typedef.ContainerInfo) {
-	qt.UpdateClusterContainers(cc)
-	if err := qt.updateCPUUtils(); err != nil {
-		log.Errorf("fail to get current cpu utilization : %v", err)
-		return
+func (qt *QuotaTurbo) AdjustQuota(conts map[string]*typedef.ContainerInfo) {
+	qt.syncCgroups(conts)
+	if err := qt.client.AdjustQuota(); err != nil {
+		log.Errorf("error occur when adjust quota: %v", err)
 	}
-	if len(qt.containers) == 0 {
-		return
-	}
-	qt.adjustQuota(qt.NodeData)
-	qt.WriteQuota()
 }
 
 // Run adjusts the quota of the trust list container cyclically.
@@ -90,12 +145,12 @@ func (qt *QuotaTurbo) Run(ctx context.Context) {
 					return pod.Annotations[constant.QuotaAnnotationKey] == "true"
 				}))
 		},
-		time.Millisecond*time.Duration(qt.SyncInterval),
+		time.Millisecond*time.Duration(qt.conf.SyncInterval),
 		ctx.Done())
 }
 
-// Validate Validate verifies that the quotaTurbo parameter is set correctly
-func (qt *QuotaTurbo) Validate() error {
+// Validate verifies that the quotaTurbo parameter is set correctly
+func (conf *Config) Validate() error {
 	const (
 		minQuotaTurboWaterMark, maxQuotaTurboWaterMark       = 0, 100
 		minQuotaTurboSyncInterval, maxQuotaTurboSyncInterval = 100, 10000
@@ -106,20 +161,44 @@ func (qt *QuotaTurbo) Validate() error {
 		}
 		return false
 	}
-	if qt.AlarmWaterMark <= qt.HighWaterMark ||
-		outOfRange(qt.HighWaterMark, minQuotaTurboWaterMark, maxQuotaTurboWaterMark) ||
-		outOfRange(qt.AlarmWaterMark, minQuotaTurboWaterMark, maxQuotaTurboWaterMark) {
+	if conf.AlarmWaterMark <= conf.HighWaterMark ||
+		outOfRange(conf.HighWaterMark, minQuotaTurboWaterMark, maxQuotaTurboWaterMark) ||
+		outOfRange(conf.AlarmWaterMark, minQuotaTurboWaterMark, maxQuotaTurboWaterMark) {
 		return fmt.Errorf("alarmWaterMark >= highWaterMark, both of which ranges from 0 to 100")
 	}
-	if outOfRange(qt.SyncInterval, minQuotaTurboSyncInterval, maxQuotaTurboSyncInterval) {
+	if outOfRange(conf.SyncInterval, minQuotaTurboSyncInterval, maxQuotaTurboSyncInterval) {
 		return fmt.Errorf("synchronization time ranges from 100 (0.1s) to 10000 (10s)")
 	}
 	return nil
 }
 
+// SetConfig sets and checks Config
+func (qt *QuotaTurbo) SetConfig(f helper.ConfigHandler) error {
+	var conf = NewConfig()
+	if err := f(qt.name, conf); err != nil {
+		return err
+	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+	qt.conf = conf
+	return nil
+}
+
+// IsRunner returns true that tells other quotaTurbo is a persistent service
+func (qt *QuotaTurbo) IsRunner() bool {
+	return true
+}
+
 // PreStart is the pre-start action
 func (qt *QuotaTurbo) PreStart(viewer api.Viewer) error {
+	// 1. set the parameters of the quotaturbo client
+	qt.client.CgroupRoot = cgroup.GetMountDir()
+	qt.client.HighWaterMark = qt.conf.HighWaterMark
+	qt.client.AlarmWaterMark = qt.conf.AlarmWaterMark
 	qt.Viewer = viewer
+
+	// 2. attempts to fix all currently running pods and containers
 	pods := viewer.ListPodsWithOptions()
 	for _, pod := range pods {
 		recoverOnePodQuota(pod)

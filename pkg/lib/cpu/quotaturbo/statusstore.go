@@ -106,6 +106,15 @@ func (store *StatusStore) RemoveCgroup(cgroupPath string) error {
 	return safeDel(cgroupPath)
 }
 
+// GetAllCgroup returns all cgroup paths that are adjusting quota
+func (store *StatusStore) GetAllCgroup() []string {
+	var res = make([]string, 0)
+	for _, cq := range store.cpuQuotas {
+		res = append(res, cq.Path)
+	}
+	return res
+}
+
 // getLastCPUUtil obtain the latest cpu utilization
 func (store *StatusStore) getLastCPUUtil() float64 {
 	if len(store.cpuUtils) == 0 {

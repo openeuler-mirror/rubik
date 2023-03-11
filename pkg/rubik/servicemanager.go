@@ -132,14 +132,23 @@ func (manager *ServiceManager) terminatingRunningServices() error {
 func (manager *ServiceManager) Setup(v api.Viewer) error {
 	// only when viewer is prepared
 	if v == nil {
-		return nil
+		return fmt.Errorf("viewer should not be empty")
 	}
-
-	for _, s := range manager.RunningServices {
+	manager.Viewer = v
+	manager.Lock()
+	var unavailable []string
+	for name, s := range manager.RunningServices {
 		if err := s.PreStart(manager.Viewer); err != nil {
 			log.Errorf("PreStart failed:%v", err)
+			unavailable = append(unavailable, name)
 		}
 	}
+
+	for _, name := range unavailable {
+		delete(manager.RunningServices, name)
+		log.Infof("service %v is unavailable", name)
+	}
+	manager.Unlock()
 	return nil
 }
 

@@ -60,6 +60,11 @@ func InitMountDir(arg string) {
 	rootDir = arg
 }
 
+// GetMountDir returns the mount point path of the cgroup
+func GetMountDir() string {
+	return rootDir
+}
+
 type (
 	// Key uniquely determines the cgroup value of the container or pod
 	Key struct {
