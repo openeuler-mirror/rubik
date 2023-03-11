@@ -23,13 +23,13 @@ import (
 
 const (
 	// iocost model file
-	iocostModelFile  = "blkio.cost.model"
+	iocostModelFile = "blkio.cost.model"
 	// iocost weight file
 	iocostWeightFile = "blkio.cost.weight"
 	// iocost weight qos file
-	iocostQosFile    = "blkio.cost.qos"
-	// cgroup writeback file 
-	wbBlkioinoFile   = "memory.wb_blkio_ino"
+	iocostQosFile = "blkio.cost.qos"
+	// cgroup writeback file
+	wbBlkioinoFile = "memory.wb_blkio_ino"
 )
 
 // ConfigIOCostQoS for config iocost qos.

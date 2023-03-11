@@ -202,7 +202,8 @@ func (c *DynCache) Validate() error {
 	if c.Config.L3Percent.Low > c.Config.L3Percent.Mid || c.Config.L3Percent.Mid > c.Config.L3Percent.High {
 		return fmt.Errorf("cache limit config L3Percent does not satisfy constraint low<=mid<=high")
 	}
-	if c.Config.MemBandPercent.Low > c.Config.MemBandPercent.Mid || c.Config.MemBandPercent.Mid > c.Config.MemBandPercent.High {
+	if c.Config.MemBandPercent.Low > c.Config.MemBandPercent.Mid ||
+		c.Config.MemBandPercent.Mid > c.Config.MemBandPercent.High {
 		return fmt.Errorf("cache limit config MemBandPercent does not satisfy constraint low<=mid<=high")
 	}
 	return nil

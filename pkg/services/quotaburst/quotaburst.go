@@ -57,21 +57,21 @@ func (b *Burst) ID() string {
 	return b.name
 }
 
-// AddFunc implement add function when pod is added in k8s
-func (conf *Burst) AddFunc(podInfo *typedef.PodInfo) error {
+// AddPod implement add function when pod is added in k8s
+func (conf *Burst) AddPod(podInfo *typedef.PodInfo) error {
 	return setPodQuotaBurst(podInfo)
 }
 
-// UpdateFunc implement update function when pod info is changed
-func (conf *Burst) UpdateFunc(oldPod, newPod *typedef.PodInfo) error {
+// UpdatePod implement update function when pod info is changed
+func (conf *Burst) UpdatePod(oldPod, newPod *typedef.PodInfo) error {
 	if oldPod.Annotations[constant.QuotaBurstAnnotationKey] == newPod.Annotations[constant.QuotaBurstAnnotationKey] {
 		return nil
 	}
 	return setPodQuotaBurst(newPod)
 }
 
-// DeleteFunc implement delete function when pod is deleted by k8s
-func (conf *Burst) DeleteFunc(podInfo *typedef.PodInfo) error {
+// DeletePod implement delete function when pod is deleted by k8s
+func (conf *Burst) DeletePod(podInfo *typedef.PodInfo) error {
 	return nil
 }
 

@@ -113,8 +113,8 @@ func TestPreemptionAddFunc(t *testing.T) {
 				tt.preHook(tt.args.new)
 			}
 			if tt.args.new != nil {
-				if err := q.AddFunc(tt.args.new.PodInfo); (err != nil) != tt.wantErr {
-					t.Errorf("QoS.AddFunc() error = %v, wantErr %v", err, tt.wantErr)
+				if err := q.AddPod(tt.args.new.PodInfo); (err != nil) != tt.wantErr {
+					t.Errorf("QoS.AddPod() error = %v, wantErr %v", err, tt.wantErr)
 				}
 
 			}
@@ -123,7 +123,7 @@ func TestPreemptionAddFunc(t *testing.T) {
 	}
 }
 
-func TestPreemptionUpdateFunc(t *testing.T) {
+func TestPreemptionUpdatePod(t *testing.T) {
 	var updateFuncTC = []test{
 		{
 			name:   "TC1-online to offline",
@@ -170,8 +170,8 @@ func TestPreemptionUpdateFunc(t *testing.T) {
 			if tt.preHook != nil {
 				tt.args.new = tt.preHook(tt.args.old)
 			}
-			if err := q.UpdateFunc(tt.args.old.PodInfo, tt.args.new.PodInfo); (err != nil) != tt.wantErr {
-				t.Errorf("QoS.UpdateFunc() error = %v, wantErr %v", err, tt.wantErr)
+			if err := q.UpdatePod(tt.args.old.PodInfo, tt.args.new.PodInfo); (err != nil) != tt.wantErr {
+				t.Errorf("QoS.UpdatePod() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			tt.args.new.CleanPath().OrDie()
 			tt.args.old.CleanPath().OrDie()

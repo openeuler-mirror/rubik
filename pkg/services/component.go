@@ -30,13 +30,13 @@ type ServiceComponent func(name string) error
 
 var (
 	serviceComponents = map[string]ServiceComponent{
-		feature.FeaturePreemption: initPreemptionFactory,
-		feature.FeatureDynCache:   initDynCacheFactory,
-		feature.FeatureIOLimit:    initIOLimitFactory,
-		feature.FeatureIOCost:     initIOCostFactory,
-		feature.FeatureDynMemory:  initDynCacheFactory,
-		feature.FeatureQuotaBurst: initQuotaBurstFactory,
-		feature.FeatureQuotaTurbo: initQuotaTurboFactory,
+		feature.PreemptionFeature: initPreemptionFactory,
+		feature.DynCacheFeature:   initDynCacheFactory,
+		feature.IOLimitFeature:    initIOLimitFactory,
+		feature.IOCostFeature:     initIOCostFactory,
+		feature.DynMemoryFeature:  initDynCacheFactory,
+		feature.QuotaBurstFeature: initQuotaBurstFactory,
+		feature.QuotaTurboFeature: initQuotaTurboFactory,
 	}
 )
 

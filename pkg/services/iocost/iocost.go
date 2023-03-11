@@ -71,24 +71,27 @@ var (
 	nodeName string
 )
 
+// IOCostFactory is the factory of IOCost.
 type IOCostFactory struct {
 	ObjName string
 }
 
+// Name to get the IOCost factory name.
 func (i IOCostFactory) Name() string {
 	return "IOCostFactory"
 }
 
+// NewObj to create object of IOCost.
 func (i IOCostFactory) NewObj() (interface{}, error) {
-	if IOCostSupport() {
+	if ioCostSupport() {
 		nodeName = os.Getenv(constant.NodeNameEnvKey)
 		return &IOCost{name: i.ObjName}, nil
 	}
 	return nil, fmt.Errorf("this machine not support iocost")
 }
 
-// IOCostSupport tell if the os support iocost.
-func IOCostSupport() bool {
+// ioCostSupport tell if the os support iocost.
+func ioCostSupport() bool {
 	cmdLine, err := os.ReadFile("/proc/cmdline")
 	if err != nil {
 		log.Warnf("get /pro/cmdline error")
@@ -110,6 +113,7 @@ func (io *IOCost) ID() string {
 	return io.name
 }
 
+// SetConfig to config nodeConfig configure
 func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	var nodeConfigs []NodeConfig
 	var nodeConfig *NodeConfig
@@ -147,6 +151,7 @@ func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 
 }
 
+// PreStart is the pre-start action
 func (io *IOCost) PreStart(viewer api.Viewer) error {
 	return io.dealExistedPods(viewer)
 }
@@ -161,21 +166,25 @@ func (b *IOCost) Terminate(viewer api.Viewer) error {
 func (b *IOCost) dealExistedPods(viewer api.Viewer) error {
 	pods := viewer.ListPodsWithOptions()
 	for _, pod := range pods {
-		b.configPodIOCostWeight(pod)
+		if err := b.configPodIOCostWeight(pod); err != nil {
+			log.Errorf("config pod iocost failed, err:%v", err)
+		}
 	}
 	return nil
 }
 
-func (b *IOCost) AddFunc(podInfo *typedef.PodInfo) error {
+// AddPod to deal the event of adding a pod.
+func (b *IOCost) AddPod(podInfo *typedef.PodInfo) error {
 	return b.configPodIOCostWeight(podInfo)
 }
 
-func (b *IOCost) UpdateFunc(old, new *typedef.PodInfo) error {
+// UpdatePod to deal the pod update event.
+func (b *IOCost) UpdatePod(old, new *typedef.PodInfo) error {
 	return b.configPodIOCostWeight(new)
 }
 
-// deal with  deleted pod.
-func (b *IOCost) DeleteFunc(podInfo *typedef.PodInfo) error {
+// DeletePod to deal the pod deletion event.
+func (b *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
 	return nil
 }
 
