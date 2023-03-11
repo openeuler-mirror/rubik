@@ -64,9 +64,9 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Attr:   &Attr{},
 			},
 			preHook: func(t *testing.T, c *DynCache) {
-				c.Config.DefaultResctrlDir = try.GenTestDir().String()
-				c.Config.DefaultLimitMode = modeStatic
-				setMaskFile(t, c.Config.DefaultResctrlDir, "7fff")
+				c.config.DefaultResctrlDir = try.GenTestDir().String()
+				c.config.DefaultLimitMode = modeStatic
+				setMaskFile(t, c.config.DefaultResctrlDir, "7fff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
@@ -80,11 +80,11 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 					"rubik_dynamic": "L3:0=7;1=7;2=7;3=7\nMB:0=10;1=10;2=10;3=10\n",
 				}
 				for level, expect := range resctrlLevelMap {
-					schemataFile := filepath.Join(c.DefaultResctrlDir, level, schemataFileName)
+					schemataFile := filepath.Join(c.config.DefaultResctrlDir, level, schemataFileName)
 					content := try.ReadFile(schemataFile).String()
 					assert.Equal(t, expect, content)
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -101,10 +101,10 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
 
 				os.Symlink(pidNameSpaceFileOri.String(), pidNameSpace)
-				c.Config.DefaultPidNameSpace = pidNameSpace
+				c.config.DefaultPidNameSpace = pidNameSpace
 			},
 			postHook: func(t *testing.T, c *DynCache) {
-				try.RemoveAll(filepath.Dir(c.DefaultPidNameSpace))
+				try.RemoveAll(filepath.Dir(c.config.DefaultPidNameSpace))
 			},
 		},
 		{
@@ -120,10 +120,10 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
 
 				os.Link(pidNameSpaceFileOri.String(), pidNameSpace)
-				c.Config.DefaultPidNameSpace = pidNameSpace
+				c.config.DefaultPidNameSpace = pidNameSpace
 			},
 			postHook: func(t *testing.T, c *DynCache) {
-				try.RemoveAll(filepath.Dir(c.DefaultPidNameSpace))
+				try.RemoveAll(filepath.Dir(c.config.DefaultPidNameSpace))
 			},
 		},
 		{
@@ -134,7 +134,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Attr:   &Attr{},
 			},
 			preHook: func(t *testing.T, c *DynCache) {
-				c.Config.DefaultResctrlDir = "/resctrl/path/is/not/exist"
+				c.config.DefaultResctrlDir = "/resctrl/path/is/not/exist"
 			},
 		},
 		{
@@ -145,10 +145,10 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Attr:   &Attr{},
 			},
 			preHook: func(t *testing.T, c *DynCache) {
-				c.Config.DefaultResctrlDir = try.GenTestDir().String()
+				c.config.DefaultResctrlDir = try.GenTestDir().String()
 			},
 			postHook: func(t *testing.T, c *DynCache) {
-				try.RemoveAll(c.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 			},
 		},
 		{
@@ -170,15 +170,15 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Attr:   &Attr{},
 			},
 			preHook: func(t *testing.T, c *DynCache) {
-				c.Config.DefaultResctrlDir = try.GenTestDir().String()
-				c.Config.DefaultLimitMode = modeStatic
-				setMaskFile(t, c.Config.DefaultResctrlDir, "")
+				c.config.DefaultResctrlDir = try.GenTestDir().String()
+				c.config.DefaultLimitMode = modeStatic
+				setMaskFile(t, c.config.DefaultResctrlDir, "")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 0)
 			},
 			postHook: func(t *testing.T, c *DynCache) {
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -189,15 +189,15 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				Attr:   &Attr{},
 			},
 			preHook: func(t *testing.T, c *DynCache) {
-				c.Config.DefaultResctrlDir = try.GenTestDir().String()
-				c.Config.DefaultLimitMode = modeStatic
-				setMaskFile(t, c.Config.DefaultResctrlDir, "1")
+				c.config.DefaultResctrlDir = try.GenTestDir().String()
+				c.config.DefaultLimitMode = modeStatic
+				setMaskFile(t, c.config.DefaultResctrlDir, "1")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 0)
 			},
 			postHook: func(t *testing.T, c *DynCache) {
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -205,7 +205,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,
 			}

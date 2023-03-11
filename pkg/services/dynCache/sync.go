@@ -78,7 +78,7 @@ func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
 		return nil
 	}
 
-	resctrlTaskFile := filepath.Join(c.Config.DefaultResctrlDir,
+	resctrlTaskFile := filepath.Join(c.config.DefaultResctrlDir,
 		resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks")
 	for _, task := range taskList {
 		if err := util.WriteFile(resctrlTaskFile, task); err != nil {
@@ -96,7 +96,7 @@ func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
 // syncLevel sync cache limit level
 func (c *DynCache) syncLevel(pod *typedef.PodInfo) error {
 	if pod.Annotations[constant.CacheLimitAnnotationKey] == "" {
-		if c.Config.DefaultLimitMode == modeStatic {
+		if c.config.DefaultLimitMode == modeStatic {
 			pod.Annotations[constant.CacheLimitAnnotationKey] = levelMax
 		} else {
 			pod.Annotations[constant.CacheLimitAnnotationKey] = levelDynamic

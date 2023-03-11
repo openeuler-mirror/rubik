@@ -88,7 +88,7 @@ type Config struct {
 // DynCache is cache limit service structure
 type DynCache struct {
 	helper.ServiceBase
-	*Config
+	config *Config
 	Attr   *Attr
 	Viewer api.Viewer
 	Name   string `json:"-"`
@@ -136,7 +136,7 @@ func NewDynCache(name string) *DynCache {
 			MaxMiss:     defaultMaxMiss,
 			MinMiss:     defaultMinMiss,
 		},
-		Config: &Config{
+		config: &Config{
 			DefaultLimitMode:    modeStatic,
 			DefaultResctrlDir:   defaultResctrlDir,
 			DefaultPidNameSpace: defaultPidNameSpace,
@@ -174,36 +174,48 @@ func (c *DynCache) ID() string {
 // Run implement service run function
 func (c *DynCache) Run(ctx context.Context) {
 	go wait.Until(c.SyncCacheLimit, time.Second, ctx.Done())
-	wait.Until(c.StartDynamic, time.Millisecond*time.Duration(c.Config.AdjustInterval), ctx.Done())
+	wait.Until(c.StartDynamic, time.Millisecond*time.Duration(c.config.AdjustInterval), ctx.Done())
+}
+
+func (c *DynCache) SetConfig(f helper.ConfigHandler) error {
+	var config Config
+	if err := f(c.Name, &config); err != nil {
+		return err
+	}
+	if err := config.Validate(); err != nil {
+		return err
+	}
+	c.config = &config
+	return nil
 }
 
 // Validate validate service's config
-func (c *DynCache) Validate() error {
-	defaultLimitMode := c.Config.DefaultLimitMode
+func (conf *Config) Validate() error {
+	defaultLimitMode := conf.DefaultLimitMode
 	if defaultLimitMode != modeStatic && defaultLimitMode != modeDynamic {
 		return fmt.Errorf("invalid cache limit mode: %s, should be %s or %s",
-			c.Config.DefaultLimitMode, modeStatic, modeDynamic)
+			conf.DefaultLimitMode, modeStatic, modeDynamic)
 	}
-	if c.Config.AdjustInterval < minAdjustInterval || c.Config.AdjustInterval > maxAdjustInterval {
+	if conf.AdjustInterval < minAdjustInterval || conf.AdjustInterval > maxAdjustInterval {
 		return fmt.Errorf("adjust interval %d out of range [%d,%d]",
-			c.Config.AdjustInterval, minAdjustInterval, maxAdjustInterval)
+			conf.AdjustInterval, minAdjustInterval, maxAdjustInterval)
 	}
-	if c.Config.PerfDuration < minPerfDur || c.Config.PerfDuration > maxPerfDur {
-		return fmt.Errorf("perf duration %d out of range [%d,%d]", c.Config.PerfDuration, minPerfDur, maxPerfDur)
+	if conf.PerfDuration < minPerfDur || conf.PerfDuration > maxPerfDur {
+		return fmt.Errorf("perf duration %d out of range [%d,%d]", conf.PerfDuration, minPerfDur, maxPerfDur)
 	}
 	for _, per := range []int{
-		c.Config.L3Percent.Low, c.Config.L3Percent.Mid,
-		c.Config.L3Percent.High, c.Config.MemBandPercent.Low,
-		c.Config.MemBandPercent.Mid, c.Config.MemBandPercent.High} {
+		conf.L3Percent.Low, conf.L3Percent.Mid,
+		conf.L3Percent.High, conf.MemBandPercent.Low,
+		conf.MemBandPercent.Mid, conf.MemBandPercent.High} {
 		if per < minPercent || per > maxPercent {
 			return fmt.Errorf("cache limit percentage %d out of range [%d,%d]", per, minPercent, maxPercent)
 		}
 	}
-	if c.Config.L3Percent.Low > c.Config.L3Percent.Mid || c.Config.L3Percent.Mid > c.Config.L3Percent.High {
+	if conf.L3Percent.Low > conf.L3Percent.Mid || conf.L3Percent.Mid > conf.L3Percent.High {
 		return fmt.Errorf("cache limit config L3Percent does not satisfy constraint low<=mid<=high")
 	}
-	if c.Config.MemBandPercent.Low > c.Config.MemBandPercent.Mid ||
-		c.Config.MemBandPercent.Mid > c.Config.MemBandPercent.High {
+	if conf.MemBandPercent.Low > conf.MemBandPercent.Mid ||
+		conf.MemBandPercent.Mid > conf.MemBandPercent.High {
 		return fmt.Errorf("cache limit config MemBandPercent does not satisfy constraint low<=mid<=high")
 	}
 	return nil

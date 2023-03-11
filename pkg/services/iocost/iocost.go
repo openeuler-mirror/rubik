@@ -117,7 +117,7 @@ func (io *IOCost) ID() string {
 func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	var nodeConfigs []NodeConfig
 	var nodeConfig *NodeConfig
-	if err := f(io.name, nodeConfigs); err != nil {
+	if err := f(io.name, &nodeConfigs); err != nil {
 		return err
 	}
 

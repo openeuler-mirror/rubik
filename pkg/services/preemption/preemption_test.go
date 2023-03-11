@@ -208,7 +208,7 @@ func TestPreemptionValidate(t *testing.T) {
 				name:   tt.fields.Name,
 				config: tt.fields.Config,
 			}
-			if err := q.Validate(); (err != nil) != tt.wantErr {
+			if err := q.config.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("QoS.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
