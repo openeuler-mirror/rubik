@@ -66,7 +66,10 @@ func (q *Preemption) ID() string {
 // SetConfig to config Preemption configure
 func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
 	var c PreemptionConfig
-	if err := f(q.name, c); err != nil {
+	if err := f(q.name, &c); err != nil {
+		return err
+	}
+	if err := c.Validate(); err != nil {
 		return err
 	}
 	q.config = c
@@ -178,11 +181,11 @@ func getQoSLevel(pod *typedef.PodInfo) int {
 }
 
 // Validate will validate the qos service config
-func (q *Preemption) Validate() error {
-	if len(q.config.Resource) == 0 {
+func (conf *PreemptionConfig) Validate() error {
+	if len(conf.Resource) == 0 {
 		return fmt.Errorf("empty qos config")
 	}
-	for _, r := range q.config.Resource {
+	for _, r := range conf.Resource {
 		if _, ok := supportCgroupTypes[r]; !ok {
 			return fmt.Errorf("not support sub system %s", r)
 		}

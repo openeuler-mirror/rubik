@@ -129,7 +129,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
-				c.Config.DefaultLimitMode = levelDynamic
+				c.config.DefaultLimitMode = levelDynamic
 			},
 		},
 		{
@@ -229,14 +229,14 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
 				}
 				c.Viewer = manager
-				c.Config.DefaultResctrlDir = "/dev/null"
+				c.config.DefaultResctrlDir = "/dev/null"
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,
 			}

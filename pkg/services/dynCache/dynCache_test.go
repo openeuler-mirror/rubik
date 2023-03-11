@@ -178,11 +178,11 @@ func TestCacheLimit_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,
 			}
-			err := c.Validate()
+			err := c.config.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CacheLimit.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -207,7 +207,7 @@ func TestNewCacheLimit(t *testing.T) {
 					MaxMiss:     defaultMaxMiss,
 					MinMiss:     defaultMinMiss,
 				},
-				Config: &Config{
+				config: &Config{
 					DefaultLimitMode:    modeStatic,
 					DefaultResctrlDir:   defaultResctrlDir,
 					DefaultPidNameSpace: defaultPidNameSpace,
@@ -266,7 +266,7 @@ func TestCacheLimit_PreStart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
 				Name:   tt.fields.Name,
@@ -301,7 +301,7 @@ func TestCacheLimit_ID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
 				Name:   tt.fields.Name,

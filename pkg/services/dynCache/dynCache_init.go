@@ -48,10 +48,10 @@ func (c *DynCache) InitCacheLimitDir() error {
 	if !perf.Support() {
 		return fmt.Errorf("perf event need by service %s not supported", c.ID())
 	}
-	if err := checkHostPidns(c.Config.DefaultPidNameSpace); err != nil {
+	if err := checkHostPidns(c.config.DefaultPidNameSpace); err != nil {
 		return err
 	}
-	if err := checkResctrlPath(c.Config.DefaultResctrlDir); err != nil {
+	if err := checkResctrlPath(c.config.DefaultResctrlDir); err != nil {
 		return err
 	}
 	numaNum, err := getNUMANum(c.Attr.NumaNodeDir)
@@ -59,14 +59,14 @@ func (c *DynCache) InitCacheLimitDir() error {
 		return fmt.Errorf("get NUMA nodes number error: %v", err)
 	}
 	c.Attr.NumaNum = numaNum
-	c.Attr.L3PercentDynamic = c.Config.L3Percent.Low
-	c.Attr.MemBandPercentDynamic = c.Config.MemBandPercent.Low
+	c.Attr.L3PercentDynamic = c.config.L3Percent.Low
+	c.Attr.MemBandPercentDynamic = c.config.MemBandPercent.Low
 
 	cacheLimitList := []*limitSet{
 		c.newCacheLimitSet(levelDynamic, c.Attr.L3PercentDynamic, c.Attr.MemBandPercentDynamic),
-		c.newCacheLimitSet(levelLow, c.Config.L3Percent.Low, c.Config.MemBandPercent.Low),
-		c.newCacheLimitSet(levelMiddle, c.Config.L3Percent.Mid, c.Config.MemBandPercent.Mid),
-		c.newCacheLimitSet(levelHigh, c.Config.L3Percent.High, c.Config.MemBandPercent.High),
+		c.newCacheLimitSet(levelLow, c.config.L3Percent.Low, c.config.MemBandPercent.Low),
+		c.newCacheLimitSet(levelMiddle, c.config.L3Percent.Mid, c.config.MemBandPercent.Mid),
+		c.newCacheLimitSet(levelHigh, c.config.L3Percent.High, c.config.MemBandPercent.High),
 		c.newCacheLimitSet(levelMax, defaultL3PercentMax, defaultMbPercentMax),
 	}
 
@@ -85,7 +85,7 @@ func (c *DynCache) newCacheLimitSet(level string, l3Per, mbPer int) *limitSet {
 		level:     level,
 		l3Percent: l3Per,
 		mbPercent: mbPer,
-		dir:       filepath.Join(filepath.Clean(c.Config.DefaultResctrlDir), resctrlDirPrefix+level),
+		dir:       filepath.Join(filepath.Clean(c.config.DefaultResctrlDir), resctrlDirPrefix+level),
 	}
 }
 

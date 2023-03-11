@@ -38,7 +38,7 @@ func (c *DynCache) StartDynamic() {
 	limiter := c.newCacheLimitSet(levelDynamic, c.Attr.L3PercentDynamic, c.Attr.MemBandPercentDynamic)
 
 	for _, p := range c.listOnlinePods() {
-		cacheMiss, llcMiss := getPodCacheMiss(p, c.Config.PerfDuration)
+		cacheMiss, llcMiss := getPodCacheMiss(p, c.config.PerfDuration)
 		if cacheMiss >= c.Attr.MaxMiss || llcMiss >= c.Attr.MaxMiss {
 			log.Infof("online pod %v cache miss: %v LLC miss: %v exceeds maxmiss, lower offline cache limit",
 				p.UID, cacheMiss, llcMiss)
@@ -99,8 +99,8 @@ func (c *DynCache) flush(limitSet *limitSet, step int) error {
 		return value
 
 	}
-	l3 := nextPercent(c.Attr.L3PercentDynamic, c.Config.L3Percent.Low, c.Config.L3Percent.High, step)
-	mb := nextPercent(c.Attr.MemBandPercentDynamic, c.Config.MemBandPercent.Low, c.Config.MemBandPercent.High, step)
+	l3 := nextPercent(c.Attr.L3PercentDynamic, c.config.L3Percent.Low, c.config.L3Percent.High, step)
+	mb := nextPercent(c.Attr.MemBandPercentDynamic, c.config.MemBandPercent.Low, c.config.MemBandPercent.High, step)
 	if c.Attr.L3PercentDynamic == l3 && c.Attr.MemBandPercentDynamic == mb {
 		return nil
 	}

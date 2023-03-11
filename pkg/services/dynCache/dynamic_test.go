@@ -66,9 +66,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
-				c.Config.DefaultResctrlDir = resctrlDir
-				c.Config.DefaultLimitMode = modeDynamic
-				c.Config.PerfDuration = 10
+				c.config.DefaultResctrlDir = resctrlDir
+				c.config.DefaultLimitMode = modeDynamic
+				c.config.PerfDuration = 10
 				for _, pod := range fakePods {
 					if pod.Annotations[constant.PriorityAnnotationKey] == "true" {
 						pod.Annotations[constant.CacheLimitAnnotationKey] = "dynamic"
@@ -81,7 +81,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -108,9 +108,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
-				c.Config.DefaultResctrlDir = resctrlDir
-				c.Config.DefaultLimitMode = modeDynamic
-				c.Config.PerfDuration = 10
+				c.config.DefaultResctrlDir = resctrlDir
+				c.config.DefaultLimitMode = modeDynamic
+				c.config.PerfDuration = 10
 				for _, pod := range fakePods {
 					if pod.Annotations[constant.PriorityAnnotationKey] == "true" {
 						pod.Annotations[constant.CacheLimitAnnotationKey] = "dynamic"
@@ -123,7 +123,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -150,9 +150,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
-				c.Config.DefaultResctrlDir = resctrlDir
-				c.Config.DefaultLimitMode = modeDynamic
-				c.Config.PerfDuration = 10
+				c.config.DefaultResctrlDir = resctrlDir
+				c.config.DefaultLimitMode = modeDynamic
+				c.config.PerfDuration = 10
 				for _, pod := range fakePods {
 					if pod.Annotations[constant.PriorityAnnotationKey] == "true" {
 						pod.Annotations[constant.CacheLimitAnnotationKey] = "dynamic"
@@ -165,7 +165,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -192,9 +192,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
-				c.Config.DefaultResctrlDir = resctrlDir
-				c.Config.DefaultLimitMode = modeDynamic
-				c.Config.PerfDuration = 10
+				c.config.DefaultResctrlDir = resctrlDir
+				c.config.DefaultLimitMode = modeDynamic
+				c.config.PerfDuration = 10
 				for _, pod := range fakePods {
 					if pod.Annotations[constant.PriorityAnnotationKey] == "true" {
 						pod.Annotations[constant.CacheLimitAnnotationKey] = "dynamic"
@@ -207,7 +207,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -234,9 +234,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
 				genNumaNodes(c.Attr.NumaNodeDir, 4)
-				c.Config.DefaultResctrlDir = resctrlDir
-				c.Config.DefaultLimitMode = modeDynamic
-				c.Config.PerfDuration = 10
+				c.config.DefaultResctrlDir = resctrlDir
+				c.config.DefaultLimitMode = modeDynamic
+				c.config.PerfDuration = 10
 				for _, pod := range fakePods {
 					if pod.Annotations[constant.PriorityAnnotationKey] == "true" {
 						pod.Annotations[constant.CacheLimitAnnotationKey] = "static"
@@ -249,7 +249,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				for _, pod := range fakePods {
 					pod.CleanPath()
 				}
-				try.RemoveAll(c.Config.DefaultResctrlDir)
+				try.RemoveAll(c.config.DefaultResctrlDir)
 				try.RemoveAll(c.Attr.NumaNodeDir)
 			},
 		},
@@ -257,7 +257,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &DynCache{
-				Config: tt.fields.Config,
+				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Name:   tt.fields.Name,
 			}
