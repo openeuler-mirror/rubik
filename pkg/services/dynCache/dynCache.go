@@ -127,6 +127,26 @@ func (i DynCacheFactory) NewObj() (interface{}, error) {
 	return NewDynCache(i.ObjName), nil
 }
 
+func newConfig() *Config {
+	return &Config{
+		DefaultLimitMode:    modeStatic,
+		DefaultResctrlDir:   defaultResctrlDir,
+		DefaultPidNameSpace: defaultPidNameSpace,
+		AdjustInterval:      defaultAdInt,
+		PerfDuration:        defaultPerfDur,
+		L3Percent: MultiLvlPercent{
+			Low:  defaultLowL3,
+			Mid:  defaultMidL3,
+			High: defaultHighL3,
+		},
+		MemBandPercent: MultiLvlPercent{
+			Low:  defaultLowMB,
+			Mid:  defaultMidMB,
+			High: defaultHighMB,
+		},
+	}
+}
+
 // NewDynCache return cache limit instance with default settings
 func NewDynCache(name string) *DynCache {
 	return &DynCache{
@@ -136,24 +156,13 @@ func NewDynCache(name string) *DynCache {
 			MaxMiss:     defaultMaxMiss,
 			MinMiss:     defaultMinMiss,
 		},
-		config: &Config{
-			DefaultLimitMode:    modeStatic,
-			DefaultResctrlDir:   defaultResctrlDir,
-			DefaultPidNameSpace: defaultPidNameSpace,
-			AdjustInterval:      defaultAdInt,
-			PerfDuration:        defaultPerfDur,
-			L3Percent: MultiLvlPercent{
-				Low:  defaultLowL3,
-				Mid:  defaultMidL3,
-				High: defaultHighL3,
-			},
-			MemBandPercent: MultiLvlPercent{
-				Low:  defaultLowMB,
-				Mid:  defaultMidMB,
-				High: defaultHighMB,
-			},
-		},
+		config: newConfig(),
 	}
+}
+
+// IsRunner returns true that tells other dynCache is a persistent service
+func (c *DynCache) IsRunner() bool {
+	return true
 }
 
 // PreStart will do some pre-setting actions
@@ -177,15 +186,16 @@ func (c *DynCache) Run(ctx context.Context) {
 	wait.Until(c.StartDynamic, time.Millisecond*time.Duration(c.config.AdjustInterval), ctx.Done())
 }
 
+// SetConfig sets and checks Config
 func (c *DynCache) SetConfig(f helper.ConfigHandler) error {
-	var config Config
-	if err := f(c.Name, &config); err != nil {
+	config := newConfig()
+	if err := f(c.Name, config); err != nil {
 		return err
 	}
 	if err := config.Validate(); err != nil {
 		return err
 	}
-	c.config = &config
+	c.config = config
 	return nil
 }
 
