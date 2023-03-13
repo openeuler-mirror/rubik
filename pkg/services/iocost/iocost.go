@@ -58,7 +58,7 @@ type IOCostConfig struct {
 // NodeConfig define the config of node, include iocost
 type NodeConfig struct {
 	NodeName     string         `json:"nodeName,omitempty"`
-	IOCostConfig []IOCostConfig `json:"iocostConfig,omitempty"`
+	IOCostConfig []IOCostConfig `json:"config,omitempty"`
 }
 
 // IOCost for iocost class
@@ -115,6 +115,10 @@ func (io *IOCost) ID() string {
 
 // SetConfig to config nodeConfig configure
 func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
+	if f == nil {
+		return fmt.Errorf("config handler function callback is nil")
+	}
+
 	var nodeConfigs []NodeConfig
 	var nodeConfig *NodeConfig
 	if err := f(io.name, &nodeConfigs); err != nil {
@@ -148,7 +152,6 @@ func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 
 	io.configIOCost(nodeConfig.IOCostConfig)
 	return nil
-
 }
 
 // PreStart is the pre-start action
