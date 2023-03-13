@@ -80,7 +80,7 @@ func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
 func (q *Preemption) PreStart(viewer api.Viewer) error {
 	for _, pod := range viewer.ListPodsWithOptions() {
 		if err := q.SetQoSLevel(pod); err != nil {
-			log.Errorf("error prestart pod %v: %v", pod.Name, err)
+			log.Errorf("failed to set the qos level for the previously started pod %v: %v", pod.Name, err)
 		}
 	}
 	return nil
@@ -104,11 +104,11 @@ func (q *Preemption) UpdatePod(old, new *typedef.PodInfo) error {
 	case newQos == oldQos:
 		return nil
 	case newQos > oldQos:
-		return fmt.Errorf("not support change qos level from low to high")
+		return fmt.Errorf("does not support pod qos level setting from low to high")
 	default:
 		if err := q.ValidateConfig(new); err != nil {
 			if err := q.SetQoSLevel(new); err != nil {
-				return fmt.Errorf("update qos for pod %s(%s) failed: %v", new.Name, new.UID, err)
+				return fmt.Errorf("failed to update the qos level of pod %s(%s): %v", new.Name, new.UID, err)
 			}
 		}
 	}
@@ -126,11 +126,11 @@ func (q *Preemption) ValidateConfig(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
 	for _, r := range q.config.Resource {
 		if err := pod.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
-			return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
+			return fmt.Errorf("failed to validate the qos level configuration of pod %s: %v", pod.Name, err)
 		}
 		for _, container := range pod.IDContainersMap {
 			if err := container.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
-				return fmt.Errorf("failed to validate pod %s: %v", pod.Name, err)
+				return fmt.Errorf("failed to validate the qos level configuration of container %s: %v", pod.Name, err)
 			}
 		}
 	}
@@ -140,11 +140,11 @@ func (q *Preemption) ValidateConfig(pod *typedef.PodInfo) error {
 // SetQoSLevel set pod and all containers' qos level within it
 func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 	if pod == nil {
-		return fmt.Errorf("pod info is empty")
+		return fmt.Errorf("empty pod info")
 	}
 	qosLevel := getQoSLevel(pod)
 	if qosLevel == constant.Online {
-		log.Debugf("pod %s already online", pod.Name)
+		log.Infof("pod %s has already been set to online", pod.Name)
 		return nil
 	}
 
@@ -158,7 +158,7 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 			}
 		}
 	}
-	log.Debugf("set pod %s(%s) qos level %d ok", pod.Name, pod.UID, qosLevel)
+	log.Infof("the qos level of pod %s(%s) is set to %d successfully", pod.Name, pod.UID, qosLevel)
 	return nil
 }
 
@@ -187,7 +187,7 @@ func (conf *PreemptionConfig) Validate() error {
 	}
 	for _, r := range conf.Resource {
 		if _, ok := supportCgroupTypes[r]; !ok {
-			return fmt.Errorf("not support sub system %s", r)
+			return fmt.Errorf("does not support setting the %s subsystem", r)
 		}
 	}
 	return nil
