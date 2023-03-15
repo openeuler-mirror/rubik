@@ -52,6 +52,8 @@ type Service interface {
 	ID() string
 	// SetConfig is an interface that invoke the ConfigHandler to obtain the corresponding configuration.
 	SetConfig(helper.ConfigHandler) error
+	// GetConfig is an interface for obtaining service running configurations.
+	GetConfig() interface{}
 	// PreStarter is an interface for calling a collection of methods when the service is pre-started
 	PreStart(api.Viewer) error
 	// Terminator is an interface that calls a collection of methods when the service terminates

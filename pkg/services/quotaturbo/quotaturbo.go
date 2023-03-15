@@ -110,6 +110,8 @@ func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 		if _, found := conts[id]; !found {
 			if err := qt.client.RemoveCgroup(path); err != nil {
 				log.Errorf("error removing container %v: %v", id, err)
+			} else {
+				log.Infof("remove container %v", id)
 			}
 		}
 	}
@@ -124,6 +126,8 @@ func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 		// add container to quotaturbo
 		if err := qt.client.AddCgroup(cont.CgroupPath, cont.LimitResources[typedef.ResourceCPU]); err != nil {
 			log.Errorf("error adding container %v: %v", cont.Name, err)
+		} else {
+			log.Infof("add container %v", id)
 		}
 	}
 }
@@ -183,6 +187,11 @@ func (qt *QuotaTurbo) SetConfig(f helper.ConfigHandler) error {
 	}
 	qt.conf = conf
 	return nil
+}
+
+// GetConfig returns Config
+func (qt *QuotaTurbo) GetConfig() interface{} {
+	return qt.conf
 }
 
 // IsRunner returns true that tells other quotaTurbo is a persistent service

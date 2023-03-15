@@ -71,8 +71,19 @@ func (manager *ServiceManager) InitServices(features []string, serviceConfig map
 			return fmt.Errorf("set configuration failed, err:%v", err)
 		}
 
+		conf, err := parser.MarshalIndent(s.GetConfig(), "", "\t")
+		if err != nil {
+			return fmt.Errorf("fail to get service %v configuration: %v", s.ID(), err)
+		}
+
 		if err := manager.AddRunningService(feature, s); err != nil {
 			return err
+		}
+
+		if len(conf) != 0 {
+			log.Infof("service %v will run with configuration:\n%v", s.ID(), conf)
+		} else {
+			log.Infof("service %v will run", s.ID())
 		}
 	}
 	return nil
@@ -114,18 +125,21 @@ func (manager *ServiceManager) EventTypes() []typedef.EventType {
 }
 
 // terminatingRunningServices handles services exits during the setup and exit phases
-func (manager *ServiceManager) terminatingRunningServices() error {
-	for _, s := range manager.RunningServices {
+func terminatingServices(serviceMap map[string]services.Service, viewer api.Viewer) {
+	for name, s := range serviceMap {
 		if s.IsRunner() {
 			if err := s.Stop(); err != nil {
-				log.Errorf("stop service err:%v", err)
+				log.Errorf("fail to stop service %v: %v", name, err)
+			} else {
+				log.Infof("stop service %v successfully", name)
 			}
 		}
-		if err := s.Terminate(manager.Viewer); err != nil {
-			log.Errorf("terminate service err:%v", err)
+		if err := s.Terminate(viewer); err != nil {
+			log.Errorf("fail to terminate service %v: %v", name, err)
+		} else {
+			log.Infof("terminate service %v successfully", name)
 		}
 	}
-	return nil
 }
 
 // Setup pre-starts services, such as preparing the environment, etc.
@@ -135,20 +149,22 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 		return fmt.Errorf("viewer should not be empty")
 	}
 	manager.Viewer = v
-	manager.Lock()
-	var unavailable []string
-	for name, s := range manager.RunningServices {
-		if err := s.PreStart(manager.Viewer); err != nil {
-			log.Errorf("PreStart failed:%v", err)
-			unavailable = append(unavailable, name)
-		}
-	}
 
-	for _, name := range unavailable {
-		delete(manager.RunningServices, name)
-		log.Infof("service %v is unavailable", name)
+	var preStarted = make(map[string]services.Service, 0)
+	manager.RLock()
+	for name, s := range manager.RunningServices {
+		/*
+			Try to prestart the service. If any service fails, rubik exits
+			and invokes the terminate function to terminate the prestarted service.
+		*/
+		if err := s.PreStart(manager.Viewer); err != nil {
+			terminatingServices(preStarted, manager.Viewer)
+			return fmt.Errorf("fail to preStart service %v: %v", name, err)
+		}
+		preStarted[name] = s
+		log.Infof("service %v pre-start successfully", name)
 	}
-	manager.Unlock()
+	manager.RUnlock()
 	return nil
 }
 
@@ -185,7 +201,10 @@ func (manager *ServiceManager) Start(ctx context.Context) {
 
 // Stop terminates the running service
 func (manager *ServiceManager) Stop() error {
-	return manager.terminatingRunningServices()
+	manager.RLock()
+	terminatingServices(manager.RunningServices, manager.Viewer)
+	manager.RUnlock()
+	return nil
 }
 
 // addFunc handles pod addition events

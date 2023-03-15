@@ -57,3 +57,15 @@ func (p *jsonParser) UnmarshalSubConfig(data interface{}, v interface{}) error {
 	// 2. convert json string to struct
 	return json.Unmarshal(jsonString, v)
 }
+
+// MarshalIndent serializes interface to string
+func (p *jsonParser) MarshalIndent(data interface{}, prefix, indent string) (string, error) {
+	if data == nil {
+		return "", nil
+	}
+	res, err := json.MarshalIndent(data, prefix, indent)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}

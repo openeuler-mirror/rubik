@@ -180,6 +180,11 @@ func (c *DynCache) ID() string {
 	return c.Name
 }
 
+// GetConfig returns Config
+func (c *DynCache) GetConfig() interface{} {
+	return c.config
+}
+
 // Run implement service run function
 func (c *DynCache) Run(ctx context.Context) {
 	go wait.Until(c.SyncCacheLimit, time.Second, ctx.Done())
