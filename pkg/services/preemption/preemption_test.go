@@ -51,6 +51,7 @@ var getCommonField = func(subSys []string) fields {
 }
 
 func TestPreemptionAddFunc(t *testing.T) {
+	const containerNum = 3
 	var addFuncTC = []test{
 		{
 			name:   "TC1-set offline pod qos ok",
@@ -69,7 +70,7 @@ func TestPreemptionAddFunc(t *testing.T) {
 				new: try.GenFakeOnlinePod(map[*cgroup.Key]string{
 					supportCgroupTypes["cpu"]:    "0",
 					supportCgroupTypes["memory"]: "0",
-				}).WithContainers(3),
+				}).WithContainers(containerNum),
 			},
 		},
 		{

@@ -16,7 +16,7 @@ package services
 
 import (
 	"isula.org/rubik/pkg/feature"
-	dyncache "isula.org/rubik/pkg/services/dynCache"
+	"isula.org/rubik/pkg/services/dyncache"
 	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/pkg/services/iocost"
 	"isula.org/rubik/pkg/services/iolimit"

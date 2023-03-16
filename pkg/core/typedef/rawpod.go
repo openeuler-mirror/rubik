@@ -198,6 +198,7 @@ func (cont *RawContainer) GetResourceMaps() (ResourceMap, ResourceMap) {
 	return iterator(&cont.spec.Resources.Requests), iterator(&cont.spec.Resources.Limits)
 }
 
+// DeepCopy returns the deep copy object of ResourceMap
 func (m ResourceMap) DeepCopy() ResourceMap {
 	if m == nil {
 		return nil

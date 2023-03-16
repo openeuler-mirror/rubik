@@ -53,13 +53,13 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 	)
 	// nil is different from empty value in golang
 	if pod.IDContainersMap != nil {
-		contMap = make(map[string]*ContainerInfo, len(pod.IDContainersMap))
+		contMap = make(map[string]*ContainerInfo)
 		for id, cont := range pod.IDContainersMap {
 			contMap[id] = cont.DeepCopy()
 		}
 	}
 	if pod.Annotations != nil {
-		annoMap = make(map[string]string, len(pod.Annotations))
+		annoMap = make(map[string]string)
 		for k, v := range pod.Annotations {
 			annoMap[k] = v
 		}

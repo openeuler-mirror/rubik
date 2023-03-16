@@ -179,7 +179,7 @@ func TestDeepCopy(t *testing.T) {
 
 	oldSlice := []string{"a", "b", "c"}
 	newSlice := DeepCopy(oldSlice).([]string)
-	for i, _ := range newSlice {
+	for i := range newSlice {
 		newSlice[i] += "z"
 	}
 	assert.Equal(t, oldSlice, []string{"a", "b", "c"})

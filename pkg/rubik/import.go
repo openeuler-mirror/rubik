@@ -16,7 +16,7 @@ package rubik
 
 import (
 	// introduce packages to auto register service
-	_ "isula.org/rubik/pkg/services/dynCache"
+	_ "isula.org/rubik/pkg/services/dyncache"
 	_ "isula.org/rubik/pkg/services/iocost"
 	_ "isula.org/rubik/pkg/services/preemption"
 	_ "isula.org/rubik/pkg/services/quotaburst"

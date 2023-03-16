@@ -47,7 +47,7 @@ type Agent struct {
 func NewAgent(cfg *config.Config) (*Agent, error) {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
 	serviceManager := NewServiceManager()
-	if err := serviceManager.InitServices( cfg.Agent.EnabledFeatures,
+	if err := serviceManager.InitServices(cfg.Agent.EnabledFeatures,
 		cfg.UnwarpServiceConfig(), cfg); err != nil {
 		return nil, err
 	}

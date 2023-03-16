@@ -21,9 +21,9 @@ import (
 )
 
 var (
-	// Version represents rubik version
+	// Version represents rubik Version
 	Version string
-	// Release represents rubik release number
+	// Release represents rubik Release number
 	Release string
 	// GitCommit represents git commit number
 	GitCommit string
@@ -33,7 +33,8 @@ var (
 
 func init() {
 	var showVersion bool
-	if len(os.Args) == 2 && os.Args[1] == "-v" {
+	const maxArgLen = 2
+	if len(os.Args) == maxArgLen && os.Args[1] == "-v" {
 		showVersion = true
 	}
 

@@ -362,6 +362,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 		quota  = "200000"
 		period = "100000"
 		usage  = "1234567"
+		minCPU = 2
 	)
 	var (
 		fooCont = &typedef.ContainerInfo{
@@ -369,7 +370,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 			ID:         "testCon1",
 			CgroupPath: "kubepods/testPod1/testCon1",
 			LimitResources: typedef.ResourceMap{
-				typedef.ResourceCPU: math.Min(2, float64(runtime.NumCPU()-1)),
+				typedef.ResourceCPU: math.Min(minCPU, float64(runtime.NumCPU()-1)),
 			},
 		}
 		barCont = &typedef.ContainerInfo{
@@ -377,7 +378,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 			ID:         "testCon2",
 			CgroupPath: "kubepods/testPod2/testCon2",
 			LimitResources: typedef.ResourceMap{
-				typedef.ResourceCPU: math.Min(2, float64(runtime.NumCPU()-1)),
+				typedef.ResourceCPU: math.Min(minCPU, float64(runtime.NumCPU()-1)),
 			},
 		}
 		preEnv = func(contPath string) {
@@ -425,7 +426,8 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 				preEnv(fooCont.CgroupPath)
 				assert.NoError(t, qt.client.AddCgroup(barCont.CgroupPath, barCont.LimitResources[typedef.ResourceCPU]))
 				assert.NoError(t, qt.client.AddCgroup(fooCont.CgroupPath, fooCont.LimitResources[typedef.ResourceCPU]))
-				assert.Equal(t, 2, len(qt.client.GetAllCgroup()))
+				const cgroupLen = 2
+				assert.Equal(t, cgroupLen, len(qt.client.GetAllCgroup()))
 			},
 			post: func(t *testing.T) {
 				try.RemoveAll(constant.TmpTestDir)
@@ -478,7 +480,8 @@ func TestQuotaTurbo_Run(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			qt.Viewer = pm
 			go qt.Run(ctx)
-			time.Sleep(time.Millisecond * 200)
+			const sleepTime = time.Millisecond * 200
+			time.Sleep(sleepTime)
 			cancel()
 		})
 	}

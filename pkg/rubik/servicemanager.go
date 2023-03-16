@@ -51,7 +51,8 @@ func NewServiceManager() *ServiceManager {
 }
 
 // InitServices parses the to-be-run services config and loads them to the ServiceManager
-func (manager *ServiceManager) InitServices(features []string, serviceConfig map[string]interface{}, parser config.ConfigParser) error {
+func (manager *ServiceManager) InitServices(features []string,
+	serviceConfig map[string]interface{}, parser config.ConfigParser) error {
 	for _, feature := range features {
 		s, err := services.GetServiceComponent(feature)
 		if err != nil {
@@ -216,7 +217,7 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 	}
 
 	const retryCount = 5
-	runOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+	addOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
 		for i := 0; i < retryCount; i++ {
 			if err := s.AddPod(podInfo); err != nil {
@@ -230,7 +231,7 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
-		go runOnce(s, podInfo.DeepCopy(), &wg)
+		go addOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
 	manager.RUnlock()
@@ -273,7 +274,7 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 		return
 	}
 
-	runOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+	deleteOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
 		wg.Add(1)
 		if err := s.DeletePod(podInfo); err != nil {
 			log.Errorf("service %s delete func failed: %v", s.ID(), err)
@@ -283,7 +284,7 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
-		go runOnce(s, podInfo.DeepCopy(), &wg)
+		go deleteOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
 	manager.RUnlock()

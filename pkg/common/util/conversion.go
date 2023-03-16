@@ -105,6 +105,7 @@ func DeepCopy(value interface{}) interface{} {
 		newSlice := reflect.MakeSlice(typ, val.Len(), val.Cap())
 		reflect.Copy(newSlice, val)
 		return newSlice.Interface()
+	default:
+		return value
 	}
-	return value
 }

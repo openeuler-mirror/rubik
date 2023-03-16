@@ -65,7 +65,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 				c.config.DefaultResctrlDir = resctrlDir
 				c.config.DefaultLimitMode = modeDynamic
 				c.config.PerfDuration = 10
@@ -107,7 +108,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 				c.config.DefaultResctrlDir = resctrlDir
 				c.config.DefaultLimitMode = modeDynamic
 				c.config.PerfDuration = 10
@@ -149,7 +151,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 				c.config.DefaultResctrlDir = resctrlDir
 				c.config.DefaultLimitMode = modeDynamic
 				c.config.PerfDuration = 10
@@ -191,7 +194,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 				c.config.DefaultResctrlDir = resctrlDir
 				c.config.DefaultLimitMode = modeDynamic
 				c.config.PerfDuration = 10
@@ -233,7 +237,8 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 				setMaskFile(t, resctrlDir, "3ff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 				c.config.DefaultResctrlDir = resctrlDir
 				c.config.DefaultLimitMode = modeDynamic
 				c.config.PerfDuration = 10
