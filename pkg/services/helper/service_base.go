@@ -76,3 +76,8 @@ func (s *ServiceBase) DeletePod(*typedef.PodInfo) error {
 	log.Warnf("this interface is not implemented.")
 	return nil
 }
+
+// Run to start runner
+func (s *ServiceBase) GetConfig() interface{} {
+	return nil
+}

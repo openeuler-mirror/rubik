@@ -23,6 +23,7 @@ type (
 	ConfigParser interface {
 		ParseConfig(data []byte) (map[string]interface{}, error)
 		UnmarshalSubConfig(data interface{}, v interface{}) error
+		MarshalIndent(v interface{}, prefix, indent string) (string, error)
 	}
 )
 
