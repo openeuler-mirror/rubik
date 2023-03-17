@@ -16,8 +16,6 @@ package quotaturbo
 
 import (
 	"fmt"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 // Client is quotaTurbo client
@@ -44,11 +42,11 @@ func (c *Client) AdjustQuota() error {
 	}
 	var errs error
 	if err := c.updateCPUQuotas(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	c.adjustQuota(c.StatusStore)
 	if err := c.writeQuota(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	return errs
 }

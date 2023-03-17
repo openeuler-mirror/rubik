@@ -21,8 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
-
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
@@ -160,7 +158,7 @@ func (store *StatusStore) updateCPUQuotas() error {
 	var errs error
 	for id, c := range store.cpuQuotas {
 		if err := c.update(); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("error updating cpu quota %v: %v", id, err))
+			errs = appendErr(errs, fmt.Errorf("error updating cpu quota %v: %v", id, err))
 		}
 	}
 	return errs
@@ -171,7 +169,7 @@ func (store *StatusStore) writeQuota() error {
 	var errs error
 	for id, c := range store.cpuQuotas {
 		if err := c.writeQuota(); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("error writing cgroup quota %v: %v", id, err))
+			errs = appendErr(errs, fmt.Errorf("error writing cgroup quota %v: %v", id, err))
 		}
 	}
 	return errs

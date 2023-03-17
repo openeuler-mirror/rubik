@@ -286,7 +286,6 @@ func TestStatusStore_AddCgroup(t *testing.T) {
 	type args struct {
 		cgroupPath string
 		cpuLimit   float64
-		cpuRequest float64
 	}
 	tests := []struct {
 		name    string
