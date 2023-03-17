@@ -15,11 +15,18 @@
 package feature
 
 const (
+	// PreemptionFeature is the Preemption feature name
 	PreemptionFeature = "preemption"
-	DynCacheFeature   = "dynCache"
-	IOLimitFeature    = "ioLimit"
-	IOCostFeature     = "ioCost"
-	DynMemoryFeature  = "dynMemory"
+	// DynCacheFeature is the DynCache feature name
+	DynCacheFeature = "dynCache"
+	// IOLimitFeature is the IOLimit feature name
+	IOLimitFeature = "ioLimit"
+	// IOCostFeature is the IOCost feature name
+	IOCostFeature = "ioCost"
+	// DynMemoryFeature is the DynMemory feature name
+	DynMemoryFeature = "dynMemory"
+	// QuotaBurstFeature is the QuotaBurst feature name
 	QuotaBurstFeature = "quotaBurst"
+	// QuotaTurboFeature is the QuotaTurbo feature name
 	QuotaTurboFeature = "quotaTurbo"
 )

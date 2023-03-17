@@ -88,7 +88,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 			},
@@ -107,7 +108,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 			},
@@ -126,7 +128,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 			preHook: func(t *testing.T, c *DynCache, fakePods []*try.FakePod) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 				c.config.DefaultLimitMode = levelDynamic
@@ -147,7 +150,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "invalid"
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 			},
@@ -187,7 +191,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 			},
@@ -207,7 +212,8 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
-					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir, resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
+					try.WriteFile(filepath.Join(defaultConfig.DefaultResctrlDir,
+						resctrlDirPrefix+pod.Annotations[constant.CacheLimitAnnotationKey], "tasks"), "")
 				}
 				c.Viewer = manager
 			},

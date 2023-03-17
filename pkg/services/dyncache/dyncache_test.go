@@ -28,6 +28,7 @@ const (
 )
 
 func TestCacheLimit_Validate(t *testing.T) {
+	const num2 = 2
 	type fields struct {
 		Config *Config
 		Attr   *Attr
@@ -48,12 +49,12 @@ func TestCacheLimit_Validate(t *testing.T) {
 					PerfDuration:     minPerfDur + 1,
 					L3Percent: MultiLvlPercent{
 						Low:  minPercent + 1,
-						Mid:  maxPercent/2 + 1,
+						Mid:  maxPercent/num2 + 1,
 						High: maxPercent - 1,
 					},
 					MemBandPercent: MultiLvlPercent{
 						Low:  minPercent + 1,
-						Mid:  maxPercent/2 + 1,
+						Mid:  maxPercent/num2 + 1,
 						High: maxPercent - 1,
 					},
 				},
@@ -98,7 +99,7 @@ func TestCacheLimit_Validate(t *testing.T) {
 			fields: fields{
 				Config: &Config{
 					DefaultLimitMode: modeStatic,
-					AdjustInterval:   maxAdjustInterval/2 + 1,
+					AdjustInterval:   maxAdjustInterval/num2 + 1,
 					PerfDuration:     minPerfDur - 1,
 				},
 			},
@@ -110,7 +111,7 @@ func TestCacheLimit_Validate(t *testing.T) {
 			fields: fields{
 				Config: &Config{
 					DefaultLimitMode: modeStatic,
-					AdjustInterval:   maxAdjustInterval/2 + 1,
+					AdjustInterval:   maxAdjustInterval/num2 + 1,
 					PerfDuration:     maxPerfDur + 1,
 				},
 			},
@@ -122,8 +123,8 @@ func TestCacheLimit_Validate(t *testing.T) {
 			fields: fields{
 				Config: &Config{
 					DefaultLimitMode: modeStatic,
-					AdjustInterval:   maxAdjustInterval/2 + 1,
-					PerfDuration:     maxPerfDur/2 + 1,
+					AdjustInterval:   maxAdjustInterval/num2 + 1,
+					PerfDuration:     maxPerfDur/num2 + 1,
 					L3Percent: MultiLvlPercent{
 						Low: minPerfDur - 1,
 					},
@@ -137,17 +138,17 @@ func TestCacheLimit_Validate(t *testing.T) {
 			fields: fields{
 				Config: &Config{
 					DefaultLimitMode: modeStatic,
-					AdjustInterval:   maxAdjustInterval/2 + 1,
-					PerfDuration:     maxPerfDur/2 + 1,
+					AdjustInterval:   maxAdjustInterval/num2 + 1,
+					PerfDuration:     maxPerfDur/num2 + 1,
 					L3Percent: MultiLvlPercent{
-						Low:  minPercent + 2,
+						Low:  minPercent + num2,
 						Mid:  minPercent + 1,
 						High: minPercent + 1,
 					},
 					MemBandPercent: MultiLvlPercent{
 						Low:  minPercent,
 						Mid:  minPercent + 1,
-						High: minPercent + 2,
+						High: minPercent + num2,
 					},
 				},
 			},
@@ -159,17 +160,17 @@ func TestCacheLimit_Validate(t *testing.T) {
 			fields: fields{
 				Config: &Config{
 					DefaultLimitMode: modeStatic,
-					AdjustInterval:   maxAdjustInterval/2 + 1,
-					PerfDuration:     maxPerfDur/2 + 1,
+					AdjustInterval:   maxAdjustInterval/num2 + 1,
+					PerfDuration:     maxPerfDur/num2 + 1,
 					L3Percent: MultiLvlPercent{
 						Low:  minPercent,
 						Mid:  minPercent + 1,
-						High: minPercent + 2,
+						High: minPercent + num2,
 					},
 					MemBandPercent: MultiLvlPercent{
 						Low:  minPercent,
-						Mid:  maxPercent/2 + 1,
-						High: maxPercent / 2,
+						Mid:  maxPercent/num2 + 1,
+						High: maxPercent / num2,
 					},
 				},
 			},
@@ -236,6 +237,7 @@ func TestNewCacheLimit(t *testing.T) {
 	}
 }
 
+// TestCacheLimit_PreStart tests PreStart
 func TestCacheLimit_PreStart(t *testing.T) {
 	type fields struct {
 		Config *Config
@@ -278,6 +280,7 @@ func TestCacheLimit_PreStart(t *testing.T) {
 	}
 }
 
+// TestCacheLimit_ID tests ID
 func TestCacheLimit_ID(t *testing.T) {
 	type fields struct {
 		Config *Config

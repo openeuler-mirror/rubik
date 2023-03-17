@@ -24,16 +24,6 @@ type DeviceConfig struct {
 	DeviceValue string `json:"value,omitempty"`
 }
 
-// annoConfig defines the annotation config of iolimit.
-/*
-type annoConfig struct {
-	DeviceReadBps   []DeviceConfig `json:"device_read_bps,omitempty"`
-	DeviceWriteBps  []DeviceConfig `json:"device_write_bps,omitempty"`
-	DeviceReadIops  []DeviceConfig `json:"device_read_iops,omitempty"`
-	DeviceWriteIops []DeviceConfig `json:"device_write_iops,omitempty"`
-}
-*/
-
 // IOLimit is the class of IOLimit.
 type IOLimit struct {
 	helper.ServiceBase

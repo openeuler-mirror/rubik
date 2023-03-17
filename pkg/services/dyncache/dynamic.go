@@ -70,9 +70,12 @@ func getPodCacheMiss(pod *typedef.PodInfo, perfDu int) (int, int) {
 	if err != nil {
 		return 0, 0
 	}
-
-	return int(100.0 * float64(stat.CacheMisses) / (1.0 + float64(stat.CacheReferences))),
-		int(100.0 * float64(stat.LLCMiss) / (1.0 + float64(stat.LLCAccess)))
+	const (
+		probability = 100.0
+		bias        = 1.0
+	)
+	return int(probability * float64(stat.CacheMisses) / (bias + float64(stat.CacheReferences))),
+		int(probability * float64(stat.LLCMiss) / (bias + float64(stat.LLCAccess)))
 }
 
 func (c *DynCache) dynamicExist() bool {

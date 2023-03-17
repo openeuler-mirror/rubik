@@ -96,7 +96,6 @@ const (
 const (
 	Offline = -1
 	Online  = 0
-	// TODO: add more level
 )
 
 // cgroup file name

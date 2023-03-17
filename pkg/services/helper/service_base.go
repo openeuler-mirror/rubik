@@ -34,13 +34,13 @@ func (s *ServiceBase) SetConfig(ConfigHandler) error {
 	return nil
 }
 
-// PreStarter is an interface for calling a collection of methods when the service is pre-started
+// PreStart is an interface for calling a collection of methods when the service is pre-started
 func (s *ServiceBase) PreStart(api.Viewer) error {
 	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
-// Terminator is an interface that calls a collection of methods when the service terminates
+// Terminate is an interface that calls a collection of methods when the service terminates
 func (s *ServiceBase) Terminate(api.Viewer) error {
 	log.Warnf("this interface is not implemented.")
 	return nil

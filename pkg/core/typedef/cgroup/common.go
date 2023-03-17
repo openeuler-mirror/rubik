@@ -26,6 +26,7 @@ import (
 
 var rootDir = constant.DefaultCgroupRoot
 
+// AbsoluteCgroupPath returns the absolute path of the cgroup
 func AbsoluteCgroupPath(elem ...string) string {
 	elem = append([]string{rootDir}, elem...)
 	return filepath.Join(elem...)
@@ -150,11 +151,13 @@ func (attr *Attr) CPUStat() (*CPUStat, error) {
 	return NewCPUStat(attr.Value)
 }
 
+// Hierarchy is used to represent a cgroup path
 type Hierarchy struct {
 	MountPoint string
 	Path       string
 }
 
+// NewHierarchy creates a Hierarchy instance
 func NewHierarchy(mountPoint, path string) *Hierarchy {
 	return &Hierarchy{
 		MountPoint: mountPoint,

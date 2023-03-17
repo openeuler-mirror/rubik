@@ -31,7 +31,8 @@ func setMaskFile(t *testing.T, resctrlDir string, data string) {
 	maskFile := filepath.Join(maskDir, "cbm_mask")
 	try.MkdirAll(maskDir, constant.DefaultDirMode).OrDie()
 	try.WriteFile(maskFile, data).OrDie()
-	try.WriteFile(filepath.Join(resctrlDir, schemataFileName), "L3:0=7fff;1=7fff;2=7fff;3=7fff\nMB:0=100;1=100;2=100;3=100").OrDie()
+	try.WriteFile(filepath.Join(resctrlDir, schemataFileName),
+		"L3:0=7fff;1=7fff;2=7fff;3=7fff\nMB:0=100;1=100;2=100;3=100").OrDie()
 }
 
 func genNumaNodes(path string, num int) {
@@ -49,7 +50,6 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 		Attr   *Attr
 		Name   string
 	}
-	// defaultConfig := genDefaultConfig()
 	tests := []struct {
 		name     string
 		fields   fields
@@ -69,7 +69,8 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				setMaskFile(t, c.config.DefaultResctrlDir, "7fff")
 				numaNodeDir := try.GenTestDir().String()
 				c.Attr.NumaNodeDir = numaNodeDir
-				genNumaNodes(c.Attr.NumaNodeDir, 4)
+				const numaNode = 4
+				genNumaNodes(c.Attr.NumaNodeDir, numaNode)
 			},
 			postHook: func(t *testing.T, c *DynCache) {
 				resctrlLevelMap := map[string]string{
