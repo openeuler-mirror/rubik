@@ -118,8 +118,8 @@ func (c *Config) filterNonServiceKeys(name string) bool {
 	return ok
 }
 
-// UnwarpServiceConfig returns service configuration, indexed by service name
-func (c *Config) UnwarpServiceConfig() map[string]interface{} {
+// UnwrapServiceConfig returns service configuration, indexed by service name
+func (c *Config) UnwrapServiceConfig() map[string]interface{} {
 	serviceConfig := make(map[string]interface{})
 	for name, conf := range c.Fields {
 		if c.filterNonServiceKeys(name) {

@@ -48,7 +48,7 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
 	serviceManager := NewServiceManager()
 	if err := serviceManager.InitServices(cfg.Agent.EnabledFeatures,
-		cfg.UnwarpServiceConfig(), cfg); err != nil {
+		cfg.UnwrapServiceConfig(), cfg); err != nil {
 		return nil, err
 	}
 	a := &Agent{
@@ -77,7 +77,7 @@ func (a *Agent) Run(ctx context.Context) error {
 // startInformer starts informer to obtain external data
 func (a *Agent) startInformer(ctx context.Context) error {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
-	informer, err := informer.GetInfomerFactory().GetInformerCreator(informer.APISERVER)(publisher)
+	informer, err := informer.GetInformerFactory().GetInformerCreator(informer.APISERVER)(publisher)
 	if err != nil {
 		return fmt.Errorf("fail to set informer: %v", err)
 	}
@@ -89,7 +89,7 @@ func (a *Agent) startInformer(ctx context.Context) error {
 	return nil
 }
 
-// stopInformer stops the infomer
+// stopInformer stops the informer
 func (a *Agent) stopInformer() {
 	a.informer.Unsubscribe(a.podManager)
 }
@@ -162,7 +162,7 @@ func Run() int {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// 2. handle external signals
-	go handelSignals(cancel)
+	go handleSignals(cancel)
 
 	// 3. run rubik-agent
 	if err := runAgent(ctx); err != nil {
@@ -172,7 +172,7 @@ func Run() int {
 	return constant.NormalExitCode
 }
 
-func handelSignals(cancel context.CancelFunc) {
+func handleSignals(cancel context.CancelFunc) {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
 	for sig := range signalChan {

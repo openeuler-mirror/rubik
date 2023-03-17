@@ -48,8 +48,8 @@ func (factory *informerFactory) GetInformerCreator(iType informerType) informerC
 	}
 }
 
-// GetInfomerFactory returns the Informer factory class entity
-func GetInfomerFactory() *informerFactory {
+// GetInformerFactory returns the Informer factory class entity
+func GetInformerFactory() *informerFactory {
 	if defaultInformerFactory == nil {
 		defaultInformerFactory = &informerFactory{}
 	}
