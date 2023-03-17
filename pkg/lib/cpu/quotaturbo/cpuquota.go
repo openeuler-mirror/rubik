@@ -19,8 +19,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
-
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
@@ -99,16 +97,16 @@ func NewCPUQuota(h *cgroup.Hierarchy, cpuLimit float64) (*CPUQuota, error) {
 func (c *CPUQuota) update() error {
 	var errs error
 	if err := c.updatePeriod(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	if err := c.updateThrottle(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	if err := c.updateQuota(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	if err := c.updateUsage(); err != nil {
-		errs = multierror.Append(errs, err)
+		errs = appendErr(errs, err)
 	}
 	if errs != nil {
 		return errs
@@ -250,4 +248,16 @@ func (c *CPUQuota) recoverQuota() error {
 	// period ranges from 1000(us) to 1000000(us) and does not overflow.
 	c.nextQuota = int64(c.cpuLimit * float64(c.period))
 	return c.writeQuota()
+}
+
+func appendErr(errs error, err error) error {
+	if errs == nil {
+		return err
+	}
+	if err == nil {
+		return errs
+	}
+	errStr1 := errs.Error()
+	errStr2 := err.Error()
+	return fmt.Errorf("%s \n* %s", errStr1, errStr2)
 }
