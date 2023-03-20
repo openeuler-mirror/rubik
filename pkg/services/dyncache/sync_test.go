@@ -22,6 +22,7 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/podmanager"
+	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
 )
 
@@ -55,6 +56,7 @@ func cleanFakePods(fakePods []*try.FakePod) {
 	}
 }
 
+// TestCacheLimit_SyncCacheLimit tests SyncCacheLimit of CacheLimit
 func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 	resctrlDir := try.GenTestDir().String()
 	defer try.RemoveAll(resctrlDir)
@@ -244,7 +246,9 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 			c := &DynCache{
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			if tt.preHook != nil {
 				tt.preHook(t, c, tt.fields.FakePods)

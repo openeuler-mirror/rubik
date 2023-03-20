@@ -24,6 +24,7 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/podmanager"
+	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
 )
 
@@ -155,7 +156,7 @@ func TestBurst_AddPod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := Burst{name: moduleName}
+			conf := Burst{ServiceBase: helper.ServiceBase{Name: moduleName}}
 			if tt.args.burst != "" {
 				tt.args.pod.Annotations[constant.QuotaBurstAnnotationKey] = tt.args.burst
 			}
@@ -172,7 +173,7 @@ func TestBurst_AddPod(t *testing.T) {
 func TestOther(t *testing.T) {
 	const tcName = "TC1-test Other"
 	t.Run(tcName, func(t *testing.T) {
-		got := Burst{name: moduleName}
+		got := Burst{ServiceBase: helper.ServiceBase{Name: moduleName}}
 		assert.NoError(t, got.DeletePod(&typedef.PodInfo{}))
 		assert.Equal(t, moduleName, got.ID())
 	})
@@ -220,7 +221,7 @@ func TestBurst_UpdatePod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := Burst{name: moduleName}
+			conf := Burst{ServiceBase: helper.ServiceBase{Name: moduleName}}
 			if err := conf.UpdatePod(tt.args.oldPod, tt.args.newPod); (err != nil) != tt.wantErr {
 				t.Errorf("Burst.UpdatePod() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -254,7 +255,7 @@ func TestBurst_PreStart(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conf := Burst{name: moduleName}
+			conf := Burst{ServiceBase: helper.ServiceBase{Name: moduleName}}
 			if err := conf.PreStart(tt.args.viewer); (err != nil) != tt.wantErr {
 				t.Errorf("Burst.PreStart() error = %v, wantErr %v", err, tt.wantErr)
 			}

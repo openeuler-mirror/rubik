@@ -64,7 +64,6 @@ type NodeConfig struct {
 // IOCost for iocost class
 type IOCost struct {
 	helper.ServiceBase
-	name string
 }
 
 var (
@@ -85,7 +84,7 @@ func (i IOCostFactory) Name() string {
 func (i IOCostFactory) NewObj() (interface{}, error) {
 	if ioCostSupport() {
 		nodeName = os.Getenv(constant.NodeNameEnvKey)
-		return &IOCost{name: i.ObjName}, nil
+		return &IOCost{ServiceBase: helper.ServiceBase{Name: i.ObjName}}, nil
 	}
 	return nil, fmt.Errorf("this machine not support iocost")
 }
@@ -108,11 +107,6 @@ func ioCostSupport() bool {
 	return util.PathExist(qosFile) && util.PathExist(modelFile)
 }
 
-// ID for get the name of iocost
-func (io *IOCost) ID() string {
-	return io.name
-}
-
 // SetConfig to config nodeConfig configure
 func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	if f == nil {
@@ -121,7 +115,7 @@ func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 
 	var nodeConfigs []NodeConfig
 	var nodeConfig *NodeConfig
-	if err := f(io.name, &nodeConfigs); err != nil {
+	if err := f(io.Name, &nodeConfigs); err != nil {
 		return err
 	}
 
@@ -159,6 +153,7 @@ func (io *IOCost) PreStart(viewer api.Viewer) error {
 	return io.dealExistedPods(viewer)
 }
 
+// Terminate is the terminating action
 func (b *IOCost) Terminate(viewer api.Viewer) error {
 	if err := b.clearIOCost(); err != nil {
 		return err

@@ -91,7 +91,6 @@ type DynCache struct {
 	config *Config
 	Attr   *Attr
 	Viewer api.Viewer
-	Name   string `json:"-"`
 }
 
 // Attr is cache limit attribute differ from config
@@ -150,7 +149,9 @@ func newConfig() *Config {
 // NewDynCache return cache limit instance with default settings
 func NewDynCache(name string) *DynCache {
 	return &DynCache{
-		Name: name,
+		ServiceBase: helper.ServiceBase{
+			Name: name,
+		},
 		Attr: &Attr{
 			NumaNodeDir: defaultNumaNodeDir,
 			MaxMiss:     defaultMaxMiss,
@@ -173,11 +174,6 @@ func (c *DynCache) PreStart(viewer api.Viewer) error {
 		return err
 	}
 	return nil
-}
-
-// ID returns service's name
-func (c *DynCache) ID() string {
-	return c.Name
 }
 
 // GetConfig returns Config

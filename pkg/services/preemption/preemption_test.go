@@ -19,6 +19,7 @@ import (
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
+	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
 )
 
@@ -50,6 +51,7 @@ var getCommonField = func(subSys []string) fields {
 	}
 }
 
+// TestPreemptionAddFunc tests AddFunc of Preemption
 func TestPreemptionAddFunc(t *testing.T) {
 	const containerNum = 3
 	var addFuncTC = []test{
@@ -107,7 +109,9 @@ func TestPreemptionAddFunc(t *testing.T) {
 	for _, tt := range addFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 				config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
@@ -124,6 +128,7 @@ func TestPreemptionAddFunc(t *testing.T) {
 	}
 }
 
+// TestPreemptionUpdatePod tests UpdatePod of Preemption
 func TestPreemptionUpdatePod(t *testing.T) {
 	var updateFuncTC = []test{
 		{
@@ -132,7 +137,6 @@ func TestPreemptionUpdatePod(t *testing.T) {
 			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}).WithContainers(3)},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				newPod := pod.DeepCopy()
-				// TODO: need fix pod.DeepCopy
 				newAnnotation := make(map[string]string, 0)
 				newAnnotation[constant.PriorityAnnotationKey] = "true"
 				newPod.Annotations = newAnnotation
@@ -165,7 +169,9 @@ func TestPreemptionUpdatePod(t *testing.T) {
 	for _, tt := range updateFuncTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 				config: tt.fields.Config,
 			}
 			if tt.preHook != nil {
@@ -206,7 +212,9 @@ func TestPreemptionValidate(t *testing.T) {
 	for _, tt := range validateTC {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &Preemption{
-				name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 				config: tt.fields.Config,
 			}
 			if err := q.config.Validate(); (err != nil) != tt.wantErr {

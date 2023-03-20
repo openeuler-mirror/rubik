@@ -257,7 +257,5 @@ func appendErr(errs error, err error) error {
 	if err == nil {
 		return errs
 	}
-	errStr1 := errs.Error()
-	errStr2 := err.Error()
-	return fmt.Errorf("%s \n* %s", errStr1, errStr2)
+	return fmt.Errorf("%s \n* %s", errs.Error(), err.Error())
 }
