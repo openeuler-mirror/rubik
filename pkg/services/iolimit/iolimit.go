@@ -27,7 +27,6 @@ type DeviceConfig struct {
 // IOLimit is the class of IOLimit.
 type IOLimit struct {
 	helper.ServiceBase
-	name string
 }
 
 // IOLimitFactory is the factory of IOLimit.
@@ -42,10 +41,7 @@ func (i IOLimitFactory) Name() string {
 
 // NewObj to create object of IOLimit.
 func (i IOLimitFactory) NewObj() (interface{}, error) {
-	return &IOLimit{name: i.ObjName}, nil
-}
-
-// ID to get the name of IOLimit.
-func (i *IOLimit) ID() string {
-	return i.name
+	return &IOLimit{
+		ServiceBase: *helper.NewServiceBase(i.ObjName),
+	}, nil
 }

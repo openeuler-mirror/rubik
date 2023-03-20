@@ -21,12 +21,14 @@ import (
 	"testing"
 
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/services/helper"
 )
 
 const (
 	moduleName = "dynCache"
 )
 
+// TestCacheLimit_StartDynamic tests StartDynamic of CacheLimit
 func TestCacheLimit_Validate(t *testing.T) {
 	const num2 = 2
 	type fields struct {
@@ -181,7 +183,9 @@ func TestCacheLimit_Validate(t *testing.T) {
 			c := &DynCache{
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			err := c.config.Validate()
 			if (err != nil) != tt.wantErr {
@@ -202,7 +206,9 @@ func TestNewCacheLimit(t *testing.T) {
 		{
 			name: "TC-do nothing",
 			want: &DynCache{
-				Name: moduleName,
+				ServiceBase: helper.ServiceBase{
+					Name: moduleName,
+				},
 				Attr: &Attr{
 					NumaNodeDir: defaultNumaNodeDir,
 					MaxMiss:     defaultMaxMiss,
@@ -271,7 +277,9 @@ func TestCacheLimit_PreStart(t *testing.T) {
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			if err := c.PreStart(tt.args.viewer); (err != nil) != tt.wantErr {
 				t.Errorf("CacheLimit.PreStart() error = %v, wantErr %v", err, tt.wantErr)
@@ -307,7 +315,9 @@ func TestCacheLimit_ID(t *testing.T) {
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
 				Viewer: tt.fields.Viewer,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			if got := c.ID(); got != tt.want {
 				t.Errorf("CacheLimit.ID() = %v, want %v", got, tt.want)

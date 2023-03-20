@@ -21,8 +21,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/perf"
+	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
 )
 
@@ -41,6 +43,7 @@ func genNumaNodes(path string, num int) {
 	}
 }
 
+// TestCacheLimit_InitCacheLimitDir tests InitCacheLimitDir of CacheLimit
 func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 	if !perf.Support() {
 		t.Skipf("%s only run on physical machine", t.Name())
@@ -101,7 +104,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				pidNameSpaceFileOri := try.WriteFile(filepath.Join(pidNameSpaceDir, "pid:[4026531836x]"), "")
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
 
-				os.Symlink(pidNameSpaceFileOri.String(), pidNameSpace)
+				assert.NoError(t, os.Symlink(pidNameSpaceFileOri.String(), pidNameSpace))
 				c.config.DefaultPidNameSpace = pidNameSpace
 			},
 			postHook: func(t *testing.T, c *DynCache) {
@@ -120,7 +123,7 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 				pidNameSpaceFileOri := try.WriteFile(filepath.Join(pidNameSpaceDir, "pid:[4026531836x]"), "")
 				pidNameSpace := filepath.Join(pidNameSpaceDir, "pid")
 
-				os.Link(pidNameSpaceFileOri.String(), pidNameSpace)
+				assert.NoError(t, os.Link(pidNameSpaceFileOri.String(), pidNameSpace))
 				c.config.DefaultPidNameSpace = pidNameSpace
 			},
 			postHook: func(t *testing.T, c *DynCache) {
@@ -208,7 +211,9 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 			c := &DynCache{
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			if tt.preHook != nil {
 				tt.preHook(t, c)

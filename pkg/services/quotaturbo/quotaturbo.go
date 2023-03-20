@@ -76,7 +76,6 @@ func NewConfig() *Config {
 
 // QuotaTurbo manages all container CPU quota data on the current node.
 type QuotaTurbo struct {
-	name   string
 	conf   *Config
 	client *quotaturbo.Client
 	Viewer api.Viewer
@@ -86,15 +85,12 @@ type QuotaTurbo struct {
 // NewQuotaTurbo generate quota turbo objects
 func NewQuotaTurbo(n string) *QuotaTurbo {
 	return &QuotaTurbo{
-		name:   n,
+		ServiceBase: helper.ServiceBase{
+			Name: n,
+		},
 		conf:   NewConfig(),
 		client: quotaturbo.NewClient(),
 	}
-}
-
-// ID returns the module name
-func (qt *QuotaTurbo) ID() string {
-	return qt.name
 }
 
 // syncCgroups updates the cgroup in cilent according to the current whitelist pod list
@@ -179,7 +175,7 @@ func (conf *Config) Validate() error {
 // SetConfig sets and checks Config
 func (qt *QuotaTurbo) SetConfig(f helper.ConfigHandler) error {
 	var conf = NewConfig()
-	if err := f(qt.name, conf); err != nil {
+	if err := f(qt.Name, conf); err != nil {
 		return err
 	}
 	if err := conf.Validate(); err != nil {

@@ -16,7 +16,6 @@ package helper
 
 import (
 	"context"
-	"fmt"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/log"
@@ -24,7 +23,16 @@ import (
 )
 
 // ServiceBase is the basic class of a service.
-type ServiceBase struct{}
+type ServiceBase struct {
+	Name string
+}
+
+// NewServiceBase returns the instance of service
+func NewServiceBase(serviceName string) *ServiceBase {
+	return &ServiceBase{
+		Name: serviceName,
+	}
+}
 
 // ConfigHandler is that obtains the configured callback function.
 type ConfigHandler func(configName string, d interface{}) error
@@ -36,14 +44,19 @@ func (s *ServiceBase) SetConfig(ConfigHandler) error {
 
 // PreStart is an interface for calling a collection of methods when the service is pre-started
 func (s *ServiceBase) PreStart(api.Viewer) error {
-	log.Warnf("this interface is not implemented.")
+	log.Warnf("%v: PreStart interface is not implemented", s.Name)
 	return nil
 }
 
 // Terminate is an interface that calls a collection of methods when the service terminates
 func (s *ServiceBase) Terminate(api.Viewer) error {
-	log.Warnf("this interface is not implemented.")
+	log.Warnf("%v: Terminate interface is not implemented", s.Name)
 	return nil
+}
+
+// ID is an interface that calls a collection of methods returning service's ID
+func (s *ServiceBase) ID() string {
+	return s.Name
 }
 
 // IsRunner to Confirm whether it is a runner
@@ -56,28 +69,25 @@ func (s *ServiceBase) Run(context.Context) {}
 
 // Stop to stop runner
 func (s *ServiceBase) Stop() error {
-	return fmt.Errorf("this interface is not implemented")
+	return nil
 }
 
 // AddPod to deal the event of adding a pod.
 func (s *ServiceBase) AddPod(*typedef.PodInfo) error {
-	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
 // UpdatePod to deal the pod update event.
 func (S *ServiceBase) UpdatePod(old, new *typedef.PodInfo) error {
-	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
 // DeletePod to deal the pod deletion event.
 func (s *ServiceBase) DeletePod(*typedef.PodInfo) error {
-	log.Warnf("this interface is not implemented.")
 	return nil
 }
 
-// Run to start runner
+// GetConfig returns the config of service
 func (s *ServiceBase) GetConfig() interface{} {
 	return nil
 }

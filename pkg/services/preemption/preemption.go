@@ -34,7 +34,6 @@ var supportCgroupTypes = map[string]*cgroup.Key{
 // Preemption define service which related to qos level setting
 type Preemption struct {
 	helper.ServiceBase
-	name   string
 	config PreemptionConfig
 }
 
@@ -55,18 +54,13 @@ func (i PreemptionFactory) Name() string {
 
 // NewObj to create object of Preemption.
 func (i PreemptionFactory) NewObj() (interface{}, error) {
-	return &Preemption{name: i.ObjName}, nil
-}
-
-// ID return qos service name
-func (q *Preemption) ID() string {
-	return q.name
+	return &Preemption{ServiceBase: helper.ServiceBase{Name: i.ObjName}}, nil
 }
 
 // SetConfig to config Preemption configure
 func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
 	var c PreemptionConfig
-	if err := f(q.name, &c); err != nil {
+	if err := f(q.Name, &c); err != nil {
 		return err
 	}
 	if err := c.Validate(); err != nil {

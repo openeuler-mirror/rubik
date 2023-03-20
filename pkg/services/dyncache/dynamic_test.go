@@ -23,9 +23,11 @@ import (
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/perf"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
+	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
 )
 
+// TestCacheLimit_StartDynamic tests StartDynamic of CacheLimit
 func TestCacheLimit_StartDynamic(t *testing.T) {
 	if !perf.Support() {
 		t.Skipf("%s only run on physical machine", t.Name())
@@ -264,7 +266,9 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 			c := &DynCache{
 				config: tt.fields.Config,
 				Attr:   tt.fields.Attr,
-				Name:   tt.fields.Name,
+				ServiceBase: helper.ServiceBase{
+					Name: tt.fields.Name,
+				},
 			}
 			if tt.preHook != nil {
 				tt.preHook(t, c, tt.fields.FakePods)

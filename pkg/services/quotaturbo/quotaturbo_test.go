@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
@@ -301,7 +302,10 @@ func TestQuotaTurbo_SetConfig(t *testing.T) {
 			name: "TC3-invalid config",
 			args: args{
 				f: func(configName string, d interface{}) error {
-					c := d.(*Config)
+					c, ok := d.(*Config)
+					if !ok {
+						t.Error("fial to convert config")
+					}
 					c.AlarmWaterMark = 101
 					return nil
 				},
@@ -337,7 +341,10 @@ func TestQuotaTurbo_Other(t *testing.T) {
 			f.Name()
 			instance, err := f.NewObj()
 			assert.NoError(t, err)
-			qt := instance.(*QuotaTurbo)
+			qt, ok := instance.(*QuotaTurbo)
+			if !ok {
+				t.Error("fial to convert QuotaTurbo")
+			}
 			if got := qt.IsRunner(); got != tt.want {
 				t.Errorf("QuotaTurbo.IsRunner() = %v, want %v", got, tt.want)
 			}

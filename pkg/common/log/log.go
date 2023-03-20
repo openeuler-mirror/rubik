@@ -224,7 +224,7 @@ func output(level string, format string, args ...interface{}) {
 // Warnf log warn level
 func Warnf(format string, args ...interface{}) {
 	if logWarn >= logLevel {
-		output(levelToString(logInfo), format, args...)
+		output(levelToString(logWarn), format, args...)
 	}
 }
 
@@ -279,7 +279,7 @@ func (e *Entry) Warnf(f string, args ...interface{}) {
 	if logInfo < logLevel {
 		return
 	}
-	output(e.level(logInfo), f, args...)
+	output(e.level(logWarn), f, args...)
 }
 
 // Infof write logs

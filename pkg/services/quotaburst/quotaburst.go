@@ -34,7 +34,6 @@ import (
 // Burst is used to control cpu burst
 type Burst struct {
 	helper.ServiceBase
-	name string
 }
 
 // BurstFactory is the factory os Burst.
@@ -49,12 +48,7 @@ func (i BurstFactory) Name() string {
 
 // NewObj to create object of Burst.
 func (i BurstFactory) NewObj() (interface{}, error) {
-	return &Burst{name: i.ObjName}, nil
-}
-
-// ID returns the module name
-func (b *Burst) ID() string {
-	return b.name
+	return &Burst{ServiceBase: helper.ServiceBase{Name: i.ObjName}}, nil
 }
 
 // AddPod implement add function when pod is added in k8s

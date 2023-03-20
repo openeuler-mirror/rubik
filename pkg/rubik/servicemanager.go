@@ -132,13 +132,13 @@ func terminatingServices(serviceMap map[string]services.Service, viewer api.View
 			if err := s.Stop(); err != nil {
 				log.Errorf("fail to stop service %v: %v", name, err)
 			} else {
-				log.Infof("stop service %v successfully", name)
+				log.Infof("service %v stop successfully", name)
 			}
 		}
 		if err := s.Terminate(viewer); err != nil {
 			log.Errorf("fail to terminate service %v: %v", name, err)
 		} else {
-			log.Infof("terminate service %v successfully", name)
+			log.Infof("service %v terminate successfully", name)
 		}
 	}
 }
