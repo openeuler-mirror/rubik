@@ -11,24 +11,27 @@
 // Create: 2021-04-17
 // Description: filepath related common functions testing
 
+// Package util is common utilitization
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"isula.org/rubik/pkg/common/constant"
 )
 
-// TestIsDirectory is IsDirectory function test
-func TestIsDirectory(t *testing.T) {
+// TestIsDir is IsDir function test
+func TestIsDir(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
 	directory, err := ioutil.TempDir(constant.TmpTestDir, t.Name())
 	assert.NoError(t, err)
-	defer os.RemoveAll(directory)
 
 	filePath, err := ioutil.TempFile(directory, t.Name())
 	assert.NoError(t, err)
@@ -71,9 +74,10 @@ func TestIsDirectory(t *testing.T) {
 
 // TestPathIsExist is PathExist function test
 func TestPathIsExist(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
 	filePath, err := ioutil.TempDir(constant.TmpTestDir, "file_exist")
 	assert.NoError(t, err)
-	defer os.RemoveAll(filePath)
 
 	type args struct {
 		path string
@@ -105,9 +109,10 @@ func TestPathIsExist(t *testing.T) {
 
 // TestReadSmallFile is test for read file
 func TestReadSmallFile(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
 	filePath, err := ioutil.TempDir(constant.TmpTestDir, "read_file")
 	assert.NoError(t, err)
-	defer os.RemoveAll(filePath)
 
 	// case1: ok
 	err = ioutil.WriteFile(filepath.Join(filePath, "ok"), []byte{}, constant.DefaultFileMode)
@@ -139,7 +144,6 @@ func TestCreateLockFile(t *testing.T) {
 	UnlockFile(lock)
 	assert.NoError(t, lock.Close())
 	assert.NoError(t, os.Remove(lockFile))
-
 }
 
 // TestLockFail is CreateLockFile fail test
@@ -169,4 +173,192 @@ func TestLockFail(t *testing.T) {
 	assert.Equal(t, true, err != nil)
 	err = os.RemoveAll(lockFile)
 	assert.NoError(t, err)
+}
+
+// TestReadFile tests ReadFile
+func TestReadFile(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		pre     func(t *testing.T)
+		post    func(t *testing.T)
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "TC1-path is dir",
+			args: args{
+				path: constant.TmpTestDir,
+			},
+			pre: func(t *testing.T) {
+				_, err := ioutil.TempDir(constant.TmpTestDir, "TC1")
+				assert.NoError(t, err)
+			},
+			post: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(constant.TmpTestDir))
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.pre != nil {
+				tt.pre(t)
+			}
+			got, err := ReadFile(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReadFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReadFile() = %v, want %v", got, tt.want)
+			}
+			if tt.post != nil {
+				tt.post(t)
+			}
+
+		})
+	}
+}
+
+// TestWriteFile tests WriteFile
+func TestWriteFile(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
+	var filePath = filepath.Join(constant.TmpTestDir, "cpu", "kubepods", "PodXXX")
+	type args struct {
+		path    string
+		content string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		pre     func(t *testing.T)
+		post    func(t *testing.T)
+		wantErr bool
+	}{
+		{
+			name: "TC1-path is dir",
+			args: args{
+				path: constant.TmpTestDir,
+			},
+			pre: func(t *testing.T) {
+				_, err := ioutil.TempDir(constant.TmpTestDir, "TC1")
+				assert.NoError(t, err)
+			},
+			post: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(constant.TmpTestDir))
+			},
+			wantErr: true,
+		},
+		{
+			name: "TC2-create dir & write file",
+			args: args{
+				path:    filePath,
+				content: "1",
+			},
+			pre: func(t *testing.T) {
+				assert.NoError(t, os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode))
+			},
+			post: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(constant.TmpTestDir))
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.pre != nil {
+				tt.pre(t)
+			}
+			if err := WriteFile(tt.args.path, tt.args.content); (err != nil) != tt.wantErr {
+				t.Errorf("WriteFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.post != nil {
+				tt.post(t)
+			}
+		})
+	}
+}
+
+func TestAppendFile(t *testing.T) {
+	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
+	defer os.RemoveAll(constant.TmpTestDir)
+	var (
+		dirPath  = filepath.Join(constant.TmpTestDir, "cpu", "kubepods", "PodXXX")
+		filePath = filepath.Join(dirPath, "cpu.cfs_quota_us")
+	)
+	type args struct {
+		path    string
+		content string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		pre     func(t *testing.T)
+		post    func(t *testing.T)
+		wantErr bool
+	}{
+		{
+			name: "TC1-path is dir",
+			args: args{
+				path: constant.TmpTestDir,
+			},
+			pre: func(t *testing.T) {
+				_, err := ioutil.TempDir(constant.TmpTestDir, "TC1")
+				assert.NoError(t, err)
+			},
+			post: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(filepath.Join(constant.TmpTestDir, "TC1")))
+			},
+			wantErr: true,
+		},
+		{
+			name: "TC2-empty path",
+			args: args{
+				path: dirPath,
+			},
+			pre: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(constant.TmpTestDir))
+			},
+			wantErr: true,
+		},
+		{
+			name: "TC3-write file success",
+			args: args{
+				path:    filePath,
+				content: "1",
+			},
+			pre: func(t *testing.T) {
+				assert.NoError(t, os.MkdirAll(dirPath, constant.DefaultDirMode))
+				assert.NoError(t, ioutil.WriteFile(filePath, []byte(""), constant.DefaultFileMode))
+			},
+			post: func(t *testing.T) {
+				assert.NoError(t, os.RemoveAll(constant.TmpTestDir))
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.pre != nil {
+				tt.pre(t)
+			}
+			err := AppendFile(tt.args.path, tt.args.content)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AppendFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				fmt.Printf("error: %v\n", err)
+			}
+			if tt.post != nil {
+				tt.post(t)
+			}
+		})
+	}
 }

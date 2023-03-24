@@ -11,6 +11,7 @@
 // Create: 2021-04-17
 // Description: filepath related common functions
 
+// Package util is common utilitization
 package util
 
 import (
@@ -112,9 +113,6 @@ func ReadFile(path string) ([]byte, error) {
 	if IsDir(path) {
 		return nil, fmt.Errorf("%v is not a file", path)
 	}
-	if !PathExist(path) {
-		return nil, fmt.Errorf("%v: No such file or directory", path)
-	}
 	return ioutil.ReadFile(path)
 }
 
@@ -135,11 +133,11 @@ func WriteFile(path, content string) error {
 
 // AppendFile appends content to the file
 func AppendFile(path, content string) error {
-	if IsDir(path) {
-		return fmt.Errorf("%v is not a file", path)
-	}
 	if !PathExist(path) {
 		return fmt.Errorf("%v: No such file or directory", path)
+	}
+	if IsDir(path) {
+		return fmt.Errorf("%v is not a file", path)
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, constant.DefaultFileMode)
 	defer func() {

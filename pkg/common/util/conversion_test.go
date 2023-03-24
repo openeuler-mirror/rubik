@@ -16,6 +16,7 @@ package util
 
 import (
 	"math"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -184,4 +185,81 @@ func TestDeepCopy(t *testing.T) {
 	}
 	assert.Equal(t, oldSlice, []string{"a", "b", "c"})
 	assert.Equal(t, newSlice, []string{"az", "bz", "cz"})
+}
+
+// TestParseInt64Map tests ParseInt64Map
+func TestParseInt64Map(t *testing.T) {
+	type args struct {
+		data string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]int64
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "TC1-length of fields is 3",
+			args: args{
+				data: `a 10 10`,
+			},
+			wantErr: true,
+		},
+		{
+			name: "TC2-the second field is string type",
+			args: args{
+				data: `a a`,
+			},
+			wantErr: true,
+		},
+		{
+			name: "TC3-success",
+			args: args{
+				data: `a 10`,
+			},
+			want:    map[string]int64{"a": 10},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseInt64Map(tt.args.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseInt64Map() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ParseInt64Map() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestPercentageToDecimal tests PercentageToDecimal
+func TestPercentageToDecimal(t *testing.T) {
+	type args struct {
+		num float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "TC1-1% to 0.01",
+			args: args{
+				num: 1.0,
+			},
+			want: 0.01,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := PercentageToDecimal(tt.args.num); got != tt.want {
+				t.Errorf("PercentageToDecimal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -54,7 +54,7 @@ func Div(dividend, divisor float64, args ...interface{}) float64 {
 		return maxValue
 	}
 	ans := dividend / divisor
-	if len(format) == 0 {
+	if len(format) != 0 {
 		if value, err := ParseFloat64(fmt.Sprintf(format, ans)); err == nil {
 			ans = value
 		}
