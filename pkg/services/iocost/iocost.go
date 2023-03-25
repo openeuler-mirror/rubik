@@ -114,11 +114,11 @@ func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	}
 
 	var nodeConfigs []NodeConfig
-	var nodeConfig *NodeConfig
 	if err := f(io.Name, &nodeConfigs); err != nil {
 		return err
 	}
 
+	var nodeConfig *NodeConfig
 	for _, config := range nodeConfigs {
 		if config.NodeName == nodeName {
 			nodeConfig = &config

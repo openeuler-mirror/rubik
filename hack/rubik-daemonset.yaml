@@ -100,6 +100,9 @@ spec:
         - name: sysfs
           mountPath: /sys/fs
           readOnly: false
+        - name: devfs
+          mountPath: /dev
+          readOnly: false
         - name: config-volume
           mountPath: /var/lib/rubik
       terminationGracePeriodSeconds: 30
@@ -113,6 +116,9 @@ spec:
       - name: sysfs
         hostPath:
           path: /sys/fs
+      - name: devfs
+        hostPath:
+          path: /dev
       - name: config-volume
         configMap:
           name: rubik-config
