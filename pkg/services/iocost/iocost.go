@@ -237,7 +237,7 @@ func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
 		weight = onlineWeight
 	}
 	for _, container := range podInfo.IDContainersMap {
-		if err := ConfigContainerIOCostWeight(container.CgroupPath, weight); err != nil {
+		if err := ConfigContainerIOCostWeight(container.Path, weight); err != nil {
 			return err
 		}
 	}

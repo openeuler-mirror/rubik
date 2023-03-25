@@ -61,7 +61,7 @@ func (c *DynCache) SyncCacheLimit() {
 
 // writeTasksToResctrl will write tasks running in containers into resctrl group
 func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
-	if !util.PathExist(cgroup.AbsoluteCgroupPath("cpu", pod.CgroupPath, "")) {
+	if !util.PathExist(cgroup.AbsoluteCgroupPath("cpu", pod.Path, "")) {
 		// just return since pod maybe deleted
 		return nil
 	}

@@ -48,10 +48,13 @@ func TestNewFakePod(t *testing.T) {
 			want: &FakePod{
 				Keys: map[*cgroup.Key]string{{SubSys: "cpu", FileName: constant.CPUCgroupFileName}: "0"},
 				PodInfo: &typedef.PodInfo{
-					Name:       "fakepod-" + id[:idLen],
-					UID:        id,
-					Namespace:  "test",
-					CgroupPath: filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBestEffort)), id),
+					Name:      "fakepod-" + id[:idLen],
+					UID:       id,
+					Namespace: "test",
+					Hierarchy: cgroup.Hierarchy{
+						Path: filepath.Join(constant.KubepodsCgroup,
+							strings.ToLower(string(corev1.PodQOSBestEffort)),
+							id)},
 				},
 			},
 		},
@@ -64,10 +67,12 @@ func TestNewFakePod(t *testing.T) {
 			want: &FakePod{
 				Keys: map[*cgroup.Key]string{{SubSys: "cpu", FileName: constant.CPUCgroupFileName}: "0"},
 				PodInfo: &typedef.PodInfo{
-					Name:       "fakepod-" + id[:idLen],
-					UID:        id,
-					Namespace:  "test",
-					CgroupPath: filepath.Join(constant.KubepodsCgroup, id),
+					Name:      "fakepod-" + id[:idLen],
+					UID:       id,
+					Namespace: "test",
+					Hierarchy: cgroup.Hierarchy{
+						Path: filepath.Join(constant.KubepodsCgroup, id),
+					},
 				},
 			},
 		},
@@ -80,10 +85,13 @@ func TestNewFakePod(t *testing.T) {
 			want: &FakePod{
 				Keys: map[*cgroup.Key]string{{SubSys: "cpu", FileName: constant.CPUCgroupFileName}: "0"},
 				PodInfo: &typedef.PodInfo{
-					Name:       "fakepod-" + id[:idLen],
-					UID:        id,
-					Namespace:  "test",
-					CgroupPath: filepath.Join(constant.KubepodsCgroup, strings.ToLower(string(corev1.PodQOSBurstable)), id),
+					Name:      "fakepod-" + id[:idLen],
+					UID:       id,
+					Namespace: "test",
+					Hierarchy: cgroup.Hierarchy{
+						Path: filepath.Join(constant.KubepodsCgroup,
+							strings.ToLower(string(corev1.PodQOSBurstable)),
+							id)},
 				},
 			},
 		},
@@ -94,7 +102,7 @@ func TestNewFakePod(t *testing.T) {
 			assert.Equal(t, fakePod.Namespace, tt.want.Namespace)
 			assert.Equal(t, len(fakePod.Name), len(tt.want.Name))
 			assert.Equal(t, len(fakePod.UID), len(tt.want.UID))
-			assert.Equal(t, len(fakePod.CgroupPath), len(tt.want.CgroupPath))
+			assert.Equal(t, len(fakePod.Path), len(tt.want.Path))
 		})
 	}
 }
@@ -130,11 +138,11 @@ func TestGenFakePod(t *testing.T) {
 			fakePod := GenFakePod(tt.args.keys, tt.args.qosClass)
 			if tt.args.qosClass != corev1.PodQOSGuaranteed {
 				// guaranteed pod does not have path prefix like "guaranteed/podxxx"
-				assert.Equal(t, true, strings.Contains(fakePod.CgroupPath, strings.ToLower(string(corev1.PodQOSBestEffort))))
+				assert.Equal(t, true, strings.Contains(fakePod.Path, strings.ToLower(string(corev1.PodQOSBestEffort))))
 
 			}
 			for key, val := range tt.args.keys {
-				podCgroupFile := cgroup.AbsoluteCgroupPath(key.SubSys, fakePod.CgroupPath, key.FileName)
+				podCgroupFile := cgroup.AbsoluteCgroupPath(key.SubSys, fakePod.Path, key.FileName)
 				assert.Equal(t, true, util.PathExist(podCgroupFile))
 				ret := ReadFile(podCgroupFile)
 				assert.NoError(t, ret.err)
@@ -144,7 +152,7 @@ func TestGenFakePod(t *testing.T) {
 				fakePod.WithContainers(tt.args.containerNum)
 				for key, val := range tt.args.keys {
 					for _, c := range fakePod.IDContainersMap {
-						containerCgroupFile := cgroup.AbsoluteCgroupPath(key.SubSys, c.CgroupPath, key.FileName)
+						containerCgroupFile := cgroup.AbsoluteCgroupPath(key.SubSys, c.Path, key.FileName)
 						assert.Equal(t, true, util.PathExist(containerCgroupFile))
 						ret := ReadFile(containerCgroupFile)
 						assert.NoError(t, ret.err)

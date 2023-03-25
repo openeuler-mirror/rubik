@@ -43,7 +43,7 @@ func GenFakeContainerInfo(pod *FakePod) *typedef.ContainerInfo {
 	var fakeContainer = &typedef.ContainerInfo{
 		Name:             fmt.Sprintf("fakeContainer-%s", containerID[:idLen]),
 		ID:               containerID,
-		CgroupPath:       filepath.Join(pod.CgroupPath, containerID),
+		Hierarchy:        cgroup.Hierarchy{Path: filepath.Join(pod.Path, containerID)},
 		RequestResources: make(typedef.ResourceMap, 0),
 		LimitResources:   make(typedef.ResourceMap, 0),
 	}
@@ -58,7 +58,7 @@ func GenFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
 		Name:        fmt.Sprintf("fakepod-%s", podID[:idLen]),
 		Namespace:   "test",
 		UID:         constant.PodCgroupNamePrefix + podID,
-		CgroupPath:  genRelativeCgroupPath(qosClass, podID),
+		Hierarchy:   cgroup.Hierarchy{Path: genRelativeCgroupPath(qosClass, podID)},
 		Annotations: make(map[string]string, 0),
 	}
 	return fakePod
@@ -81,7 +81,7 @@ func (pod *FakePod) genFakePodCgroupPath() Ret {
 	// generate fake cgroup path
 	for key, value := range pod.Keys {
 		// generate pod absolute cgroup path
-		podCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, pod.CgroupPath, key.FileName)
+		podCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, pod.Path, key.FileName)
 		if err := WriteFile(podCGFilePath, value); err.err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (pod *FakePod) genFakeContainersCgroupPath() Ret {
 	for key, value := range pod.Keys {
 		for _, container := range pod.IDContainersMap {
 			// generate container absolute cgroup path
-			containerCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, container.CgroupPath, key.FileName)
+			containerCGFilePath := cgroup.AbsoluteCgroupPath(key.SubSys, container.Path, key.FileName)
 			if err := WriteFile(containerCGFilePath, value); err.err != nil {
 				return err
 			}
@@ -123,7 +123,7 @@ func (pod *FakePod) CleanPath() Ret {
 		return newRet(nil)
 	}
 	for key := range pod.Keys {
-		path := cgroup.AbsoluteCgroupPath(key.SubSys, pod.CgroupPath, key.FileName)
+		path := cgroup.AbsoluteCgroupPath(key.SubSys, pod.Path, key.FileName)
 		if len(key.FileName) != 0 {
 			path = filepath.Dir(path)
 		}

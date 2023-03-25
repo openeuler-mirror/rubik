@@ -15,18 +15,16 @@
 package typedef
 
 import (
-	"strings"
-
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
 // PodInfo represents pod
 type PodInfo struct {
-	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
+	cgroup.Hierarchy
 	Name            string                    `json:"name"`
 	UID             string                    `json:"uid"`
-	CgroupPath      string                    `json:"cgroupPath"`
 	Namespace       string                    `json:"namespace"`
+	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
 	Annotations     map[string]string         `json:"annotations,omitempty"`
 }
 
@@ -36,7 +34,7 @@ func NewPodInfo(pod *RawPod) *PodInfo {
 		Name:            pod.Name,
 		Namespace:       pod.Namespace,
 		UID:             pod.ID(),
-		CgroupPath:      pod.CgroupPath(),
+		Hierarchy:       cgroup.Hierarchy{Path: pod.CgroupPath()},
 		IDContainersMap: pod.ExtractContainerInfos(),
 		Annotations:     pod.DeepCopy().Annotations,
 	}
@@ -68,29 +66,9 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 	return &PodInfo{
 		Name:            pod.Name,
 		UID:             pod.UID,
-		CgroupPath:      pod.CgroupPath,
+		Hierarchy:       pod.Hierarchy,
 		Namespace:       pod.Namespace,
 		Annotations:     annoMap,
 		IDContainersMap: contMap,
 	}
-}
-
-// SetCgroupAttr sets the container cgroup file
-func (pod *PodInfo) SetCgroupAttr(key *cgroup.Key, value string) error {
-	if err := validateCgroupKey(key); err != nil {
-		return err
-	}
-	return cgroup.WriteCgroupFile(value, key.SubSys, pod.CgroupPath, key.FileName)
-}
-
-// GetCgroupAttr gets container cgroup file content
-func (pod *PodInfo) GetCgroupAttr(key *cgroup.Key) *cgroup.Attr {
-	if err := validateCgroupKey(key); err != nil {
-		return &cgroup.Attr{Err: err}
-	}
-	data, err := cgroup.ReadCgroupFile(key.SubSys, pod.CgroupPath, key.FileName)
-	if err != nil {
-		return &cgroup.Attr{Err: err}
-	}
-	return &cgroup.Attr{Value: strings.TrimSpace(string(data)), Err: nil}
 }

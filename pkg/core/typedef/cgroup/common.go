@@ -153,8 +153,8 @@ func (attr *Attr) CPUStat() (*CPUStat, error) {
 
 // Hierarchy is used to represent a cgroup path
 type Hierarchy struct {
-	MountPoint string
-	Path       string
+	MountPoint string `json:"mountPoint,omitempty"`
+	Path       string `json:"cgroupPath"`
 }
 
 // NewHierarchy creates a Hierarchy instance
@@ -170,7 +170,11 @@ func (h *Hierarchy) SetCgroupAttr(key *Key, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	return writeCgroupFile(filepath.Join(h.MountPoint, key.SubSys, h.Path, key.FileName), value)
+	var mountPoint = rootDir
+	if len(h.MountPoint) > 0 {
+		mountPoint = h.MountPoint
+	}
+	return writeCgroupFile(filepath.Join(mountPoint, key.SubSys, h.Path, key.FileName), value)
 }
 
 // GetCgroupAttr gets cgroup file content
@@ -178,7 +182,11 @@ func (h *Hierarchy) GetCgroupAttr(key *Key) *Attr {
 	if err := validateCgroupKey(key); err != nil {
 		return &Attr{Err: err}
 	}
-	data, err := readCgroupFile(filepath.Join(h.MountPoint, key.SubSys, h.Path, key.FileName))
+	var mountPoint = rootDir
+	if len(h.MountPoint) > 0 {
+		mountPoint = h.MountPoint
+	}
+	data, err := readCgroupFile(filepath.Join(mountPoint, key.SubSys, h.Path, key.FileName))
 	if err != nil {
 		return &Attr{Err: err}
 	}

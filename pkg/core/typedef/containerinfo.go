@@ -15,7 +15,6 @@
 package typedef
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -63,9 +62,9 @@ func (engine *ContainerEngineType) Prefix() string {
 
 // ContainerInfo contains the interested information of container
 type ContainerInfo struct {
+	cgroup.Hierarchy
 	Name             string      `json:"name"`
 	ID               string      `json:"id"`
-	CgroupPath       string      `json:"cgroupPath"`
 	RequestResources ResourceMap `json:"requests,omitempty"`
 	LimitResources   ResourceMap `json:"limits,omitempty"`
 }
@@ -76,7 +75,7 @@ func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *Con
 	return &ContainerInfo{
 		Name:             rawContainer.status.Name,
 		ID:               id,
-		CgroupPath:       filepath.Join(podCgroupPath, id),
+		Hierarchy:        cgroup.Hierarchy{Path: filepath.Join(podCgroupPath, id)},
 		RequestResources: requests,
 		LimitResources:   limits,
 	}
@@ -98,35 +97,4 @@ func (cont *ContainerInfo) DeepCopy() *ContainerInfo {
 	copyObject.LimitResources = cont.LimitResources.DeepCopy()
 	copyObject.RequestResources = cont.RequestResources.DeepCopy()
 	return &copyObject
-}
-
-// SetCgroupAttr sets the container cgroup file
-func (cont *ContainerInfo) SetCgroupAttr(key *cgroup.Key, value string) error {
-	if err := validateCgroupKey(key); err != nil {
-		return err
-	}
-	return cgroup.WriteCgroupFile(value, key.SubSys, cont.CgroupPath, key.FileName)
-}
-
-// GetCgroupAttr gets container cgroup file content
-func (cont *ContainerInfo) GetCgroupAttr(key *cgroup.Key) *cgroup.Attr {
-	if err := validateCgroupKey(key); err != nil {
-		return &cgroup.Attr{Err: err}
-	}
-	data, err := cgroup.ReadCgroupFile(key.SubSys, cont.CgroupPath, key.FileName)
-	if err != nil {
-		return &cgroup.Attr{Err: err}
-	}
-	return &cgroup.Attr{Value: strings.TrimSpace(string(data)), Err: nil}
-}
-
-// validateCgroupKey is used to verify the validity of the cgroup key
-func validateCgroupKey(key *cgroup.Key) error {
-	if key == nil {
-		return fmt.Errorf("key cannot be empty")
-	}
-	if len(key.SubSys) == 0 || len(key.FileName) == 0 {
-		return fmt.Errorf("invalid key")
-	}
-	return nil
 }
