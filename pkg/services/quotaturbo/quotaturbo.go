@@ -120,7 +120,7 @@ func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 			continue
 		}
 		// add container to quotaturbo
-		if err := qt.client.AddCgroup(cont.CgroupPath, cont.LimitResources[typedef.ResourceCPU]); err != nil {
+		if err := qt.client.AddCgroup(cont.Path, cont.LimitResources[typedef.ResourceCPU]); err != nil {
 			log.Errorf("error adding container %v: %v", cont.Name, err)
 		} else {
 			log.Infof("add container %v", id)

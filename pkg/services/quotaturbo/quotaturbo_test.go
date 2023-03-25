@@ -28,6 +28,7 @@ import (
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/podmanager"
 	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/test/try"
@@ -69,18 +70,18 @@ func TestQuotaTurbo_Terminate(t *testing.T) {
 		fooCont = &typedef.ContainerInfo{
 			Name:           fooContName,
 			ID:             "testCon1",
-			CgroupPath:     "kubepods/testPod1/testCon1",
+			Hierarchy:      cgroup.Hierarchy{Path: "kubepods/testPod1/testCon1"},
 			LimitResources: make(typedef.ResourceMap),
 		}
 		barCont = &typedef.ContainerInfo{
 			Name:           barContName,
 			ID:             "testCon2",
-			CgroupPath:     "kubepods/testPod1/testCon2",
+			Hierarchy:      cgroup.Hierarchy{Path: "kubepods/testPod1/testCon2"},
 			LimitResources: make(typedef.ResourceMap),
 		}
 		pod = &typedef.PodInfo{
-			UID:        "testPod1",
-			CgroupPath: "kubepods/testPod1",
+			UID:       "testPod1",
+			Hierarchy: cgroup.Hierarchy{Path: "kubepods/testPod1"},
 			IDContainersMap: map[string]*typedef.ContainerInfo{
 				fooCont.ID: fooCont,
 				barCont.ID: barCont,
@@ -179,15 +180,15 @@ func TestQuotaTurbo_PreStart(t *testing.T) {
 		fooCont = &typedef.ContainerInfo{
 			Name:           fooContName,
 			ID:             "testCon1",
-			CgroupPath:     "kubepods/testPod1/testCon1",
+			Hierarchy:      cgroup.Hierarchy{Path: "kubepods/testPod1/testCon1"},
 			LimitResources: make(typedef.ResourceMap),
 		}
 		pm = &podmanager.PodManager{
 			Pods: &podmanager.PodCache{
 				Pods: map[string]*typedef.PodInfo{
 					podUID: {
-						UID:        podUID,
-						CgroupPath: "kubepods/testPod1",
+						UID:       podUID,
+						Hierarchy: cgroup.Hierarchy{Path: "kubepods/testPod1"},
 						IDContainersMap: map[string]*typedef.ContainerInfo{
 							fooCont.ID: fooCont,
 						},
@@ -373,17 +374,17 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 	)
 	var (
 		fooCont = &typedef.ContainerInfo{
-			Name:       "Foo",
-			ID:         "testCon1",
-			CgroupPath: "kubepods/testPod1/testCon1",
+			Name:      "Foo",
+			ID:        "testCon1",
+			Hierarchy: cgroup.Hierarchy{Path: "kubepods/testPod1/testCon1"},
 			LimitResources: typedef.ResourceMap{
 				typedef.ResourceCPU: math.Min(minCPU, float64(runtime.NumCPU()-1)),
 			},
 		}
 		barCont = &typedef.ContainerInfo{
-			Name:       "Bar",
-			ID:         "testCon2",
-			CgroupPath: "kubepods/testPod2/testCon2",
+			Name:      "Bar",
+			ID:        "testCon2",
+			Hierarchy: cgroup.Hierarchy{Path: "kubepods/testPod2/testCon2"},
 			LimitResources: typedef.ResourceMap{
 				typedef.ResourceCPU: math.Min(minCPU, float64(runtime.NumCPU()-1)),
 			},
@@ -412,8 +413,8 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 				},
 			},
 			pre: func(t *testing.T, qt *QuotaTurbo) {
-				preEnv(barCont.CgroupPath)
-				assert.NoError(t, qt.client.AddCgroup(barCont.CgroupPath, barCont.LimitResources[typedef.ResourceCPU]))
+				preEnv(barCont.Path)
+				assert.NoError(t, qt.client.AddCgroup(barCont.Path, barCont.LimitResources[typedef.ResourceCPU]))
 				assert.Equal(t, 1, len(qt.client.GetAllCgroup()))
 			},
 			post: func(t *testing.T) {
@@ -429,10 +430,10 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 				},
 			},
 			pre: func(t *testing.T, qt *QuotaTurbo) {
-				preEnv(barCont.CgroupPath)
-				preEnv(fooCont.CgroupPath)
-				assert.NoError(t, qt.client.AddCgroup(barCont.CgroupPath, barCont.LimitResources[typedef.ResourceCPU]))
-				assert.NoError(t, qt.client.AddCgroup(fooCont.CgroupPath, fooCont.LimitResources[typedef.ResourceCPU]))
+				preEnv(barCont.Path)
+				preEnv(fooCont.Path)
+				assert.NoError(t, qt.client.AddCgroup(barCont.Path, barCont.LimitResources[typedef.ResourceCPU]))
+				assert.NoError(t, qt.client.AddCgroup(fooCont.Path, fooCont.LimitResources[typedef.ResourceCPU]))
 				const cgroupLen = 2
 				assert.Equal(t, cgroupLen, len(qt.client.GetAllCgroup()))
 			},
@@ -460,9 +461,9 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 func TestQuotaTurbo_Run(t *testing.T) {
 	const name = "quotaturbo"
 	var fooPod = &typedef.PodInfo{
-		Name:       "Foo",
-		UID:        "testPod1",
-		CgroupPath: "kubepods/testPod1",
+		Name:      "Foo",
+		UID:       "testPod1",
+		Hierarchy: cgroup.Hierarchy{Path: "kubepods/testPod1"},
 		Annotations: map[string]string{
 			constant.QuotaAnnotationKey: "true",
 		},

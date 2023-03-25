@@ -173,7 +173,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 				manager := genPodManager(fakePods)
 				for _, pod := range manager.Pods.Pods {
 					pod.Annotations[constant.CacheLimitAnnotationKey] = "low"
-					try.RemoveAll(cgroup.AbsoluteCgroupPath("cpu", pod.CgroupPath, ""))
+					try.RemoveAll(cgroup.AbsoluteCgroupPath("cpu", pod.Path, ""))
 				}
 				c.Viewer = manager
 			},

@@ -92,7 +92,7 @@ func setPodQuotaBurst(podInfo *typedef.PodInfo) error {
 	const subsys = "cpu"
 	// 1. Try to write container burst value firstly
 	for _, c := range podInfo.IDContainersMap {
-		cgpath := cgroup.AbsoluteCgroupPath(subsys, c.CgroupPath, "")
+		cgpath := cgroup.AbsoluteCgroupPath(subsys, c.Path, "")
 		if err := setQuotaBurst(burst, cgpath); err != nil {
 			log.Errorf("set container quota burst failed: %v", err)
 			continue
@@ -105,7 +105,7 @@ func setPodQuotaBurst(podInfo *typedef.PodInfo) error {
 		podBurst += burst
 	}
 	// 2. Try to write pod burst value
-	podPath := cgroup.AbsoluteCgroupPath(subsys, podInfo.CgroupPath, "")
+	podPath := cgroup.AbsoluteCgroupPath(subsys, podInfo.Path, "")
 	if err := setQuotaBurst(podBurst, podPath); err != nil {
 		log.Errorf("set pod quota burst failed: %v", err)
 	}

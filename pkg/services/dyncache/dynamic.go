@@ -61,7 +61,7 @@ func (c *DynCache) StartDynamic() {
 }
 
 func getPodCacheMiss(pod *typedef.PodInfo, perfDu int) (int, int) {
-	cgroupPath := cgroup.AbsoluteCgroupPath("perf_event", pod.CgroupPath, "")
+	cgroupPath := cgroup.AbsoluteCgroupPath("perf_event", pod.Path, "")
 	if !util.PathExist(cgroupPath) {
 		return 0, 0
 	}
