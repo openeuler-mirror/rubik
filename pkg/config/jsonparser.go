@@ -16,7 +16,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 // defaultJsonParser is globally unique json parser
@@ -44,17 +43,11 @@ func (parser *jsonParser) ParseConfig(data []byte) (map[string]interface{}, erro
 
 // UnmarshalSubConfig deserializes interface to structure
 func (p *jsonParser) UnmarshalSubConfig(data interface{}, v interface{}) error {
-	// 1. convert map[string]interface to json string
-	val, ok := data.(map[string]interface{})
-	if !ok {
-		fmt.Printf("invalid type %T\n", data)
-		return fmt.Errorf("invalid type %T", data)
-	}
-	jsonString, err := json.Marshal(val)
+	jsonString, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	// 2. convert json string to struct
+	// 1. convert json string to struct
 	return json.Unmarshal(jsonString, v)
 }
 
