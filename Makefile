@@ -22,13 +22,15 @@ BUILD_TIME := $(shell date "+%Y-%m-%d")
 GIT_COMMIT := $(if $(shell git rev-parse --short HEAD),$(shell git rev-parse --short HEAD),$(shell cat ./git-commit | head -c 7))
 
 DEBUG_FLAGS := -gcflags="all=-N -l"
+EXTRALDFLAGS := -extldflags=-ftrapv \
+	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static
+
 LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
 	-X isula.org/rubik/pkg/version.GitCommit=$(GIT_COMMIT) \
 	-X isula.org/rubik/pkg/version.BuildTime=$(BUILD_TIME) \
 	-X isula.org/rubik/pkg/version.Version=$(VERSION) \
 	-X isula.org/rubik/pkg/version.Release=$(RELEASE) \
-	-extldflags=-ftrapv \
-	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static'
+	$(EXTRALDFLAGS)'
 
 GO_BUILD=CGO_ENABLED=1 \
 	CGO_CFLAGS="-fstack-protector-strong -fPIE" \
@@ -51,10 +53,18 @@ help:
 	@echo "make cover                    # generate coverage report"
 	@echo "make install                  # install files to /var/lib/rubik"
 
-release:
+prepare:
 	mkdir -p $(TMP_DIR) $(BUILD_DIR)
-	rm -rf $(TMP_DIR) && mkdir -p $(ORG_PATH) $(TMP_DIR)
+	rm -rf $(TMP_DIR) && mkdir -p $(TMP_DIR)
+
+release: prepare
 	$(GO_BUILD) -o $(BUILD_DIR)/rubik $(LD_FLAGS) rubik.go
+	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
+	cp hack/rubik.service $(BUILD_DIR)
+
+debug: prepare
+	EXTRALDFLAGS=""
+	go build $(LD_FLAGS) $(DEBUG_FLAGS) -o $(BUILD_DIR)/rubik rubik.go
 	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
 	cp hack/rubik.service $(BUILD_DIR)
 
@@ -88,3 +98,4 @@ install:
 	install -d -m 0750 $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/* $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/rubik.service /lib/systemd/system/
+

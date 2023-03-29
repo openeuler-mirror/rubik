@@ -1,3 +1,4 @@
 FROM scratch
-COPY ./rubik /rubik
+COPY ./build/rubik /rubik
 ENTRYPOINT ["/rubik"]
+

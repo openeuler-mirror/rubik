@@ -1,4 +1,4 @@
-// Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
+// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
 // rubik licensed under the Mulan PSL v2.
 // You can use this software according to the terms and conditions of the Mulan PSL v2.
 // You may obtain a copy of Mulan PSL v2 at:
@@ -7,165 +7,125 @@
 // IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 // PURPOSE.
 // See the Mulan PSL v2 for more details.
-// Author: Danni Xia
-// Create: 2021-04-26
-// Description: config load
+// Author: Jiaqi Yang
+// Create: 2023-02-01
+// Description: This file contains configuration content and provides external interaction functions
 
+// Package config is used to manage the configuration of rubik
 package config
 
 import (
-	"bytes"
 	"encoding/json"
-	"path/filepath"
+	"fmt"
 
-	"isula.org/rubik/pkg/constant"
-	"isula.org/rubik/pkg/util"
+	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/util"
 )
 
-var (
-	// CgroupRoot is cgroup mount point
-	CgroupRoot = constant.DefaultCgroupRoot
-	// ShutdownFlag is rubik shutdown flag
-	ShutdownFlag int32
-	// ShutdownChan is rubik shutdown channel
-	ShutdownChan = make(chan struct{})
-)
+const agentKey = "agent"
 
-// Config defines the configuration for rubik
+// sysConfKeys saves the system configuration key, which is the service name except
+var sysConfKeys = map[string]struct{}{
+	agentKey: {},
+}
+
+// Config saves all configuration information of rubik
 type Config struct {
-	AutoCheck  bool         `json:"autoCheck,omitempty"`
-	LogDriver  string       `json:"logDriver,omitempty"`
-	LogDir     string       `json:"logDir,omitempty"`
-	LogSize    int          `json:"logSize,omitempty"`
-	LogLevel   string       `json:"logLevel,omitempty"`
-	CgroupRoot string       `json:"cgroupRoot,omitempty"`
-	CacheCfg   CacheConfig  `json:"cacheConfig,omitempty"`
-	BlkioCfg   BlkioConfig  `json:"blkioConfig,omitempty"`
-	MemCfg     MemoryConfig `json:"memoryConfig,omitempty"`
-	NodeConfig []NodeConfig `json:"nodeConfig,omitempty"`
+	ConfigParser
+	Agent  *AgentConfig
+	Fields map[string]interface{}
 }
 
-// CacheConfig define cache limit related config
-type CacheConfig struct {
-	Enable            bool            `json:"enable,omitempty"`
-	DefaultLimitMode  string          `json:"defaultLimitMode,omitempty"`
-	DefaultResctrlDir string          `json:"-"`
-	AdjustInterval    int             `json:"adjustInterval,omitempty"`
-	PerfDuration      int             `json:"perfDuration,omitempty"`
-	L3Percent         MultiLvlPercent `json:"l3Percent,omitempty"`
-	MemBandPercent    MultiLvlPercent `json:"memBandPercent,omitempty"`
+// AgentConfig is the configuration of rubik, including important basic configurations such as logs
+type AgentConfig struct {
+	LogDriver       string   `json:"logDriver,omitempty"`
+	LogLevel        string   `json:"logLevel,omitempty"`
+	LogSize         int64    `json:"logSize,omitempty"`
+	LogDir          string   `json:"logDir,omitempty"`
+	CgroupRoot      string   `json:"cgroupRoot,omitempty"`
+	EnabledFeatures []string `json:"enabledFeatures,omitempty"`
 }
 
-// BlkioConfig defines blkio related configurations.
-type BlkioConfig struct {
-	Enable bool `json:"enable,omitempty"`
+// NewConfig returns an config object pointer
+func NewConfig(pType parserType) *Config {
+	c := &Config{
+		ConfigParser: defaultParserFactory.getParser(pType),
+		Agent: &AgentConfig{
+			LogDriver:  constant.LogDriverStdio,
+			LogSize:    constant.DefaultLogSize,
+			LogLevel:   constant.DefaultLogLevel,
+			LogDir:     constant.DefaultLogDir,
+			CgroupRoot: constant.DefaultCgroupRoot,
+		},
+	}
+	return c
 }
 
-// MultiLvlPercent define multi level percentage
-type MultiLvlPercent struct {
-	Low  int `json:"low,omitempty"`
-	Mid  int `json:"mid,omitempty"`
-	High int `json:"high,omitempty"`
+// loadConfigFile loads data from configuration file
+func loadConfigFile(config string) ([]byte, error) {
+	buffer, err := util.ReadSmallFile(config)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
 }
 
-type MemoryConfig struct {
-	Enable        bool   `json:"enable,omitempty"`
-	Strategy      string `json:"strategy,omitempty"`
-	CheckInterval int    `json:"checkInterval,omitempty"`
+// parseAgentConfig parses config as AgentConfig
+func (c *Config) parseAgentConfig() error {
+	content, ok := c.Fields[agentKey]
+	if !ok {
+		// not setting agent means using the default configuration file
+		return nil
+	}
+	if err := c.UnmarshalSubConfig(content, c.Agent); err != nil {
+		return err
+	}
+	return nil
 }
 
-// NodeConfig define node configuration for each node
-type NodeConfig struct {
-	NodeName     string         `json:"nodeName,omitempty"`
-	IOcostEnable bool           `json:"iocostEnable,omitempty"`
-	IOcostConfig []IOcostConfig `json:"iocostConfig,omitempty"`
-}
-
-// IOcostConfig define iocost for node
-type IOcostConfig struct {
-	Dev    string `json:"dev,omitempty"`
-	Enable bool   `json:"enable,omitempty"`
-	Model  string `json:"model,omitempty"`
-	Param  Param  `json:"param,omitempty"`
-}
-
-// Param for linear model
-type Param struct {
-	Rbps      int64 `json:"rbps,omitempty"`
-	Rseqiops  int64 `json:"rseqiops,omitempty"`
-	Rrandiops int64 `json:"rrandiops,omitempty"`
-	Wbps      int64 `json:"wbps,omitempty"`
-	Wseqiops  int64 `json:"wseqiops,omitempty"`
-	Wrandiops int64 `json:"wrandiops,omitempty"`
-}
-
-// NewConfig returns new config load from config file
-func NewConfig(path string) (*Config, error) {
+// LoadConfig loads and parses configuration data from the file, and save it to the Config
+func (c *Config) LoadConfig(path string) error {
 	if path == "" {
 		path = constant.ConfigFile
 	}
-
-	defaultLogSize, defaultAdInt, defaultPerfDur := 1024, 1000, 1000
-	defaultLowL3, defaultMidL3, defaultHighL3, defaultLowMB, defaultMidMB, defaultHighMB := 20, 30, 50, 10, 30, 50
-	cfg := Config{
-		LogDriver:  "stdio",
-		LogDir:     constant.DefaultLogDir,
-		LogSize:    defaultLogSize,
-		LogLevel:   "info",
-		CgroupRoot: constant.DefaultCgroupRoot,
-		CacheCfg: CacheConfig{
-			Enable:            false,
-			DefaultLimitMode:  "static",
-			DefaultResctrlDir: "/sys/fs/resctrl",
-			AdjustInterval:    defaultAdInt,
-			PerfDuration:      defaultPerfDur,
-			L3Percent: MultiLvlPercent{
-				Low:  defaultLowL3,
-				Mid:  defaultMidL3,
-				High: defaultHighL3,
-			},
-			MemBandPercent: MultiLvlPercent{
-				Low:  defaultLowMB,
-				Mid:  defaultMidMB,
-				High: defaultHighMB,
-			},
-		},
-		BlkioCfg: BlkioConfig{
-			Enable: false,
-		},
-		MemCfg: MemoryConfig{
-			Enable:        false,
-			Strategy:      constant.DefaultMemStrategy,
-			CheckInterval: constant.DefaultMemCheckInterval,
-		},
-	}
-
-	defer func() {
-		CgroupRoot = cfg.CgroupRoot
-	}()
-
-	if !util.PathExist(path) {
-		return &cfg, nil
-	}
-
-	b, err := util.ReadSmallFile(filepath.Clean(path))
+	data, err := loadConfigFile(path)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error loading config file %s: %w", path, err)
 	}
-
-	reader := bytes.NewReader(b)
-	if err := json.NewDecoder(reader).Decode(&cfg); err != nil {
-		return nil, err
+	fields, err := c.ParseConfig(data)
+	if err != nil {
+		return fmt.Errorf("error parsing config: %v", err)
 	}
-
-	return &cfg, nil
+	c.Fields = fields
+	if err := c.parseAgentConfig(); err != nil {
+		return fmt.Errorf("error parsing agent config: %v", err)
+	}
+	return nil
 }
 
-// String return string format.
-func (cfg *Config) String() string {
-	data, err := json.MarshalIndent(cfg, "", "    ")
+func (c *Config) String() string {
+	data, err := json.MarshalIndent(c.Fields, "", "  ")
 	if err != nil {
 		return "{}"
 	}
-	return string(data)
+	return fmt.Sprintf("%s", string(data))
+}
+
+// filterNonServiceKeys returns true when inputting a non-service name
+func (c *Config) filterNonServiceKeys(name string) bool {
+	// 1. ignore system configured key values
+	_, ok := sysConfKeys[name]
+	return ok
+}
+
+// UnwrapServiceConfig returns service configuration, indexed by service name
+func (c *Config) UnwrapServiceConfig() map[string]interface{} {
+	serviceConfig := make(map[string]interface{})
+	for name, conf := range c.Fields {
+		if c.filterNonServiceKeys(name) {
+			continue
+		}
+		serviceConfig[name] = conf
+	}
+	return serviceConfig
 }
