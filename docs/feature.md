@@ -1,7 +1,7 @@
 # 特性介绍
 在rubik中，每一个特性以服务形式运行在后台。rubik根据用户配置（config.json）按需启动对应服务。下文是对各个服务的介绍。
 
-## 绝对抢占
+## preemption 绝对抢占
 rubik支持业务优先级配置，针对在离线业务混合部署的场景，确保在线业务相对离线业务的资源抢占。目前仅支持CPU资源和内存资源。使用该特性，用户需要手动为业务指定业务类型，即在业务pod的yaml文件中增加注解`volcano.sh/preemptable`。业务优先级配置示例如下：
 
 ```yaml
@@ -56,7 +56,7 @@ annotations:
 - 业务容器启动并已设置dynCache级别后，不支持对其限制级别进行修改。
 - 动态限制组的调控灵敏度受到rubik配置文件内adjustInterval、perfDuration值以及节点在线业务pod数量的影响，每次调整（若干扰检测结果为需要调整）间隔在区间`[adjustInterval+perfDuration, adjustInterval+perfDuration*pod数量]`内波动，用户可根据灵敏度需求调整配置项。
 
-## ioLimit
+## ioLimit 块设备读写限制
 通过cgroup提供的blkio能力限制pod对io资源的使用。
 用户需手动为业务Pod配置`volcano.sh/blkio-limit`注解，其格式如下：
 ```yaml
@@ -80,7 +80,7 @@ volcano.sh/blkio-limit: '{"device_read_bps":[{"device":"/dev/sda1","value":"1048
 > 3. 只有minor为0的device配置才会生效
 > 4. 如果取消限速，可将值设为0
 
-## dynMemory
+## dynMemory 内存分级回收
 
 rubik中支持多种内存策略。针对不同场景使用不同的内存分配方案,以解决多场景内存分配。目前支持`dynlevel`和`fssr`策略。
 
@@ -95,7 +95,7 @@ rubik中支持多种内存策略。针对不同场景使用不同的内存分配
 
 内核态通过Linux内核提供的`CPU burst`能力，允许容器短时间内突破其cpu使用限制。内核态配置需要用户手动设置和修改每个pod的burst值的大小，rubik不作自适应调整。
 
-### 用户态
+### quotaTurbo 用户态解决方案
 用户手动为需要自适应调整CPU限额的业务Pod指定“volcano.sh/quota-turbo="true"”注解，（仅针对限额Pod生效，即yaml中指定CPULimit）。
 弹性限流用户态策略根据当前整机CPU负载和容器运行情况定时调整白名单容器的CPU quota，并在启停rubik时自动检验并恢复全部容器的quota值 （本节描述的CPU quota指容器当前的cpu.cfs_quota_us参数）。调整策略包括：
 1.  整机CPU负载低于警戒水位时，若白名单容器在当前周期受到CPU压制，则rubik按照压制情况缓慢提升容器CPU quota。单轮容器Quota提升总量最多不超过当前节点总CPU quota的1%。
@@ -104,7 +104,7 @@ rubik中支持多种内存策略。针对不同场景使用不同的内存分配
 4.  容器最大可调整CPU quota不超过2倍用户配置值（例如Pod yaml中指定CPUlimit参数），但不应小于用户配置值。
 5.  容器在60个同步间隔时间内的整体CPU利用率不得超过用户配置值。
     
-### 内核态
+### quotaBurst 内核态解决方案
 用户手动为需要业务Pod指定“volcano.sh/quota-burst-time”注解，rubik将注解值写入pod的所有容器的burst内核接口，写入后rubik不会根据cpu使用率等自适应修改。示例如下：
 ```yaml
 metadata:    
@@ -124,7 +124,7 @@ metadata:
     -   用户应使用k8s接口设置pod的busrt值，禁止用户手动直接修改容器的cpu cgroup目录下的cpu.cfs_burst_us文件。
 - 禁止用户同时使能弹性限流用户态和内核态方案。
 
-## 支持iocost对IO权重控制
+## ioCost 支持iocost对IO权重控制
 为了有效解决由离线业务IO占用过高，导致在线业务QoS下降的问题，rubik容器提供了基于cgroup v1 iocost的IO权重控制功能。
 资料参见：
 [iocost内核相关功能介绍]([https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#io:~:text=correct%20memory%20ownership.-,IO,-%C2%B6)
