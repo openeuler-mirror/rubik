@@ -59,13 +59,13 @@ prepare:
 
 release: prepare
 	$(GO_BUILD) -o $(BUILD_DIR)/rubik $(LD_FLAGS) rubik.go
-	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
+	sed "/image:/s/:.*/: rubik:$(VERSION)-$(RELEASE)/" hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
 	cp hack/rubik.service $(BUILD_DIR)
 
 debug: prepare
 	EXTRALDFLAGS=""
 	go build $(LD_FLAGS) $(DEBUG_FLAGS) -o $(BUILD_DIR)/rubik rubik.go
-	sed 's/__RUBIK_IMAGE__/rubik:$(VERSION)-$(RELEASE)/g' hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
+	sed "/image:/s/:.*/: rubik:$(VERSION)-$(RELEASE)/" hack/rubik-daemonset.yaml > $(BUILD_DIR)/rubik-daemonset.yaml
 	cp hack/rubik.service $(BUILD_DIR)
 
 image: release
