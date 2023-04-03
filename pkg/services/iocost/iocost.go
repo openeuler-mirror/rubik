@@ -50,7 +50,6 @@ type LinearParam struct {
 // IOCostConfig define iocost for node
 type IOCostConfig struct {
 	Dev    string      `json:"dev,omitempty"`
-	Enable bool        `json:"enable,omitempty"`
 	Model  string      `json:"model,omitempty"`
 	Param  LinearParam `json:"param,omitempty"`
 }
@@ -93,7 +92,7 @@ func (i IOCostFactory) NewObj() (interface{}, error) {
 func ioCostSupport() bool {
 	cmdLine, err := os.ReadFile("/proc/cmdline")
 	if err != nil {
-		log.Warnf("get /pro/cmdline error")
+		log.Warnf("get /pro/cmdline error:%v", err)
 		return false
 	}
 
@@ -144,7 +143,12 @@ func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 		return nil
 	}
 
-	io.configIOCost(nodeConfig.IOCostConfig)
+	if err := io.configIOCost(nodeConfig.IOCostConfig); err != nil {
+		if err2 := io.clearIOCost(); err2 != nil {
+			log.Errorf("clear iocost failed:%v", err2)
+		}
+		return err
+	}
 	return nil
 }
 
@@ -186,26 +190,25 @@ func (b *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *IOCost) configIOCost(configs []IOCostConfig) {
+func (b *IOCost) configIOCost(configs []IOCostConfig) error {
 	for _, config := range configs {
 		devno, err := getBlkDeviceNo(config.Dev)
 		if err != nil {
-			log.Errorf("this device not found:%v", config.Dev)
-			continue
+			return err
 		}
 		if config.Model == "linear" {
 			if err := ConfigIOCostModel(devno, config.Param); err != nil {
-				log.Errorf("this device not found:%v", err)
-				continue
+				return err
 			}
 		} else {
-			log.Errorf("non-linear models are not supported")
-			continue
+			return fmt.Errorf("non-linear models are not supported")
 		}
-		if err := ConfigIOCostQoS(devno, config.Enable); err != nil {
-			log.Errorf("Config iocost qos failed:%v", err)
+
+		if err := ConfigIOCostQoS(devno, true); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // clearIOCost used to disable all iocost
@@ -233,7 +236,7 @@ func (b *IOCost) clearIOCost() error {
 
 func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
 	var weight uint64 = offlineWeight
-	if podInfo.Annotations[constant.PriorityAnnotationKey] == "true" {
+	if podInfo.Annotations[constant.PriorityAnnotationKey] == "false" {
 		weight = onlineWeight
 	}
 	for _, container := range podInfo.IDContainersMap {

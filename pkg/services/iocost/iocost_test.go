@@ -18,17 +18,17 @@ import (
 )
 
 const (
-	sysDevBlock = "/sys/dev/block"
-	objName     = "ioCost"
-	paramsLen   = 2
+	sysDevBlock  = "/sys/dev/block"
+	objName      = "ioCost"
+	paramsLen    = 2
+	testNodeName = "iocost_test_node"
 )
 
 type ResultItem struct {
 	testName   string
 	devno      string
-	qosCheck   bool
-	modelCheck bool
-	qosParam   string
+	qosEnable  string
+	qosDisable string
 	modelParam string
 }
 
@@ -37,18 +37,12 @@ var (
 	resultItmes           []ResultItem
 )
 
-func createTestIteam(dev, devno string, enable bool, val int64) (*IOCostConfig, *ResultItem) {
-	qosStr := devno + " enable=0"
-	name := "Test iocost disable"
-	if enable {
-		qosStr = devno + " enable=1"
-		name = fmt.Sprintf("Test iocost enable: val=%v", val)
-	}
+func createTestIteam(dev, devno string, val int64) (*IOCostConfig, *ResultItem) {
+	name := "Test iocost"
 
 	cfg := IOCostConfig{
-		Dev:    dev,
-		Enable: enable,
-		Model:  "linear",
+		Dev:   dev,
+		Model: "linear",
 		Param: LinearParam{
 			Rbps: val, Rseqiops: val, Rrandiops: val,
 			Wbps: val, Wseqiops: val, Wrandiops: val,
@@ -57,9 +51,8 @@ func createTestIteam(dev, devno string, enable bool, val int64) (*IOCostConfig, 
 	res := ResultItem{
 		testName:   name,
 		devno:      devno,
-		qosCheck:   true,
-		modelCheck: enable,
-		qosParam:   qosStr,
+		qosEnable:  devno + " enable=1",
+		qosDisable: devno + " enable=0",
 		modelParam: fmt.Sprintf("%v ctrl=user model=linear rbps=%v rseqiops=%v rrandiops=%v wbps=%v wseqiops=%v wrandiops=%v",
 			devno, val, val, val, val, val, val),
 	}
@@ -72,11 +65,9 @@ func createIOCostConfigTestItems() {
 	}
 	for dev, devno := range devs {
 		for _, val := range []int64{600, 700, 800} {
-			for _, e := range []bool{true, false, true} {
-				cfg, res := createTestIteam(dev, devno, e, val)
-				iocostConfigTestItems = append(iocostConfigTestItems, *cfg)
-				resultItmes = append(resultItmes, *res)
-			}
+			cfg, res := createTestIteam(dev, devno, val)
+			iocostConfigTestItems = append(iocostConfigTestItems, *cfg)
+			resultItmes = append(resultItmes, *res)
 		}
 	}
 
@@ -87,15 +78,9 @@ func createIOCostConfigTestItems() {
 		break
 	}
 
-	cfg, res := createTestIteam(dev, devno, true, 900)
+	cfg, res := createTestIteam(dev, devno, 900)
 	iocostConfigTestItems = append(iocostConfigTestItems, *cfg)
 	resultItmes = append(resultItmes, *res)
-
-	/*
-		cfg, res = createTestIteam(dev, devno, true, 1000)
-		res.testName = "Test iocost config no dev"
-		cfg.Dev = "XXX"
-	*/
 }
 
 func TestIOCostSupport(t *testing.T) {
@@ -121,30 +106,58 @@ func TestIOCostSetConfig(t *testing.T) {
 	assert.Error(t, err)
 	assert.EqualError(t, err, "config handler error test")
 
-	for i, item := range iocostConfigTestItems {
-		nodeConfig := NodeConfig{
-			NodeName:     "global",
-			IOCostConfig: []IOCostConfig{item},
-		}
+	err = obj.clearIOCost()
+	assert.NoError(t, err)
 
-		t.Run(resultItmes[i].testName, func(t *testing.T) {
-			var nodeConfigs []NodeConfig
-			nodeConfigs = append(nodeConfigs, nodeConfig)
-			cfgStr, err := json.Marshal(nodeConfigs)
-			assert.NoError(t, err)
-			err = obj.SetConfig(func(configName string, d interface{}) error {
-				assert.Equal(t, configName, objName)
-				return json.Unmarshal(cfgStr, d)
+	testItems := []struct {
+		nodeName  string
+		qosExpect bool
+	}{
+		{
+			nodeName:  "global",
+			qosExpect: true,
+		},
+		{
+			nodeName:  testNodeName,
+			qosExpect: true,
+		},
+		{
+			nodeName:  "nodeNameTest",
+			qosExpect: false,
+		},
+	}
+
+	for i, item := range iocostConfigTestItems {
+		for _, test := range testItems {
+			nodeConfig := NodeConfig{
+				NodeName:     test.nodeName,
+				IOCostConfig: []IOCostConfig{item},
+			}
+
+			t.Run(resultItmes[i].testName, func(t *testing.T) {
+				var nodeConfigs []NodeConfig
+				nodeConfigs = append(nodeConfigs, nodeConfig)
+				cfgStr, err := json.Marshal(nodeConfigs)
+				assert.NoError(t, err)
+				err = obj.SetConfig(func(configName string, d interface{}) error {
+					assert.Equal(t, configName, objName)
+					return json.Unmarshal(cfgStr, d)
+				})
+				assert.NoError(t, err)
+				checkResult(t, &resultItmes[i], test.qosExpect)
+				err = obj.clearIOCost()
+				assert.NoError(t, err)
 			})
-			assert.NoError(t, err)
-			checkResult(t, &resultItmes[i])
-		})
+		}
 	}
 }
 
 func TestConfigIOCost(t *testing.T) {
 	obj := IOCost{ServiceBase: helper.ServiceBase{Name: objName}}
 	assert.Equal(t, obj.ID(), objName)
+
+	err := obj.clearIOCost()
+	assert.NoError(t, err)
 
 	var devname, devno string
 	devs, err := getAllBlockDevice()
@@ -166,77 +179,10 @@ func TestConfigIOCost(t *testing.T) {
 		modelParam string
 	}{
 		{
-			name: "Test iocost enable",
-			config: IOCostConfig{
-				Dev:    devname,
-				Enable: true,
-				Model:  "linear",
-				Param: LinearParam{
-					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
-					Wbps: 600, Wseqiops: 600, Wrandiops: 600,
-				},
-			},
-			qosCheck:   true,
-			modelCheck: true,
-			qosParam:   devno + " enable=1",
-			modelParam: devno + " ctrl=user model=linear " +
-				"rbps=600 rseqiops=600 rrandiops=600 " +
-				"wbps=600 wseqiops=600 wrandiops=600",
-		},
-		{
-			name: "Test iocost disable",
-			config: IOCostConfig{
-				Dev:    devname,
-				Enable: false,
-				Model:  "linear",
-				Param: LinearParam{
-					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
-					Wbps: 600, Wseqiops: 600, Wrandiops: 600,
-				},
-			},
-			qosCheck:   true,
-			modelCheck: false,
-			qosParam:   devno + " enable=0",
-		},
-		{
-			name: "Test modifying iocost linear parameters",
-			config: IOCostConfig{
-				Dev:    devname,
-				Enable: true,
-				Model:  "linear",
-				Param: LinearParam{
-					Rbps: 500, Rseqiops: 500, Rrandiops: 500,
-					Wbps: 500, Wseqiops: 500, Wrandiops: 500,
-				},
-			},
-			qosCheck:   true,
-			modelCheck: true,
-			qosParam:   devno + " enable=1",
-			modelParam: devno + " ctrl=user model=linear " +
-				"rbps=500 rseqiops=500 rrandiops=500 " +
-				"wbps=500 wseqiops=500 wrandiops=500",
-		},
-		{
-			name: "Test iocost disable",
-			config: IOCostConfig{
-				Dev:    devname,
-				Enable: false,
-				Model:  "linear",
-				Param: LinearParam{
-					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
-					Wbps: 600, Wseqiops: 600, Wrandiops: 600,
-				},
-			},
-			qosCheck:   true,
-			modelCheck: false,
-			qosParam:   devno + " enable=0",
-		},
-		{
 			name: "Test iocost no dev error",
 			config: IOCostConfig{
-				Dev:    "xxx",
-				Enable: true,
-				Model:  "linear",
+				Dev:   "xxx",
+				Model: "linear",
 				Param: LinearParam{
 					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
 					Wbps: 600, Wseqiops: 600, Wrandiops: 600,
@@ -249,9 +195,8 @@ func TestConfigIOCost(t *testing.T) {
 		{
 			name: "Test iocost non-linear error",
 			config: IOCostConfig{
-				Dev:    devname,
-				Enable: true,
-				Model:  "linearx",
+				Dev:   devname,
+				Model: "linearx",
 				Param: LinearParam{
 					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
 					Wbps: 600, Wseqiops: 600, Wrandiops: 600,
@@ -264,9 +209,8 @@ func TestConfigIOCost(t *testing.T) {
 		{
 			name: "Test iocost param error",
 			config: IOCostConfig{
-				Dev:    devname,
-				Enable: true,
-				Model:  "linear",
+				Dev:   devname,
+				Model: "linear",
 				Param: LinearParam{
 					Rbps: 600, Rseqiops: 600, Rrandiops: 600,
 					Wbps: 600, Wseqiops: 600, Wrandiops: 0,
@@ -344,8 +288,8 @@ func TestSetPodWeight(t *testing.T) {
 	rubikMemTestPath := cgroup.AbsoluteCgroupPath(memcgRootDir, podCgroupPath)
 	try.MkdirAll(rubikBlkioTestPath, constant.DefaultDirMode)
 	try.MkdirAll(rubikMemTestPath, constant.DefaultDirMode)
-	//defer try.RemoveAll(rubikBlkioTestPath)
-	//defer try.RemoveAll(rubikMemTestPath)
+	defer try.RemoveAll(rubikBlkioTestPath)
+	defer try.RemoveAll(rubikMemTestPath)
 	containerPath := podCgroupPath + "/container" + strconv.Itoa(0)
 	try.MkdirAll(cgroup.AbsoluteCgroupPath(memcgRootDir, containerPath), constant.DefaultDirMode)
 	try.MkdirAll(cgroup.AbsoluteCgroupPath(blkcgRootDir, containerPath), constant.DefaultDirMode)
@@ -442,29 +386,35 @@ func getAllBlockDevice() (map[string]string, error) {
 	return devs, nil
 }
 
-func checkResult(t *testing.T, result *ResultItem) {
-	if result.qosCheck {
-		qos, err := cgroup.ReadCgroupFile(blkcgRootDir, iocostQosFile)
-		assert.NoError(t, err)
-		qosParams := strings.Split(string(qos), "\n")
-		for _, qosParam := range qosParams {
-			paramList := strings.FieldsFunc(qosParam, unicode.IsSpace)
-			if len(paramList) >= paramsLen && strings.Compare(paramList[0], result.devno) == 0 {
-				assert.Equal(t, result.qosParam, qosParam[:len(result.qosParam)])
-				break
-			}
+func checkResult(t *testing.T, result *ResultItem, qosExpect bool) {
+	qosParamStr := result.qosEnable
+	if !qosExpect {
+		qosParamStr = result.qosDisable
+	}
+
+	qos, err := cgroup.ReadCgroupFile(blkcgRootDir, iocostQosFile)
+	assert.NoError(t, err)
+	qosParams := strings.Split(string(qos), "\n")
+	for _, qosParam := range qosParams {
+		paramList := strings.FieldsFunc(qosParam, unicode.IsSpace)
+		if len(paramList) >= paramsLen && strings.Compare(paramList[0], result.devno) == 0 {
+			assert.Equal(t, qosParamStr, qosParam[:len(qosParamStr)])
+			break
 		}
 	}
-	if result.modelCheck {
-		modelParamByte, err := cgroup.ReadCgroupFile(blkcgRootDir, iocostModelFile)
-		assert.NoError(t, err)
-		modelParams := strings.Split(string(modelParamByte), "\n")
-		for _, modelParam := range modelParams {
-			paramList := strings.FieldsFunc(modelParam, unicode.IsSpace)
-			if len(paramList) >= paramsLen && strings.Compare(paramList[0], result.devno) == 0 {
-				assert.Equal(t, result.modelParam, modelParam[:len(result.modelParam)])
-				break
-			}
+
+	if !qosExpect {
+		return
+	}
+
+	modelParamByte, err := cgroup.ReadCgroupFile(blkcgRootDir, iocostModelFile)
+	assert.NoError(t, err)
+	modelParams := strings.Split(string(modelParamByte), "\n")
+	for _, modelParam := range modelParams {
+		paramList := strings.FieldsFunc(modelParam, unicode.IsSpace)
+		if len(paramList) >= paramsLen && strings.Compare(paramList[0], result.devno) == 0 {
+			assert.Equal(t, result.modelParam, modelParam[:len(result.modelParam)])
+			break
 		}
 	}
 }
@@ -474,6 +424,7 @@ func TestMain(m *testing.M) {
 		fmt.Println("this machine not support iocost")
 		return
 	}
+	nodeName = testNodeName
 	createIOCostConfigTestItems()
 	m.Run()
 }
