@@ -15,6 +15,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 )
 
@@ -34,11 +35,13 @@ func getJsonParser() *jsonParser {
 
 // ParseConfig parses json data as map[string]interface{}
 func (parser *jsonParser) ParseConfig(data []byte) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
-	if err := json.Unmarshal(data, &m); err != nil {
+	var m interface{}
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.UseNumber()
+	if err := d.Decode(&m); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return m.(map[string]interface{}), nil
 }
 
 // UnmarshalSubConfig deserializes interface to structure
