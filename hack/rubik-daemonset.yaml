@@ -46,8 +46,7 @@ data:
       },
       "preemption": {
         "resource": [
-          "cpu",
-          "memory"
+          "cpu"
         ]
       }
     }
@@ -73,7 +72,7 @@ spec:
       hostPID: true
       containers:
       - name: rubik-agent
-        image: rubik_image_name_and_tag
+        image: hub.oepkgs.net/cloudnative/rubik:latest
         imagePullPolicy: IfNotPresent
         env:
           - name: RUBIK_NODE_NAME

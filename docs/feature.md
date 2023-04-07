@@ -80,14 +80,6 @@ volcano.sh/blkio-limit: '{"device_read_bps":[{"device":"/dev/sda1","value":"1048
 > 3. 只有minor为0的device配置才会生效
 > 4. 如果取消限速，可将值设为0
 
-## dynMemory 内存分级回收
-
-rubik中支持多种内存策略。针对不同场景使用不同的内存分配方案,以解决多场景内存分配。目前支持`dynlevel`和`fssr`策略。
-
-- `dynlevel`策略：基于内核cgroup的多级别控制。通过监测节点内存压力，多级别动态调整离线业务的memory cgroup，尽可能地保障在线业务服务质量。
-- `fssr`策略：基于内核cgroup的动态水位线控制。memory.high是内核提供的memcg级的水位线接口，rubik动态检测内存压力，动态调整离线应用的memory.high上限，实现对离线业务的内存压制，保障在线业务的服务质量。
-用户可通过rubik全局配置文件的`strategy`字段配置不同的策略。
-
 ## 支持弹性限流
 为有效解决由业务CPU限流导致QoS下降的问题，rubik容器提供了弹性限流功能，允许容器使用额外的CPU资源，从而保证业务的平稳运行。弹性限流方案包括内核态和用户态配置两种。二者不可同时使用。
 
