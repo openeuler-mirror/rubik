@@ -104,8 +104,8 @@ func (store *StatusStore) RemoveCgroup(cgroupPath string) error {
 	return safeDel(cgroupPath)
 }
 
-// GetAllCgroup returns all cgroup paths that are adjusting quota
-func (store *StatusStore) GetAllCgroup() []string {
+// AllCgroups returns all cgroup paths that are adjusting quota
+func (store *StatusStore) AllCgroups() []string {
 	var res = make([]string, 0)
 	for _, cq := range store.cpuQuotas {
 		res = append(res, cq.Path)

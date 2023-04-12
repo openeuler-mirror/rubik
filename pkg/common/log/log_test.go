@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"isula.org/rubik/pkg/common/constant"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 // test_rubik_set_logdriver_0001

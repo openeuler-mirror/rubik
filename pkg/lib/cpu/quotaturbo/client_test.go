@@ -23,7 +23,7 @@ import (
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 // TestClient_AdjustQuota tests AdjustQuota of Client
@@ -56,7 +56,7 @@ func TestClient_AdjustQuota(t *testing.T) {
 		{
 			name: "TC2-fail to updateCPUQuota causing absent of path",
 			pre: func(t *testing.T, c *Client) {
-				c.SetCgroupRoot(constant.TmpTestDir)
+				c.WithOptions(WithCgroupRoot(constant.TmpTestDir))
 				try.RemoveAll(filepath.Join(constant.TmpTestDir, "cpu", contPath))
 				try.MkdirAll(filepath.Join(constant.TmpTestDir, "cpu", contPath), constant.DefaultDirMode)
 
@@ -64,7 +64,7 @@ func TestClient_AdjustQuota(t *testing.T) {
 				c.AddCgroup(contPath, float64(runtime.NumCPU()))
 				c.cpuQuotas[contPath] = &CPUQuota{
 					Hierarchy: &cgroup.Hierarchy{
-						MountPoint: c.CgroupRoot,
+						MountPoint: c.CgroupRoot(),
 						Path:       contPath,
 					},
 					cpuLimit:    float64(runtime.NumCPU()) - 1,
@@ -81,7 +81,7 @@ func TestClient_AdjustQuota(t *testing.T) {
 		{
 			name: "TC3-success",
 			pre: func(t *testing.T, c *Client) {
-				c.SetCgroupRoot(constant.TmpTestDir)
+				c.WithOptions(WithCgroupRoot(constant.TmpTestDir))
 				try.WriteFile(filepath.Join(constant.TmpTestDir, "cpu", contPath, cpuPeriodFile), period)
 				try.WriteFile(filepath.Join(constant.TmpTestDir, "cpu", contPath, cpuQuotaFile), quota)
 				try.WriteFile(filepath.Join(constant.TmpTestDir, "cpuacct", contPath, cpuUsageFile), usage)
@@ -99,7 +99,9 @@ func TestClient_AdjustQuota(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewClient()
+			quotaTurbo := NewClient()
+			c, ok := quotaTurbo.(*Client)
+			assert.True(t, ok)
 			if tt.pre != nil {
 				tt.pre(t, c)
 			}

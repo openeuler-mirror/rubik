@@ -23,79 +23,15 @@ import (
 	"isula.org/rubik/pkg/common/constant"
 )
 
-func TestConfig_SetAlarmWaterMark(t *testing.T) {
-	type fields struct {
-		HighWaterMark int
-	}
-	type args struct {
-		arg int
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "TC1-set alarmWaterMark successfully",
-			fields: fields{
-				HighWaterMark: 60,
-			},
-			args: args{
-				arg: 100,
-			},
-			wantErr: false,
-		},
-		{
-			name: "TC2-alarmWaterMark = highwatermark",
-			fields: fields{
-				HighWaterMark: 60,
-			},
-			args: args{
-				arg: 60,
-			},
-			wantErr: true,
-		},
-		{
-			name: "TC2.1-alarmWaterMark < highwatermark",
-			fields: fields{
-				HighWaterMark: 60,
-			},
-			args: args{
-				arg: 59,
-			},
-			wantErr: true,
-		},
-		{
-			name: "TC3-alarmWaterMark > 100",
-			fields: fields{
-				HighWaterMark: 60,
-			},
-			args: args{
-				arg: 101,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := &Config{
-				HighWaterMark: tt.fields.HighWaterMark,
-			}
-			if err := c.SetAlarmWaterMark(tt.args.arg); (err != nil) != tt.wantErr {
-				t.Errorf("Config.SetAlarmWaterMark() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-// TestConfig_SetHighWaterMark tests SetHighWaterMark of Config
-func TestConfig_SetHighWaterMark(t *testing.T) {
+// TestWithWaterMark tests WithWaterMark
+func TestWithWaterMark(t *testing.T) {
 	type fields struct {
 		AlarmWaterMark int
+		HighWaterMark  int
 	}
 	type args struct {
-		arg int
+		highArg  int
+		alarmArg int
 	}
 	tests := []struct {
 		name    string
@@ -104,12 +40,26 @@ func TestConfig_SetHighWaterMark(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "TC1-set highWaterMark successfully",
+			name: "TC1-set small WaterMark successfully",
 			fields: fields{
 				AlarmWaterMark: 80,
+				HighWaterMark:  60,
 			},
 			args: args{
-				arg: 10,
+				highArg:  10,
+				alarmArg: 20,
+			},
+			wantErr: false,
+		},
+		{
+			name: "TC1.1-set large WaterMark successfully",
+			fields: fields{
+				AlarmWaterMark: 80,
+				HighWaterMark:  60,
+			},
+			args: args{
+				highArg:  85,
+				alarmArg: 90,
 			},
 			wantErr: false,
 		},
@@ -117,9 +67,11 @@ func TestConfig_SetHighWaterMark(t *testing.T) {
 			name: "TC2-alarmWaterMark = highwatermark",
 			fields: fields{
 				AlarmWaterMark: 80,
+				HighWaterMark:  60,
 			},
 			args: args{
-				arg: 80,
+				highArg:  80,
+				alarmArg: 80,
 			},
 			wantErr: true,
 		},
@@ -127,9 +79,11 @@ func TestConfig_SetHighWaterMark(t *testing.T) {
 			name: "TC2.1-alarmWaterMark < highwatermark",
 			fields: fields{
 				AlarmWaterMark: 80,
+				HighWaterMark:  60,
 			},
 			args: args{
-				arg: 81,
+				highArg:  81,
+				alarmArg: 80,
 			},
 			wantErr: true,
 		},
@@ -137,9 +91,11 @@ func TestConfig_SetHighWaterMark(t *testing.T) {
 			name: "TC3-highWaterMark < 0",
 			fields: fields{
 				AlarmWaterMark: 60,
+				HighWaterMark:  30,
 			},
 			args: args{
-				arg: -1,
+				highArg:  -1,
+				alarmArg: -1,
 			},
 			wantErr: true,
 		},
@@ -148,16 +104,17 @@ func TestConfig_SetHighWaterMark(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{
 				AlarmWaterMark: tt.fields.AlarmWaterMark,
+				HighWaterMark:  tt.fields.AlarmWaterMark,
 			}
-			if err := c.SetHighWaterMark(tt.args.arg); (err != nil) != tt.wantErr {
+			if err := WithWaterMark(tt.args.highArg, tt.args.alarmArg)(c); (err != nil) != tt.wantErr {
 				t.Errorf("Config.SetHighWaterMark() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-// TestConfig_SetlEvateLimit tests SetlEvateLimit of Config
-func TestConfig_SetlEvateLimit(t *testing.T) {
+// TestWithElevateLimit tests WithElevateLimit
+func TestWithElevateLimit(t *testing.T) {
 	const (
 		normal   = 2.0
 		larger   = 100.01
@@ -187,9 +144,9 @@ func TestConfig_SetlEvateLimit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewConfig()
-			err := c.SetlEvateLimit(tt.arg)
+			err := WithElevateLimit(tt.arg)(c)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Config.SetlEvateLimit() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("WithElevateLimit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil {
 				assert.Equal(t, tt.arg, c.ElevateLimit)
@@ -200,8 +157,8 @@ func TestConfig_SetlEvateLimit(t *testing.T) {
 	}
 }
 
-// TestConfig_SetCPUFloatingLimit tests SetCPUFloatingLimit of Config
-func TestConfig_SetCPUFloatingLimit(t *testing.T) {
+// TestWithCPUFloatingLimit tests WithCPUFloatingLimit
+func TestWithCPUFloatingLimit(t *testing.T) {
 	const (
 		normal   = 20.0
 		larger   = 100.01
@@ -231,7 +188,7 @@ func TestConfig_SetCPUFloatingLimit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewConfig()
-			err := c.SetCPUFloatingLimit(tt.arg)
+			err := WithCPUFloatingLimit(tt.arg)(c)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Config.SetCPUFloatingLimit() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -244,7 +201,7 @@ func TestConfig_SetCPUFloatingLimit(t *testing.T) {
 	}
 }
 
-// TestOther tests other function of Config
+// TestOther tests other function
 func TestOther(t *testing.T) {
 	tests := []struct {
 		name string
@@ -269,14 +226,10 @@ func TestOther(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewConfig() = %v, want %v", got, tt.want)
 			}
-			got.SetCgroupRoot(constant.TmpTestDir)
+			WithCgroupRoot(constant.TmpTestDir)(got)
 			assert.Equal(t, got.CgroupRoot, constant.TmpTestDir)
-			got.SetSlowFallbackRatio(slowFallback)
+			WithSlowFallbackRatio(slowFallback)(got)
 			assert.Equal(t, got.SlowFallbackRatio, slowFallback)
-			copyConf := got.GetConfig()
-			if !reflect.DeepEqual(got, copyConf) {
-				t.Errorf("GetConfig() = %v, want %v", got, copyConf)
-			}
 		})
 	}
 }
