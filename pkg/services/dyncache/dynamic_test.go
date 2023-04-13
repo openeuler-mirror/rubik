@@ -24,7 +24,7 @@ import (
 	"isula.org/rubik/pkg/common/perf"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/services/helper"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 // TestCacheLimit_StartDynamic tests StartDynamic of CacheLimit

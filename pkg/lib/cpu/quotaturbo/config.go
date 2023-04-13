@@ -63,6 +63,9 @@ type Config struct {
 	CPUFloatingLimit float64 `json:"cpuFloatingLimit,omitempty"`
 }
 
+// Option is an option provided by the Client for setting parameters
+type Option func(c *Config) error
+
 // NewConfig returns a quota Turbo config instance with default values
 func NewConfig() *Config {
 	return &Config{
@@ -85,60 +88,4 @@ func (c *Config) validateWaterMark() error {
 		return fmt.Errorf("alarmWaterMark >= highWaterMark, both of which ranges from 0 to 100")
 	}
 	return nil
-}
-
-// SetAlarmWaterMark sets AlarmWaterMark of QuotaTurbo
-func (c *Config) SetAlarmWaterMark(arg int) error {
-	tmp := c.AlarmWaterMark
-	c.AlarmWaterMark = arg
-	if err := c.validateWaterMark(); err != nil {
-		c.AlarmWaterMark = tmp
-		return err
-	}
-	return nil
-}
-
-// SetHighWaterMark sets HighWaterMark of QuotaTurbo
-func (c *Config) SetHighWaterMark(arg int) error {
-	tmp := c.HighWaterMark
-	c.HighWaterMark = arg
-	if err := c.validateWaterMark(); err != nil {
-		c.HighWaterMark = tmp
-		return err
-	}
-	return nil
-}
-
-// SetCgroupRoot sets CgroupRoot of QuotaTurbo
-func (c *Config) SetCgroupRoot(arg string) {
-	c.CgroupRoot = arg
-}
-
-// SetlEvateLimit sets ElevateLimit of QuotaTurbo
-func (c *Config) SetlEvateLimit(arg float64) error {
-	if arg < minimumUtilization || arg > maximumUtilization {
-		return fmt.Errorf("the size range of SingleTotalIncreaseLimit is [0,100]")
-	}
-	c.ElevateLimit = arg
-	return nil
-}
-
-// SetSlowFallbackRatio sets SlowFallbackRatio of QuotaTurbo
-func (c *Config) SetSlowFallbackRatio(arg float64) {
-	c.SlowFallbackRatio = arg
-}
-
-// SetCPUFloatingLimit sets CPUFloatingLimit of QuotaTurbo
-func (c *Config) SetCPUFloatingLimit(arg float64) error {
-	if arg < minimumUtilization || arg > maximumUtilization {
-		return fmt.Errorf("the size range of SingleTotalIncreaseLimit is [0,100]")
-	}
-	c.CPUFloatingLimit = arg
-	return nil
-}
-
-// GetConfig returns a copy of the QuotaTurbo configuration
-func (c *Config) GetConfig() *Config {
-	copyConf := *c
-	return &copyConf
 }

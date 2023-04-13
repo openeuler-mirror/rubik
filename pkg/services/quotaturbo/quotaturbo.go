@@ -77,7 +77,7 @@ func NewConfig() *Config {
 // QuotaTurbo manages all container CPU quota data on the current node.
 type QuotaTurbo struct {
 	conf   *Config
-	client *quotaturbo.Client
+	client quotaturbo.ClientAPI
 	Viewer api.Viewer
 	helper.ServiceBase
 }
@@ -96,7 +96,7 @@ func NewQuotaTurbo(n string) *QuotaTurbo {
 // syncCgroups updates the cgroup in cilent according to the current whitelist pod list
 func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 	var (
-		existedCgroupPaths   = qt.client.GetAllCgroup()
+		existedCgroupPaths   = qt.client.AllCgroups()
 		existedCgroupPathMap = make(map[string]struct{}, len(existedCgroupPaths))
 	)
 	// delete containers marked as no need to adjust quota
@@ -198,9 +198,10 @@ func (qt *QuotaTurbo) IsRunner() bool {
 // PreStart is the pre-start action
 func (qt *QuotaTurbo) PreStart(viewer api.Viewer) error {
 	// 1. set the parameters of the quotaturbo client
-	qt.client.CgroupRoot = cgroup.GetMountDir()
-	qt.client.HighWaterMark = qt.conf.HighWaterMark
-	qt.client.AlarmWaterMark = qt.conf.AlarmWaterMark
+	qt.client.WithOptions(
+		quotaturbo.WithCgroupRoot(cgroup.GetMountDir()),
+		quotaturbo.WithWaterMark(qt.conf.HighWaterMark, qt.conf.AlarmWaterMark),
+	)
 	qt.Viewer = viewer
 
 	// 2. attempts to fix all currently running pods and containers

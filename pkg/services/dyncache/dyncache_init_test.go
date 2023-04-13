@@ -25,7 +25,7 @@ import (
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/perf"
 	"isula.org/rubik/pkg/services/helper"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 func setMaskFile(t *testing.T, resctrlDir string, data string) {

@@ -29,9 +29,10 @@ import (
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
+	"isula.org/rubik/pkg/lib/cpu/quotaturbo"
 	"isula.org/rubik/pkg/podmanager"
 	"isula.org/rubik/pkg/services/helper"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 func sameQuota(t *testing.T, path string, want int64) bool {
@@ -415,7 +416,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 			pre: func(t *testing.T, qt *QuotaTurbo) {
 				preEnv(barCont.Path)
 				assert.NoError(t, qt.client.AddCgroup(barCont.Path, barCont.LimitResources[typedef.ResourceCPU]))
-				assert.Equal(t, 1, len(qt.client.GetAllCgroup()))
+				assert.Equal(t, 1, len(qt.client.AllCgroups()))
 			},
 			post: func(t *testing.T) {
 				try.RemoveAll(constant.TmpTestDir)
@@ -435,7 +436,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 				assert.NoError(t, qt.client.AddCgroup(barCont.Path, barCont.LimitResources[typedef.ResourceCPU]))
 				assert.NoError(t, qt.client.AddCgroup(fooCont.Path, fooCont.LimitResources[typedef.ResourceCPU]))
 				const cgroupLen = 2
-				assert.Equal(t, cgroupLen, len(qt.client.GetAllCgroup()))
+				assert.Equal(t, cgroupLen, len(qt.client.AllCgroups()))
 			},
 			post: func(t *testing.T) {
 				try.RemoveAll(constant.TmpTestDir)
@@ -445,7 +446,7 @@ func TestQuotaTurbo_AdjustQuota(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			qt := NewQuotaTurbo(name)
-			qt.client.SetCgroupRoot(constant.TmpTestDir)
+			qt.client.WithOptions(quotaturbo.WithCgroupRoot(constant.TmpTestDir))
 			if tt.pre != nil {
 				tt.pre(t, qt)
 			}

@@ -24,7 +24,7 @@ import (
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
-	"isula.org/rubik/test/try"
+	"isula.org/rubik/tests/try"
 )
 
 // TestIsAdjustmentAllowed tests isAdjustmentAllowed
