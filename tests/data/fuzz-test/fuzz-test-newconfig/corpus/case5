@@ -1,0 +1,22 @@
+{
+    "agent": {
+      "logDriver": "stdio",
+      "logDir": "/var/log/rubik",
+      "logSize": 2048,
+      "logLevel": "info",
+      "cgroupRoot": "/sys/fs/cgroup",
+      "enabledFeatures": [
+        "preemption"
+      ]
+    },
+    "preemption": {
+      "resource": [
+        "cpu",
+        "memory"
+      ]
+    },
+    "quotaTurbo": {
+      "highWaterMark": 50,
+      "syncInterval": 100
+    }
+  }

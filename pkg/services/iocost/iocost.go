@@ -49,9 +49,9 @@ type LinearParam struct {
 
 // IOCostConfig define iocost for node
 type IOCostConfig struct {
-	Dev    string      `json:"dev,omitempty"`
-	Model  string      `json:"model,omitempty"`
-	Param  LinearParam `json:"param,omitempty"`
+	Dev   string      `json:"dev,omitempty"`
+	Model string      `json:"model,omitempty"`
+	Param LinearParam `json:"param,omitempty"`
 }
 
 // NodeConfig define the config of node, include iocost
@@ -90,7 +90,7 @@ func (i IOCostFactory) NewObj() (interface{}, error) {
 
 // ioCostSupport tell if the os support iocost.
 func ioCostSupport() bool {
-	cmdLine, err := os.ReadFile("/proc/cmdline")
+	cmdLine, err := util.ReadSmallFile("/proc/cmdline")
 	if err != nil {
 		log.Warnf("get /pro/cmdline error:%v", err)
 		return false

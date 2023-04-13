@@ -1,0 +1,9 @@
+{
+  "agent": {
+    "logDriver": "invalid",
+    "logDir": "/var/log/rubik",
+    "logSize": 2048,
+    "logLevel": "invalid",
+    "cgroupRoot": "/sys/fs/cgroup"
+  }
+}
