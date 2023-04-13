@@ -1,0 +1,67 @@
+// Copyright (c) Huawei Technologies Co., Ltd. 2021-2022. All rights reserved.
+// rubik licensed under the Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+//     http://license.coscl.org.cn/MulanPSL2
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+// PURPOSE.
+// See the Mulan PSL v2 for more details.
+// Author: Jiaqi Yang
+// Date: 2023-04-13
+// Description: This file is used for fuzz newconfig parameter
+
+// Package rubik defines the overall logic
+package rubik
+
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/config"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
+	"isula.org/rubik/pkg/services"
+)
+
+func Fuzz(data []byte) int {
+	// 1. prepare environment
+	if err := os.MkdirAll(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+		return -1
+	}
+	defer os.RemoveAll(constant.TmpTestDir)
+	// 2. prepare config file
+	tmpDir, err := ioutil.TempDir(constant.TmpTestDir, "fuzz")
+	if err != nil {
+		return -1
+	}
+	configFile := filepath.Join(tmpDir, "fuzz_config.json")
+	if err := ioutil.WriteFile(configFile, data, constant.DefaultFileMode); err != nil {
+		return -1
+	}
+	// 3. read configuration
+	c := config.NewConfig(config.JSON)
+	if err := c.LoadConfig(configFile); err != nil {
+		return -1
+	}
+
+	// 4. enable log system
+	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
+		return -1
+	}
+
+	// 5. enable cgroup system
+	cgroup.InitMountDir(c.Agent.CgroupRoot)
+
+	// 6. init service components
+	services.InitServiceComponents(defaultRubikFeature)
+
+	// 7. Create athe agent
+	_, err = NewAgent(c)
+	if err != nil {
+		return -1
+	}
+	return 1
+}

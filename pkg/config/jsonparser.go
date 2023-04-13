@@ -17,6 +17,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
 // defaultJsonParser is globally unique json parser
@@ -41,7 +42,11 @@ func (parser *jsonParser) ParseConfig(data []byte) (map[string]interface{}, erro
 	if err := d.Decode(&m); err != nil {
 		return nil, err
 	}
-	return m.(map[string]interface{}), nil
+	res, ok := m.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("fail to convert config to map[string]interface {}")
+	}
+	return res, nil
 }
 
 // UnmarshalSubConfig deserializes interface to structure
