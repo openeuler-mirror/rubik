@@ -109,6 +109,7 @@ func TestPathIsExist(t *testing.T) {
 
 // TestReadSmallFile is test for read file
 func TestReadSmallFile(t *testing.T) {
+	os.RemoveAll(constant.TmpTestDir)
 	os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode)
 	defer os.RemoveAll(constant.TmpTestDir)
 	filePath, err := ioutil.TempDir(constant.TmpTestDir, "read_file")

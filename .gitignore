@@ -7,3 +7,8 @@
 .vscode
 .fortest
 /unit_test.log
+/unit_test_log
+/coverage.out
+/coverage
+/gocov.json
+/testcasesresult.json

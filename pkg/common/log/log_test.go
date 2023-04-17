@@ -184,6 +184,7 @@ func TestInitConfigLogLevel(t *testing.T) {
 // test_rubik_set_logsize_0001
 func TestInitConfigLogSize(t *testing.T) {
 	logDir := try.GenTestDir().String()
+	defer try.DelTestDir()
 	// LogSize invalid
 	err := InitConfig("file", logDir, "", logSizeMin-1)
 	assert.Equal(t, true, err != nil)
@@ -204,6 +205,9 @@ func TestInitConfigLogSize(t *testing.T) {
 	}
 	var size int64
 	err = filepath.Walk(logDir, func(_ string, f os.FileInfo, _ error) error {
+		if f == nil {
+			return nil
+		}
 		size += f.Size()
 		return nil
 	})

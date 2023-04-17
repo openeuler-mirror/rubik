@@ -19,7 +19,7 @@ build_dir="${top_dir}"/build
 test_fun() {
     # check rubik binary
     if [ ! -f "${build_dir}"/rubik ]; then
-        pushd "${build_dir}" || exit 1 > /dev/null 2>&1
+        pushd "${top_dir}" || exit 1 > /dev/null 2>&1
         make release
         popd || exit 1 > /dev/null 2>&1
     fi
