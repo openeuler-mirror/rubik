@@ -153,6 +153,7 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 
 	var preStarted = make(map[string]services.Service, 0)
 	manager.RLock()
+	defer manager.RUnlock()
 	for name, s := range manager.RunningServices {
 		/*
 			Try to prestart the service. If any service fails, rubik exits
@@ -165,7 +166,6 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 		preStarted[name] = s
 		log.Infof("service %v pre-start successfully", name)
 	}
-	manager.RUnlock()
 	return nil
 }
 
