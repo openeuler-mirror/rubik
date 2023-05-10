@@ -124,8 +124,7 @@ func (c *DynCache) doFlush(limitSet *limitSet) error {
 }
 
 func (c *DynCache) listOnlinePods() map[string]*typedef.PodInfo {
-	onlineValue := "false"
 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
-		return pi.Annotations[constant.PriorityAnnotationKey] == onlineValue
+		return pi.Online()
 	})
 }

@@ -111,8 +111,7 @@ func (c *DynCache) syncLevel(pod *typedef.PodInfo) error {
 }
 
 func (c *DynCache) listOfflinePods() map[string]*typedef.PodInfo {
-	offlineValue := "true"
 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
-		return pi.Annotations[constant.PriorityAnnotationKey] == offlineValue
+		return pi.Offline()
 	})
 }

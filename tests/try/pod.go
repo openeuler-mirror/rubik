@@ -60,6 +60,7 @@ func GenFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
 		UID:         constant.PodCgroupNamePrefix + podID,
 		Hierarchy:   cgroup.Hierarchy{Path: genRelativeCgroupPath(qosClass, podID)},
 		Annotations: make(map[string]string, 0),
+		Labels:      make(map[string]string, 0),
 	}
 	return fakePod
 }
