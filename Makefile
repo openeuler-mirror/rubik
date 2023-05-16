@@ -23,7 +23,7 @@ GIT_COMMIT := $(if $(shell git rev-parse --short HEAD),$(shell git rev-parse --s
 
 DEBUG_FLAGS := -gcflags="all=-N -l"
 EXTRALDFLAGS := -extldflags=-ftrapv \
-	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static
+	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static-pie
 
 LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
 	-X isula.org/rubik/pkg/version.GitCommit=$(GIT_COMMIT) \
