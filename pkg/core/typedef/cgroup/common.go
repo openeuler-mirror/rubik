@@ -135,7 +135,7 @@ func (attr *Attr) Int() (int, error) {
 	return strconv.Atoi(attr.Value)
 }
 
-// Int64Map parses CgroupAttr64 as map[string]int64 type
+// Int64Map parses CgroupAttr as map[string]int64 type
 func (attr *Attr) Int64Map() (map[string]int64, error) {
 	if attr.Err != nil {
 		return nil, attr.Err
@@ -143,12 +143,20 @@ func (attr *Attr) Int64Map() (map[string]int64, error) {
 	return util.ParseInt64Map(attr.Value)
 }
 
-// CPUStat parses CgroupAttr64 as CPUStat type
+// CPUStat parses CgroupAttr as CPUStat type
 func (attr *Attr) CPUStat() (*CPUStat, error) {
 	if attr.Err != nil {
 		return nil, attr.Err
 	}
 	return NewCPUStat(attr.Value)
+}
+
+// PSI parses CgroupAttr as psi Pressure type
+func (attr *Attr) PSI() (*Pressure, error) {
+	if attr.Err != nil {
+		return nil, attr.Err
+	}
+	return NewPSIData(attr.Value)
 }
 
 // Hierarchy is used to represent a cgroup path

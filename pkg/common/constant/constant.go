@@ -104,4 +104,10 @@ const (
 	CPUCgroupFileName = "cpu.qos_level"
 	// MemoryCgroupFileName is name of cgroup file used for memory qos level setting
 	MemoryCgroupFileName = "memory.qos_level"
+	// PSICPUCgroupFileName is name of cgroup file used for detecting cpu psi
+	PSICPUCgroupFileName = "cpu.pressure"
+	// PSIMemoryCgroupFileName is name of cgroup file used for detecting memory psi
+	PSIMemoryCgroupFileName = "memory.pressure"
+	// PSIIOCgroupFileName is name of cgroup file used for detecting io psi
+	PSIIOCgroupFileName = "io.pressure"
 )
