@@ -28,7 +28,8 @@ kubernetes: 1.17.0+
 其余约束详见[约束限制](./docs/limitation.md)
 
 ### 通过yaml一键部署rubik
-我们提供了一键式脚本供用户使用，并在openEuler官方镜像仓库上提供了`hub.oepkgs.net/cloudnative/rubik:latest`镜像（仅支持x86架构）。
+我们提供了一键式脚本供用户使用，并在openEuler容器镜像仓库提供了体验镜像`hub.oepkgs.net/cloudnative/rubik:latest`。
+
 1. 下载rubik yaml脚本
     ```bash
     $ curl -O https://gitee.com/openeuler/rubik/raw/master/hack/rubik-daemonset.yaml

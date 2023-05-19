@@ -1,0 +1,21 @@
+# This Dockerfile can be used for multi-arch image compiling
+# pre: docker buildx is needed
+# 1st: you should located at the root of rubik source repo ($GOPATH/src/isula.org/rubik)
+# 2nd: run this command for amd64 and arm64 
+# docker buildx build --platform=linux/amd64,linux/arm64 -f ./hack/Dockerfile.multiarch -t hub.oepkgs.net/cloudnative/rubik . --push
+
+## 1st stage, prepare golang image and compile rubik binary
+FROM openeuler/openeuler AS build_rubik
+RUN yum install -y golang make
+
+ENV GOPATH /go
+ENV PATH $PATH:/go/bin:/usr/local/go/bin
+
+ADD . ${GOPATH}/src/isula.org/rubik
+RUN cd ${GOPATH}/src/isula.org/rubik && make
+
+
+## 2nd stage, copy rubik binary from 1st stage and build rubik image
+FROM scratch
+COPY --from=build_rubik /go/src/isula.org/rubik/build/rubik /rubik
+ENTRYPOINT ["/rubik"]
