@@ -48,4 +48,8 @@ var defaultRubikFeature = []services.FeatureSpec{
 		Name:    feature.QuotaTurboFeature,
 		Default: true,
 	},
+	{
+		Name:    feature.PSIFeature,
+		Default: true,
+	},
 }

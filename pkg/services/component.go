@@ -21,6 +21,7 @@ import (
 	"isula.org/rubik/pkg/services/iocost"
 	"isula.org/rubik/pkg/services/iolimit"
 	"isula.org/rubik/pkg/services/preemption"
+	"isula.org/rubik/pkg/services/psi"
 	"isula.org/rubik/pkg/services/quotaburst"
 	"isula.org/rubik/pkg/services/quotaturbo"
 )
@@ -37,6 +38,7 @@ var (
 		feature.DynMemoryFeature:  initDynCacheFactory,
 		feature.QuotaBurstFeature: initQuotaBurstFactory,
 		feature.QuotaTurboFeature: initQuotaTurboFactory,
+		feature.PSIFeature:        initPSIFactory,
 	}
 )
 
@@ -62,4 +64,8 @@ func initQuotaBurstFactory(name string) error {
 
 func initPreemptionFactory(name string) error {
 	return helper.AddFactory(name, preemption.PreemptionFactory{ObjName: name})
+}
+
+func initPSIFactory(name string) error {
+	return helper.AddFactory(name, psi.Factory{ObjName: name})
 }
