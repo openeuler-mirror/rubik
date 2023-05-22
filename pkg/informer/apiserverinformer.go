@@ -47,7 +47,7 @@ func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
 	}
 
 	// create apiserver client
-	client, err := initKubeClient()
+	client, err := InitKubeClient()
 	if err != nil {
 		return nil, fmt.Errorf("fail to init kubenetes client: %v", err)
 	}
@@ -63,8 +63,8 @@ func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
 	return informer, nil
 }
 
-// initKubeClient initializes kubeClient
-func initKubeClient() (*kubernetes.Clientset, error) {
+// InitKubeClient initializes kubeClient
+func InitKubeClient() (*kubernetes.Clientset, error) {
 	conf, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err

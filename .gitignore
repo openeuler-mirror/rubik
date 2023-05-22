@@ -12,3 +12,4 @@
 /coverage
 /gocov.json
 /testcasesresult.json
+/compose-dev.yaml

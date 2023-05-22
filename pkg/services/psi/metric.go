@@ -9,7 +9,7 @@
 // See the Mulan PSL v2 for more details.
 // Author: Jiaqi Yang
 // Date: 2023-05-16
-// Description: This file is used for *
+// Description: This file defines metrics used for psi service
 
 package psi
 
@@ -24,11 +24,11 @@ import (
 )
 
 const (
-	cpuRes         = "cpu"
-	memoryRes      = "memory"
-	ioRes          = "io"
-	psiSubSys      = "cpuacct"
-	avg10Threshold = 5.0
+	cpuRes                = "cpu"
+	memoryRes             = "memory"
+	ioRes                 = "io"
+	psiSubSys             = "cpuacct"
+	defaultAvg10Threshold = 5.0
 )
 
 // supportResources is the supported resource type
@@ -41,7 +41,8 @@ var supportResources map[string]*cgroup.Key = map[string]*cgroup.Key{
 // BasePSIMetric is the basic PSI indicator
 type BasePSIMetric struct {
 	*metric.BaseMetric
-	resources []string
+	avg10Threshold float64
+	resources      []string
 	// conservation is the Pod object that needs to guarantee resources
 	conservation map[string]*typedef.PodInfo
 	// Suspicion is the pod object that needs to be suspected of eviction
@@ -55,7 +56,7 @@ func (m *BasePSIMetric) Update() error {
 		return nil
 	}
 	for _, typ := range m.resources {
-		if detectPSiMetric(typ, m.conservation) {
+		if detectPSiMetric(typ, m.conservation, m.avg10Threshold) {
 			if err := alarm(typ, m.Triggers, m.suspicion); err != nil {
 				return err
 			}
@@ -64,7 +65,7 @@ func (m *BasePSIMetric) Update() error {
 	return nil
 }
 
-func detectPSiMetric(resTyp string, conservation map[string]*typedef.PodInfo) bool {
+func detectPSiMetric(resTyp string, conservation map[string]*typedef.PodInfo, avg10Threshold float64) bool {
 	var key *cgroup.Key
 	key, supported := supportResources[resTyp]
 	if !supported {
@@ -73,6 +74,7 @@ func detectPSiMetric(resTyp string, conservation map[string]*typedef.PodInfo) bo
 	}
 
 	for _, pod := range conservation {
+		log.Debugf("check psi of online pod: %v", pod.Name)
 		pressure, err := pod.GetCgroupAttr(key).PSI()
 		if err != nil {
 			log.Warnf("fail to get file %v: %v", key.FileName, err)

@@ -16,6 +16,7 @@ package trigger
 
 import (
 	"fmt"
+	"sync"
 
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
@@ -39,7 +40,7 @@ const (
 
 type triggerCreator func() Trigger
 
-var triggerMap map[Typ]triggerCreator = map[Typ]triggerCreator{
+var triggerCreatorMap map[Typ]triggerCreator = map[Typ]triggerCreator{
 	EXPULSION:        expulsionCreator,
 	RESOURCEANALYSIS: analyzerCreator,
 }
@@ -52,6 +53,7 @@ type Descriptor interface {
 // Executor is the trigger execution function interface
 type Executor interface {
 	Execute(Factor) (Factor, error)
+	Stop() error
 }
 
 // Trigger interface defines the trigger methods
@@ -68,10 +70,11 @@ type TreeTrigger struct {
 	subTriggers []Trigger
 }
 
-// NewTreeTirggerNode returns a BaseMetric object
-func NewTreeTirggerNode(name string) *TreeTrigger {
+// withTreeTirgger returns a BaseMetric object
+func withTreeTirgger(name string, exec Executor) *TreeTrigger {
 	return &TreeTrigger{
 		name:        name,
+		exec:        exec,
 		subTriggers: make([]Trigger, 0)}
 }
 
@@ -88,6 +91,9 @@ func (t *TreeTrigger) Name() string {
 
 // Execute executes the sub-triggers of the current trigger
 func (t *TreeTrigger) Execute(f Factor) error {
+	if t.exec == nil {
+		return fmt.Errorf("trigger %v can not execute", t.name)
+	}
 	var errs error
 	res, err := t.exec.Execute(f)
 	if err != nil {
@@ -103,11 +109,54 @@ func (t *TreeTrigger) Execute(f Factor) error {
 	return errs
 }
 
-// GetTrigger returns a trigger singleton according to type
-func GetTrigger(t Typ) Trigger {
-	if _, ok := triggerMap[t]; !ok {
+// NewTrigger returns a trigger singleton according to type
+func NewTrigger(t Typ) Trigger {
+	if _, ok := triggerCreatorMap[t]; !ok {
 		log.Warnf("undefine trigger: %v", t)
 		return nil
 	}
-	return triggerMap[t]()
+	return triggerCreatorMap[t]()
+}
+
+var (
+	runningExecutors = make(map[string]Executor, 0)
+	execLock         sync.Mutex
+)
+
+func appendUsedExecutors(name string, exec Executor) {
+	if exec == nil {
+		log.Errorf("nil executor %v can not be used", name)
+		return
+	}
+	execLock.Lock()
+	defer execLock.Unlock()
+	if _, existed := runningExecutors[name]; existed {
+		log.Errorf("conflict executor %v", name)
+		return
+	}
+	log.Infof("using executor: %v", name)
+	runningExecutors[name] = exec
+}
+
+// StopUsedExecutors stops running executors
+func StopUsedExecutors() error {
+	execLock.Lock()
+	defer execLock.Unlock()
+	var errs error
+	// stop the executors one by one
+	for name, exec := range runningExecutors {
+		log.Infof("stopping executor %v", name)
+		if exec == nil {
+			log.Infof("executor %v has stopped", name)
+			continue
+		}
+		if err := exec.Stop(); err != nil {
+			errs = util.AppendErr(errs, util.AddErrorPrfix(err, name))
+		}
+	}
+	// clear executors
+	for k := range runningExecutors {
+		delete(runningExecutors, k)
+	}
+	return errs
 }
