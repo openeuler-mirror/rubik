@@ -17,6 +17,7 @@ package services
 import (
 	"isula.org/rubik/pkg/feature"
 	"isula.org/rubik/pkg/services/dyncache"
+	"isula.org/rubik/pkg/services/dynmemory"
 	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/pkg/services/iocost"
 	"isula.org/rubik/pkg/services/iolimit"
@@ -35,7 +36,7 @@ var (
 		feature.DynCacheFeature:   initDynCacheFactory,
 		feature.IOLimitFeature:    initIOLimitFactory,
 		feature.IOCostFeature:     initIOCostFactory,
-		feature.DynMemoryFeature:  initDynCacheFactory,
+		feature.DynMemoryFeature:  initDynMemoryFactory,
 		feature.QuotaBurstFeature: initQuotaBurstFactory,
 		feature.QuotaTurboFeature: initQuotaTurboFactory,
 		feature.PSIFeature:        initPSIFactory,
@@ -68,4 +69,8 @@ func initPreemptionFactory(name string) error {
 
 func initPSIFactory(name string) error {
 	return helper.AddFactory(name, psi.Factory{ObjName: name})
+}
+
+func initDynMemoryFactory(name string) error {
+	return helper.AddFactory(name, dynmemory.DynMemoryFactory{ObjName: name})
 }
