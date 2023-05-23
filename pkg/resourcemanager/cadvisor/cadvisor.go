@@ -20,42 +20,72 @@ import (
 	"net/http"
 	"time"
 
-	cmemory "github.com/google/cadvisor/cache/memory"
-	cadvisorcontainer "github.com/google/cadvisor/container"
+	"github.com/google/cadvisor/cache/memory"
+	"github.com/google/cadvisor/container"
+	v2 "github.com/google/cadvisor/info/v2"
 	"github.com/google/cadvisor/manager"
-	csysfs "github.com/google/cadvisor/utils/sysfs"
-	"k8s.io/klog/v2"
+	"github.com/google/cadvisor/utils/sysfs"
+
+	"isula.org/rubik/pkg/common/log"
 )
 
-type CadvisorManager struct {
-	cgroupDriver string
+// Manager is the cadvisor manager
+type Manager struct {
 	manager.Manager
 }
 
-func NewCadvidorManager() *CadvisorManager {
-	var includedMetrics = cadvisorcontainer.MetricSet{
-		cadvisorcontainer.CpuUsageMetrics:         struct{}{},
-		cadvisorcontainer.ProcessSchedulerMetrics: struct{}{},
-	}
+// StartArgs is a set of parameters that control the startup of cadvisor
+type StartArgs struct {
+	MemCache              *memory.InMemoryCache
+	SysFs                 sysfs.SysFs
+	IncludeMetrics        container.MetricSet
+	MaxHousekeepingConfig manager.HouskeepingConfig
+}
 
-	allowDynamic := true
-	maxHousekeepingInterval := 10 * time.Second
-	memCache := cmemory.New(10*time.Minute, nil)
-	sysfs := csysfs.NewRealSysFs()
-	maxHousekeepingConfig := manager.HouskeepingConfig{Interval: &maxHousekeepingInterval, AllowDynamic: &allowDynamic}
-
-	m, err := manager.New(memCache, sysfs, maxHousekeepingConfig, includedMetrics, http.DefaultClient, []string{"/kubepods"}, []string{""}, "", time.Duration(1))
+// WithStartArgs creates cadvisor.Manager object
+func WithStartArgs(args StartArgs) *Manager {
+	const (
+		perfEventsFile = "/sys/kernel/debug/tracing/events/raw_syscalls/sys_enter"
+	)
+	var (
+		rawContainerCgroupPathPrefixWhiteList = []string{"/kubepods"}
+		containerEnvMetadataWhiteList         = []string{}
+		resctrlInterval                       = time.Second
+	)
+	m, err := manager.New(args.MemCache, args.SysFs, args.MaxHousekeepingConfig,
+		args.IncludeMetrics, http.DefaultClient, rawContainerCgroupPathPrefixWhiteList,
+		containerEnvMetadataWhiteList, perfEventsFile, resctrlInterval)
 	if err != nil {
-		klog.Errorf("Failed to create cadvisor manager start: %v", err)
+		log.Errorf("Failed to create cadvisor manager: %v", err)
 		return nil
 	}
-
 	if err := m.Start(); err != nil {
-		klog.Errorf("Failed to start cadvisor manager: %v", err)
+		log.Errorf("Failed to start cadvisor manager: %v", err)
 		return nil
 	}
-
-	return &CadvisorManager{
+	return &Manager{
 		Manager: m,
 	}
+}
+
+// Start starts cadvisor manager
+func (c *Manager) Start() error {
+	return c.Manager.Start()
+}
+
+// Stop stops cadvisor and clear existing factory
+func (c *Manager) Stop() error {
+	err := c.Manager.Stop()
+	if err != nil {
+		return err
+	}
+	// clear existing factory
+	container.ClearContainerHandlerFactories()
+	return nil
+}
+
+// ContainerInfo gets container infos v2
+func (c *Manager) ContainerInfoV2(name string,
+	options v2.RequestOptions) (map[string]v2.ContainerInfo, error) {
+	return c.GetContainerInfoV2(name, options)
 }

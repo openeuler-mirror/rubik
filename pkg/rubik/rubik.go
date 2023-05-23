@@ -29,6 +29,7 @@ import (
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/config"
 	"isula.org/rubik/pkg/core/publisher"
+	"isula.org/rubik/pkg/core/trigger"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/informer"
 	"isula.org/rubik/pkg/podmanager"
@@ -165,6 +166,7 @@ func Run() int {
 	go handleSignals(cancel)
 
 	// 3. run rubik-agent
+	defer cleanDepecdencies()
 	if err := runAgent(ctx); err != nil {
 		log.Errorf("error running rubik agent: %v", err)
 		return constant.ErrorExitCode
@@ -180,5 +182,11 @@ func handleSignals(cancel context.CancelFunc) {
 			log.Infof("signal %v received and starting exit...", sig)
 			cancel()
 		}
+	}
+}
+
+func cleanDepecdencies() {
+	if err := trigger.StopUsedExecutors(); err != nil {
+		log.Errorf("fail to stop dependencies: %v", err)
 	}
 }
