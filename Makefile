@@ -21,9 +21,11 @@ RELEASE :=$(if $(shell awk -F"-" '{print $$2}' < $(VERSION_FILE)),$(shell awk -F
 BUILD_TIME := $(shell date "+%Y-%m-%d")
 GIT_COMMIT := $(if $(shell git rev-parse --short HEAD),$(shell git rev-parse --short HEAD),$(shell cat ./git-commit | head -c 7))
 
+export GO111MODULE=on
+
 DEBUG_FLAGS := -gcflags="all=-N -l"
-EXTRALDFLAGS := -extldflags=-ftrapv \
-	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags=-static-pie
+EXTRALDFLAGS := -buildmode=pie -extldflags=-ftrapv \
+	-extldflags=-Wl,-z,relro,-z,now -linkmode=external -extldflags "-static-pie -Wl,-z,now"
 
 LD_FLAGS := -ldflags '-buildid=none -tmpdir=$(TMP_DIR) \
 	-X isula.org/rubik/pkg/version.GitCommit=$(GIT_COMMIT) \
@@ -37,7 +39,7 @@ GO_BUILD=CGO_ENABLED=1 \
 	CGO_CPPFLAGS="-fstack-protector-strong -fPIE" \
 	CGO_LDFLAGS_ALLOW='-Wl,-z,relro,-z,now' \
 	CGO_LDFLAGS="-Wl,-z,relro,-z,now -Wl,-z,noexecstack" \
-	go build -buildmode=pie
+	go build -mod=vendor
 
 all: release
 
