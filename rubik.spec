@@ -1,6 +1,6 @@
 Name: rubik
-Version: 1.0.0
-Release: 5
+Version: 2.0.0
+Release: 1
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -13,7 +13,7 @@ Source5: series.conf
 Source6: patch.tar.gz
 Source7: build_rubik_image.sh
 BuildRoot: %{_tmppath}/%{name}-%{version}-build
-BuildRequires: golang >= 1.13
+BuildRequires: golang >= 1.17
 
 %description
 This is hybrid deployment component for cloud native, it should be running in kubernetes environment.
@@ -56,6 +56,12 @@ install -Dp ./build_rubik_image.sh %{buildroot}%{_sharedstatedir}/%{name}/build_
 rm -rf %{buildroot}
 
 %changelog
+* Wed May 24 2023 vegbir <yangjiaqi16@huawei.com> - 2.0.0-1
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:upgrade rubik version to v2.0.0
+
 * Tue Nov 29 2022 CooperLi <a710905118@163.com> - 1.0.0-5
 - Type:bugfix
 - CVE:NA

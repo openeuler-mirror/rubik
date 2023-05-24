@@ -41,4 +41,4 @@ echo -e "\n"
 docker images | grep -E "REPOSITORY|${BINARY_NAME}"
 
 # Modify rubik-daemonset.yaml file, set rubik image name
-sed -i "s/rubik_image_name_and_tag/${IMG_NAME_AND_TAG}/g" "${YAML_FILE}"
+sed -i "/image:/s/:.*/: ${IMG_NAME_AND_TAG}/" "${YAML_FILE}"
