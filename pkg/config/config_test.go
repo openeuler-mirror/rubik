@@ -53,6 +53,35 @@ var rubikConfig string = `
 		"mid": 30,
 		"high": 50
 	  }
+	},
+	"ioCost": [
+	  {
+		"nodeName": "k8s-single",
+		"config": [
+		  {
+			"dev": "sdb",
+			"enable": true,
+			"model": "linear",
+			"param": {
+			  "rbps": 10000000,
+			  "rseqiops": 10000000,
+			  "rrandiops": 10000000,
+			  "wbps": 10000000,
+			  "wseqiops": 10000000,
+			  "wrandiops": 10000000
+			}
+		  }
+		]
+	  }
+	],
+	"psi": {
+		"interval": 10,
+		"resource": [
+		  "cpu",
+		  "memory",
+		  "io"
+		],
+		"avg10Threshold": 5.0
 	}
 }
 `
