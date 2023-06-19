@@ -1,0 +1,69 @@
+From 804ff7873331cf745bc49aab5f5d2857ec1597c6 Mon Sep 17 00:00:00 2001
+From: hanchao <hanchao63@huawei.com>
+Date: Mon, 5 Jun 2023 13:56:01 +0800
+Subject: [PATCH 2/7] rubik: fix weight for iocost does not take effect
+
+reason: Fix weight for iocost does not take effect.
+The iocost weight is at pod level, not container
+level.
+---
+ pkg/services/iocost/iocost.go        | 7 +------
+ pkg/services/iocost/iocost_origin.go | 8 ++++----
+ pkg/services/iocost/iocost_test.go   | 2 +-
+ 3 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/pkg/services/iocost/iocost.go b/pkg/services/iocost/iocost.go
+index e5298b1..34f508a 100644
+--- a/pkg/services/iocost/iocost.go
++++ b/pkg/services/iocost/iocost.go
+@@ -239,10 +239,5 @@ func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
+ 	if podInfo.Annotations[constant.PriorityAnnotationKey] == "false" {
+ 		weight = onlineWeight
+ 	}
+-	for _, container := range podInfo.IDContainersMap {
+-		if err := ConfigContainerIOCostWeight(container.Path, weight); err != nil {
+-			return err
+-		}
+-	}
+-	return nil
++	return ConfigPodIOCostWeight(podInfo.Path, weight)
+ }
+diff --git a/pkg/services/iocost/iocost_origin.go b/pkg/services/iocost/iocost_origin.go
+index d37109f..5e9948f 100644
+--- a/pkg/services/iocost/iocost_origin.go
++++ b/pkg/services/iocost/iocost_origin.go
+@@ -63,14 +63,14 @@ func ConfigIOCostModel(devno string, p interface{}) error {
+ 	return cgroup.WriteCgroupFile(paramStr, blkcgRootDir, iocostModelFile)
+ }
+ 
+-// ConfigContainerIOCostWeight for config iocost weight
++// ConfigPodIOCostWeight for config iocost weight
+ // cgroup v1 iocost cannot be inherited. Therefore, only the container level can be configured.
+-func ConfigContainerIOCostWeight(containerRelativePath string, weight uint64) error {
++func ConfigPodIOCostWeight(relativePath string, weight uint64) error {
+ 	if err := cgroup.WriteCgroupFile(strconv.FormatUint(weight, scale), blkcgRootDir,
+-		containerRelativePath, iocostWeightFile); err != nil {
++		relativePath, iocostWeightFile); err != nil {
+ 		return err
+ 	}
+-	if err := bindMemcgBlkcg(containerRelativePath); err != nil {
++	if err := bindMemcgBlkcg(relativePath); err != nil {
+ 		return err
+ 	}
+ 	return nil
+diff --git a/pkg/services/iocost/iocost_test.go b/pkg/services/iocost/iocost_test.go
+index 95b6d97..3bdadad 100644
+--- a/pkg/services/iocost/iocost_test.go
++++ b/pkg/services/iocost/iocost_test.go
+@@ -334,7 +334,7 @@ func TestSetPodWeight(t *testing.T) {
+ 
+ 	for _, tt := range tests {
+ 		t.Run(tt.name, func(t *testing.T) {
+-			err := ConfigContainerIOCostWeight(tt.cgroupPath, uint64(tt.weight))
++			err := ConfigPodIOCostWeight(tt.cgroupPath, uint64(tt.weight))
+ 			if tt.wantErr {
+ 				assert.Contains(t, err.Error(), tt.errMsg)
+ 				return
+-- 
+2.32.1 (Apple Git-133)
+
