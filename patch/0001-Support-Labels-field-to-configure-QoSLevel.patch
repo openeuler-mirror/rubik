@@ -1,0 +1,188 @@
+From b8e000527f7129242bd71f9c79697bef3a8b2111 Mon Sep 17 00:00:00 2001
+From: wujing <wujing50@huawei.com>
+Date: Wed, 10 May 2023 19:26:36 +0800
+Subject: [PATCH 1/7] Support Labels field to configure QoSLevel
+
+Signed-off-by: wujing <wujing50@huawei.com>
+---
+ pkg/core/typedef/podinfo.go           | 39 +++++++++++++++++++++++++--
+ pkg/services/dyncache/dynamic.go      |  3 +--
+ pkg/services/dyncache/sync.go         |  3 +--
+ pkg/services/iocost/iocost.go         |  2 +-
+ pkg/services/preemption/preemption.go | 13 +++------
+ tests/try/pod.go                      |  1 +
+ 6 files changed, 44 insertions(+), 17 deletions(-)
+
+diff --git a/pkg/core/typedef/podinfo.go b/pkg/core/typedef/podinfo.go
+index 907f02b..fd96848 100644
+--- a/pkg/core/typedef/podinfo.go
++++ b/pkg/core/typedef/podinfo.go
+@@ -15,6 +15,7 @@
+ package typedef
+ 
+ import (
++	"isula.org/rubik/pkg/common/constant"
+ 	"isula.org/rubik/pkg/core/typedef/cgroup"
+ )
+ 
+@@ -26,6 +27,7 @@ type PodInfo struct {
+ 	Namespace       string                    `json:"namespace"`
+ 	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
+ 	Annotations     map[string]string         `json:"annotations,omitempty"`
++	Labels          map[string]string         `json:"labels,omitempty"`
+ }
+ 
+ // NewPodInfo creates the PodInfo instance
+@@ -37,6 +39,7 @@ func NewPodInfo(pod *RawPod) *PodInfo {
+ 		Hierarchy:       cgroup.Hierarchy{Path: pod.CgroupPath()},
+ 		IDContainersMap: pod.ExtractContainerInfos(),
+ 		Annotations:     pod.DeepCopy().Annotations,
++		Labels:          pod.DeepCopy().Labels,
+ 	}
+ }
+ 
+@@ -46,8 +49,9 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
+ 		return nil
+ 	}
+ 	var (
+-		contMap map[string]*ContainerInfo
+-		annoMap map[string]string
++		contMap  map[string]*ContainerInfo
++		annoMap  map[string]string
++		labelMap map[string]string
+ 	)
+ 	// nil is different from empty value in golang
+ 	if pod.IDContainersMap != nil {
+@@ -56,6 +60,7 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
+ 			contMap[id] = cont.DeepCopy()
+ 		}
+ 	}
++
+ 	if pod.Annotations != nil {
+ 		annoMap = make(map[string]string)
+ 		for k, v := range pod.Annotations {
+@@ -63,12 +68,42 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
+ 		}
+ 	}
+ 
++	if pod.Labels != nil {
++		labelMap = make(map[string]string)
++		for k, v := range pod.Labels {
++			labelMap[k] = v
++		}
++	}
++
+ 	return &PodInfo{
+ 		Name:            pod.Name,
+ 		UID:             pod.UID,
+ 		Hierarchy:       pod.Hierarchy,
+ 		Namespace:       pod.Namespace,
+ 		Annotations:     annoMap,
++		Labels:          labelMap,
+ 		IDContainersMap: contMap,
+ 	}
+ }
++
++// Offline is used to determine whether the pod is offline
++func (pod *PodInfo) Offline() bool {
++	var anno string
++	var label string
++
++	if pod.Annotations != nil {
++		anno = pod.Annotations[constant.PriorityAnnotationKey]
++	}
++
++	if pod.Labels != nil {
++		label = pod.Labels[constant.PriorityAnnotationKey]
++	}
++
++	// Annotations have a higher priority than labels
++	return anno == "true" || label == "true"
++}
++
++// Online is used to determine whether the pod is online
++func (pod *PodInfo) Online() bool {
++	return !pod.Offline()
++}
+diff --git a/pkg/services/dyncache/dynamic.go b/pkg/services/dyncache/dynamic.go
+index 09bde4c..d74efc7 100644
+--- a/pkg/services/dyncache/dynamic.go
++++ b/pkg/services/dyncache/dynamic.go
+@@ -124,8 +124,7 @@ func (c *DynCache) doFlush(limitSet *limitSet) error {
+ }
+ 
+ func (c *DynCache) listOnlinePods() map[string]*typedef.PodInfo {
+-	onlineValue := "false"
+ 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
+-		return pi.Annotations[constant.PriorityAnnotationKey] == onlineValue
++		return pi.Online()
+ 	})
+ }
+diff --git a/pkg/services/dyncache/sync.go b/pkg/services/dyncache/sync.go
+index 8307c41..bf59cd4 100644
+--- a/pkg/services/dyncache/sync.go
++++ b/pkg/services/dyncache/sync.go
+@@ -111,8 +111,7 @@ func (c *DynCache) syncLevel(pod *typedef.PodInfo) error {
+ }
+ 
+ func (c *DynCache) listOfflinePods() map[string]*typedef.PodInfo {
+-	offlineValue := "true"
+ 	return c.Viewer.ListPodsWithOptions(func(pi *typedef.PodInfo) bool {
+-		return pi.Annotations[constant.PriorityAnnotationKey] == offlineValue
++		return pi.Offline()
+ 	})
+ }
+diff --git a/pkg/services/iocost/iocost.go b/pkg/services/iocost/iocost.go
+index e5298b1..c11ef60 100644
+--- a/pkg/services/iocost/iocost.go
++++ b/pkg/services/iocost/iocost.go
+@@ -236,7 +236,7 @@ func (b *IOCost) clearIOCost() error {
+ 
+ func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
+ 	var weight uint64 = offlineWeight
+-	if podInfo.Annotations[constant.PriorityAnnotationKey] == "false" {
++	if podInfo.Online() {
+ 		weight = onlineWeight
+ 	}
+ 	for _, container := range podInfo.IDContainersMap {
+diff --git a/pkg/services/preemption/preemption.go b/pkg/services/preemption/preemption.go
+index ce436a3..28ec36e 100644
+--- a/pkg/services/preemption/preemption.go
++++ b/pkg/services/preemption/preemption.go
+@@ -160,18 +160,11 @@ func getQoSLevel(pod *typedef.PodInfo) int {
+ 	if pod == nil {
+ 		return constant.Online
+ 	}
+-	anno, ok := pod.Annotations[constant.PriorityAnnotationKey]
+-	if !ok {
+-		return constant.Online
+-	}
+-	switch anno {
+-	case "true":
++	if pod.Offline() {
+ 		return constant.Offline
+-	case "false":
+-		return constant.Online
+-	default:
+-		return constant.Online
+ 	}
++
++	return constant.Online
+ }
+ 
+ // Validate will validate the qos service config
+diff --git a/tests/try/pod.go b/tests/try/pod.go
+index 18cb0ec..8053c4b 100644
+--- a/tests/try/pod.go
++++ b/tests/try/pod.go
+@@ -60,6 +60,7 @@ func GenFakePodInfo(qosClass corev1.PodQOSClass) *typedef.PodInfo {
+ 		UID:         constant.PodCgroupNamePrefix + podID,
+ 		Hierarchy:   cgroup.Hierarchy{Path: genRelativeCgroupPath(qosClass, podID)},
+ 		Annotations: make(map[string]string, 0),
++		Labels:      make(map[string]string, 0),
+ 	}
+ 	return fakePod
+ }
+-- 
+2.32.1 (Apple Git-133)
+
