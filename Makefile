@@ -54,6 +54,7 @@ help:
 	@echo "make test-unit                # run unit test"
 	@echo "make cover                    # generate coverage report"
 	@echo "make install                  # install files to /var/lib/rubik"
+	@echo "make clean"                   # clean built files and test logs
 
 prepare:
 	mkdir -p $(TMP_DIR) $(BUILD_DIR)
@@ -101,3 +102,5 @@ install:
 	cp -f $(BUILD_DIR)/* $(INSTALL_DIR)
 	cp -f $(BUILD_DIR)/rubik.service /lib/systemd/system/
 
+clean:
+	rm -rf build/* cover.* unit_test_log

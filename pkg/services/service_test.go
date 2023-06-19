@@ -36,6 +36,10 @@ var defaultFeature = []FeatureSpec{
 		Name:    feature.QuotaTurboFeature,
 		Default: true,
 	},
+	{
+		Name:    feature.PSIFeature,
+		Default: true,
+	},
 }
 
 func TestErrorInitServiceComponents(t *testing.T) {

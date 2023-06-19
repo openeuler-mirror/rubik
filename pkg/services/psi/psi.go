@@ -37,19 +37,19 @@ const (
 	minThreshold float64 = 5.0
 )
 
-// Factory is the QuotaTurbo factory class
+// Factory is the PSI Manager factory class
 type Factory struct {
 	ObjName string
 }
 
 // Name returns the factory class name
-func (i Factory) Name() string {
-	return "Factory"
+func (f Factory) Name() string {
+	return "PSIFactory"
 }
 
-// NewObj returns a QuotaTurbo object
-func (i Factory) NewObj() (interface{}, error) {
-	return NewManager(i.ObjName), nil
+// NewObj returns a Manager object
+func (f Factory) NewObj() (interface{}, error) {
+	return NewManager(f.ObjName), nil
 }
 
 // Config is PSI service configuration
@@ -130,7 +130,7 @@ func (m *Manager) SetConfig(f helper.ConfigHandler) error {
 }
 
 // IsRunner returns true that tells other Manager is a persistent service
-func (qt *Manager) IsRunner() bool {
+func (m *Manager) IsRunner() bool {
 	return true
 }
 
