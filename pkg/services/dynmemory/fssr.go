@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 
@@ -76,26 +77,35 @@ func (f *fssrDynMemAdapter) dynamicAdjust() {
 			f.count++
 			return
 		}
-		// no risk of overflow
+		// check int64 overflow
+		if f.memHigh > math.MaxInt64-f.memTotal/100 {
+			log.Errorf("int64 overflow")
+			return
+		}
 		memHigh = f.memHigh + f.memTotal/100
 		if memHigh > f.memTotal*8/10 {
 			memHigh = f.memTotal * 8 / 10
 		}
+		f.adjustMemoryHigh(memHigh)
 	} else if freeMem < f.reservedMem {
 		memHigh = f.memHigh - f.memTotal/10
-		if memHigh < 0 {
+		if memHigh <= 0 {
+			log.Errorf("memHigh is equal to or less than 0")
 			return
 		}
 		if memHigh < f.memTotal*3/10 {
 			memHigh = f.memTotal * 3 / 10
 		}
+		f.adjustMemoryHigh(memHigh)
 	}
+	f.count = 0
+}
+
+func (f *fssrDynMemAdapter) adjustMemoryHigh(memHigh int64) {
 	if memHigh != f.memHigh {
 		f.memHigh = memHigh
 		f.adjustOfflinePodHighMemory()
 	}
-
-	f.count = 0
 }
 
 // adjustOfflinePodHighMemory adjusts the memory.high of offline pods.
