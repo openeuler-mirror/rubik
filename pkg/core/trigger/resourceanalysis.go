@@ -49,7 +49,7 @@ var analyzerCreator = func() Trigger {
 			appendUsedExecutors(ResourceAnalysisAnno, resourceAnalysisExec)
 		}
 	}
-	return withTreeTirgger(ResourceAnalysisAnno, resourceAnalysisExec)
+	return withTreeTrigger(ResourceAnalysisAnno, resourceAnalysisExec)
 }
 
 // rreqOpt is the option to get information from cadvisor
@@ -161,7 +161,7 @@ func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo
 		}
 	}
 	if chosen != nil {
-		log.Infof("find the max cpu util pod \"%v\": %v", chosen.Name, maxUtil)
+		log.Infof("find the pod(%v) with the highest cpu utilization(%v)", chosen.Name, maxUtil)
 	}
 	return chosen
 }
@@ -185,7 +185,7 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
 		}
 	}
 	if chosen != nil {
-		log.Infof("find the max cpu util pod \"%v\": %v", chosen.Name, maxUtil)
+		log.Infof("find the pod(%v) with the highest memory utilization(%v)", chosen.Name, maxUtil)
 	}
 	return chosen
 }

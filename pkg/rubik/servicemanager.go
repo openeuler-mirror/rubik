@@ -218,7 +218,6 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 
 	const retryCount = 5
 	addOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
-		wg.Add(1)
 		for i := 0; i < retryCount; i++ {
 			if err := s.AddPod(podInfo); err != nil {
 				log.Errorf("service %s add func failed: %v", s.ID(), err)
@@ -231,6 +230,7 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
+		wg.Add(1)
 		go addOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
@@ -250,7 +250,6 @@ func (manager *ServiceManager) updateFunc(event typedef.Event) {
 		return
 	}
 	runOnce := func(s services.Service, old, new *typedef.PodInfo, wg *sync.WaitGroup) {
-		wg.Add(1)
 		log.Debugf("update Func with service: %s", s.ID())
 		if err := s.UpdatePod(old, new); err != nil {
 			log.Errorf("service %s update func failed: %v", s.ID(), err)
@@ -260,6 +259,7 @@ func (manager *ServiceManager) updateFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
+		wg.Add(1)
 		go runOnce(s, podInfos[0], podInfos[1], &wg)
 	}
 	wg.Wait()
@@ -275,7 +275,6 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	}
 
 	deleteOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
-		wg.Add(1)
 		if err := s.DeletePod(podInfo); err != nil {
 			log.Errorf("service %s delete func failed: %v", s.ID(), err)
 		}
@@ -284,6 +283,7 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
 	manager.RLock()
 	var wg sync.WaitGroup
 	for _, s := range manager.RunningServices {
+		wg.Add(1)
 		go deleteOnce(s, podInfo.DeepCopy(), &wg)
 	}
 	wg.Wait()
