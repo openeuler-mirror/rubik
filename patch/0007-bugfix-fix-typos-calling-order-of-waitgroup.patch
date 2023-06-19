@@ -1,0 +1,127 @@
+From 6b9d862857a1b302b26d8d51e7df5fed3062ba94 Mon Sep 17 00:00:00 2001
+From: vegbir <yangjiaqi16@huawei.com>
+Date: Mon, 19 Jun 2023 11:47:53 +0800
+Subject: [PATCH 7/7] bugfix: fix typos & calling order of waitgroup
+
+Signed-off-by: vegbir <yangjiaqi16@huawei.com>
+---
+ pkg/core/trigger/base.go             | 4 ++--
+ pkg/core/trigger/expulsion.go        | 2 +-
+ pkg/core/trigger/resourceanalysis.go | 6 +++---
+ pkg/rubik/servicemanager.go          | 6 +++---
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/pkg/core/trigger/base.go b/pkg/core/trigger/base.go
+index 7f1fbe9..c212f66 100644
+--- a/pkg/core/trigger/base.go
++++ b/pkg/core/trigger/base.go
+@@ -70,8 +70,8 @@ type TreeTrigger struct {
+ 	subTriggers []Trigger
+ }
+ 
+-// withTreeTirgger returns a BaseMetric object
+-func withTreeTirgger(name string, exec Executor) *TreeTrigger {
++// withTreeTrigger returns a BaseMetric object
++func withTreeTrigger(name string, exec Executor) *TreeTrigger {
+ 	return &TreeTrigger{
+ 		name:        name,
+ 		exec:        exec,
+diff --git a/pkg/core/trigger/expulsion.go b/pkg/core/trigger/expulsion.go
+index 87dd484..e438d3d 100644
+--- a/pkg/core/trigger/expulsion.go
++++ b/pkg/core/trigger/expulsion.go
+@@ -41,7 +41,7 @@ var expulsionCreator = func() Trigger {
+ 			appendUsedExecutors(ExpulsionAnno, expulsionExec)
+ 		}
+ 	}
+-	return withTreeTirgger(ExpulsionAnno, expulsionExec)
++	return withTreeTrigger(ExpulsionAnno, expulsionExec)
+ }
+ 
+ // Expulsion is the trigger to evict pods
+diff --git a/pkg/core/trigger/resourceanalysis.go b/pkg/core/trigger/resourceanalysis.go
+index a3d99e5..7e7413e 100644
+--- a/pkg/core/trigger/resourceanalysis.go
++++ b/pkg/core/trigger/resourceanalysis.go
+@@ -49,7 +49,7 @@ var analyzerCreator = func() Trigger {
+ 			appendUsedExecutors(ResourceAnalysisAnno, resourceAnalysisExec)
+ 		}
+ 	}
+-	return withTreeTirgger(ResourceAnalysisAnno, resourceAnalysisExec)
++	return withTreeTrigger(ResourceAnalysisAnno, resourceAnalysisExec)
+ }
+ 
+ // rreqOpt is the option to get information from cadvisor
+@@ -161,7 +161,7 @@ func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo
+ 		}
+ 	}
+ 	if chosen != nil {
+-		log.Infof("find the max cpu util pod \"%v\": %v", chosen.Name, maxUtil)
++		log.Infof("find the pod(%v) with the highest cpu utilization(%v)", chosen.Name, maxUtil)
+ 	}
+ 	return chosen
+ }
+@@ -185,7 +185,7 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
+ 		}
+ 	}
+ 	if chosen != nil {
+-		log.Infof("find the max cpu util pod \"%v\": %v", chosen.Name, maxUtil)
++		log.Infof("find the pod(%v) with the highest memory utilization(%v)", chosen.Name, maxUtil)
+ 	}
+ 	return chosen
+ }
+diff --git a/pkg/rubik/servicemanager.go b/pkg/rubik/servicemanager.go
+index 3e162b6..c3b252a 100644
+--- a/pkg/rubik/servicemanager.go
++++ b/pkg/rubik/servicemanager.go
+@@ -218,7 +218,6 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
+ 
+ 	const retryCount = 5
+ 	addOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+-		wg.Add(1)
+ 		for i := 0; i < retryCount; i++ {
+ 			if err := s.AddPod(podInfo); err != nil {
+ 				log.Errorf("service %s add func failed: %v", s.ID(), err)
+@@ -231,6 +230,7 @@ func (manager *ServiceManager) addFunc(event typedef.Event) {
+ 	manager.RLock()
+ 	var wg sync.WaitGroup
+ 	for _, s := range manager.RunningServices {
++		wg.Add(1)
+ 		go addOnce(s, podInfo.DeepCopy(), &wg)
+ 	}
+ 	wg.Wait()
+@@ -250,7 +250,6 @@ func (manager *ServiceManager) updateFunc(event typedef.Event) {
+ 		return
+ 	}
+ 	runOnce := func(s services.Service, old, new *typedef.PodInfo, wg *sync.WaitGroup) {
+-		wg.Add(1)
+ 		log.Debugf("update Func with service: %s", s.ID())
+ 		if err := s.UpdatePod(old, new); err != nil {
+ 			log.Errorf("service %s update func failed: %v", s.ID(), err)
+@@ -260,6 +259,7 @@ func (manager *ServiceManager) updateFunc(event typedef.Event) {
+ 	manager.RLock()
+ 	var wg sync.WaitGroup
+ 	for _, s := range manager.RunningServices {
++		wg.Add(1)
+ 		go runOnce(s, podInfos[0], podInfos[1], &wg)
+ 	}
+ 	wg.Wait()
+@@ -275,7 +275,6 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
+ 	}
+ 
+ 	deleteOnce := func(s services.Service, podInfo *typedef.PodInfo, wg *sync.WaitGroup) {
+-		wg.Add(1)
+ 		if err := s.DeletePod(podInfo); err != nil {
+ 			log.Errorf("service %s delete func failed: %v", s.ID(), err)
+ 		}
+@@ -284,6 +283,7 @@ func (manager *ServiceManager) deleteFunc(event typedef.Event) {
+ 	manager.RLock()
+ 	var wg sync.WaitGroup
+ 	for _, s := range manager.RunningServices {
++		wg.Add(1)
+ 		go deleteOnce(s, podInfo.DeepCopy(), &wg)
+ 	}
+ 	wg.Wait()
+-- 
+2.32.1 (Apple Git-133)
+
