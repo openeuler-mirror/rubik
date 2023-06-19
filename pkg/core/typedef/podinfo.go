@@ -15,6 +15,7 @@
 package typedef
 
 import (
+	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
@@ -26,6 +27,7 @@ type PodInfo struct {
 	Namespace       string                    `json:"namespace"`
 	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
 	Annotations     map[string]string         `json:"annotations,omitempty"`
+	Labels          map[string]string         `json:"labels,omitempty"`
 }
 
 // NewPodInfo creates the PodInfo instance
@@ -37,6 +39,7 @@ func NewPodInfo(pod *RawPod) *PodInfo {
 		Hierarchy:       cgroup.Hierarchy{Path: pod.CgroupPath()},
 		IDContainersMap: pod.ExtractContainerInfos(),
 		Annotations:     pod.DeepCopy().Annotations,
+		Labels:          pod.DeepCopy().Labels,
 	}
 }
 
@@ -46,8 +49,9 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 		return nil
 	}
 	var (
-		contMap map[string]*ContainerInfo
-		annoMap map[string]string
+		contMap  map[string]*ContainerInfo
+		annoMap  map[string]string
+		labelMap map[string]string
 	)
 	// nil is different from empty value in golang
 	if pod.IDContainersMap != nil {
@@ -56,10 +60,18 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 			contMap[id] = cont.DeepCopy()
 		}
 	}
+
 	if pod.Annotations != nil {
 		annoMap = make(map[string]string)
 		for k, v := range pod.Annotations {
 			annoMap[k] = v
+		}
+	}
+
+	if pod.Labels != nil {
+		labelMap = make(map[string]string)
+		for k, v := range pod.Labels {
+			labelMap[k] = v
 		}
 	}
 
@@ -69,6 +81,29 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 		Hierarchy:       pod.Hierarchy,
 		Namespace:       pod.Namespace,
 		Annotations:     annoMap,
+		Labels:          labelMap,
 		IDContainersMap: contMap,
 	}
+}
+
+// Offline is used to determine whether the pod is offline
+func (pod *PodInfo) Offline() bool {
+	var anno string
+	var label string
+
+	if pod.Annotations != nil {
+		anno = pod.Annotations[constant.PriorityAnnotationKey]
+	}
+
+	if pod.Labels != nil {
+		label = pod.Labels[constant.PriorityAnnotationKey]
+	}
+
+	// Annotations have a higher priority than labels
+	return anno == "true" || label == "true"
+}
+
+// Online is used to determine whether the pod is online
+func (pod *PodInfo) Online() bool {
+	return !pod.Offline()
 }

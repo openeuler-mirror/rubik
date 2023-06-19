@@ -160,18 +160,11 @@ func getQoSLevel(pod *typedef.PodInfo) int {
 	if pod == nil {
 		return constant.Online
 	}
-	anno, ok := pod.Annotations[constant.PriorityAnnotationKey]
-	if !ok {
-		return constant.Online
-	}
-	switch anno {
-	case "true":
+	if pod.Offline() {
 		return constant.Offline
-	case "false":
-		return constant.Online
-	default:
-		return constant.Online
 	}
+
+	return constant.Online
 }
 
 // Validate will validate the qos service config

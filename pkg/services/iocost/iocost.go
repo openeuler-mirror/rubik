@@ -236,7 +236,7 @@ func (b *IOCost) clearIOCost() error {
 
 func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
 	var weight uint64 = offlineWeight
-	if podInfo.Annotations[constant.PriorityAnnotationKey] == "false" {
+	if podInfo.Online() {
 		weight = onlineWeight
 	}
 	return ConfigPodIOCostWeight(podInfo.Path, weight)
