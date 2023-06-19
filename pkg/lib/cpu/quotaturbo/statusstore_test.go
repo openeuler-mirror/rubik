@@ -354,7 +354,7 @@ func TestStatusStore_AddCgroup(t *testing.T) {
 			name: "TC5-add successfully",
 			args: args{
 				cgroupPath: contPath,
-				cpuLimit:   2,
+				cpuLimit:   1,
 			},
 			fields: fields{
 				Config: &Config{

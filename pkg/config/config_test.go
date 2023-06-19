@@ -27,7 +27,8 @@ import (
 	"isula.org/rubik/pkg/common/util"
 )
 
-var rubikConfig string = `
+func TestNewConfig(t *testing.T) {
+	var rubikConfig string = `
 {
 	"agent": {
 	  "logDriver": "stdio",
@@ -85,8 +86,6 @@ var rubikConfig string = `
 	}
 }
 `
-
-func TestNewConfig(t *testing.T) {
 	if !util.PathExist(constant.TmpTestDir) {
 		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
 			assert.NoError(t, err)
@@ -99,13 +98,75 @@ func TestNewConfig(t *testing.T) {
 	defer os.Remove(tmpConfigFile)
 	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
 		assert.NoError(t, err)
-		return
 	}
 
 	c := NewConfig(JSON)
 	if err := c.LoadConfig(tmpConfigFile); err != nil {
 		assert.NoError(t, err)
-		return
 	}
 	fmt.Printf("config: %v", c)
+}
+
+func TestNewConfigNoConfig(t *testing.T) {
+	c := &Config{}
+	if err := c.LoadConfig(""); err == nil {
+		t.Fatalf("Config file exists")
+	}
+}
+
+func TestNewConfigDamagedConfig(t *testing.T) {
+	var rubikConfig string = `{`
+	if !util.PathExist(constant.TmpTestDir) {
+		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+			assert.NoError(t, err)
+		}
+	}
+	defer os.RemoveAll(constant.TmpTestDir)
+
+	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
+	defer os.Remove(tmpConfigFile)
+	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
+		assert.NoError(t, err)
+	}
+
+	c := NewConfig(JSON)
+	if err := c.LoadConfig(tmpConfigFile); err == nil {
+		t.Fatalf("Damaged config file should not be loaded.")
+	}
+}
+
+func TestNewConfigNoAgentConfig(t *testing.T) {
+	var rubikConfig string = `{}`
+	if !util.PathExist(constant.TmpTestDir) {
+		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+			assert.NoError(t, err)
+		}
+	}
+	defer os.RemoveAll(constant.TmpTestDir)
+
+	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
+	defer os.Remove(tmpConfigFile)
+	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
+		assert.NoError(t, err)
+	}
+
+	c := NewConfig(JSON)
+	if err := c.LoadConfig(tmpConfigFile); err != nil {
+		assert.NoError(t, err)
+	}
+	fmt.Printf("config: %v", c)
+}
+
+func TestUnwrapServiceConfig(t *testing.T) {
+	c := &Config{}
+	c.Fields = make(map[string]interface{})
+	c.Fields["agent"] = nil
+	c.Fields["config"] = nil
+	sc := c.UnwrapServiceConfig()
+	if _, exist := sc["agent"]; exist {
+		t.Fatalf("agent is exists")
+	}
+	if _, exist := sc["config"]; !exist {
+		t.Fatalf("config is not exists")
+	}
 }
