@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services/helper"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -15,6 +16,7 @@ type DynMemoryAdapter interface {
 	preStart(api.Viewer) error
 	getInterval() int
 	dynamicAdjust()
+	setOfflinePod(path string) error
 }
 type dynMemoryConfig struct {
 	Policy string `json:"policy,omitempty"`
@@ -42,11 +44,11 @@ type DynMemory struct {
 }
 
 // PreStart is an interface for calling a collection of methods when the service is pre-started
-func (dynMem *DynMemory) PreStart(api api.Viewer) error {
+func (dynMem *DynMemory) PreStart(viewer api.Viewer) error {
 	if dynMem.dynMemoryAdapter == nil {
 		return nil
 	}
-	return dynMem.dynMemoryAdapter.preStart(api)
+	return dynMem.dynMemoryAdapter.preStart(viewer)
 }
 
 // SetConfig is an interface that invoke the ConfigHandler to obtain the corresponding configuration.
@@ -79,6 +81,22 @@ func (dynMem *DynMemory) Run(ctx context.Context) {
 // IsRunner to Confirm whether it is a runner
 func (dynMem *DynMemory) IsRunner() bool {
 	return true
+}
+
+// AddPod to deal the event of adding a pod.
+func (dynMem *DynMemory) AddPod(podInfo *typedef.PodInfo) error {
+	if podInfo.Offline() {
+		return dynMem.dynMemoryAdapter.setOfflinePod(podInfo.Path)
+	}
+	return nil
+}
+
+// UpdatePod to deal the pod update event.
+func (dynMem *DynMemory) UpdatePod(old, new *typedef.PodInfo) error {
+	if new.Offline() {
+		return dynMem.dynMemoryAdapter.setOfflinePod(new.Path)
+	}
+	return nil
 }
 
 // newAdapter to create adapter of dyn memory.
