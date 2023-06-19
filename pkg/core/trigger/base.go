@@ -70,8 +70,8 @@ type TreeTrigger struct {
 	subTriggers []Trigger
 }
 
-// withTreeTirgger returns a BaseMetric object
-func withTreeTirgger(name string, exec Executor) *TreeTrigger {
+// withTreeTrigger returns a BaseMetric object
+func withTreeTrigger(name string, exec Executor) *TreeTrigger {
 	return &TreeTrigger{
 		name:        name,
 		exec:        exec,

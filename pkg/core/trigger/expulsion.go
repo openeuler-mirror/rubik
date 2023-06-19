@@ -41,7 +41,7 @@ var expulsionCreator = func() Trigger {
 			appendUsedExecutors(ExpulsionAnno, expulsionExec)
 		}
 	}
-	return withTreeTirgger(ExpulsionAnno, expulsionExec)
+	return withTreeTrigger(ExpulsionAnno, expulsionExec)
 }
 
 // Expulsion is the trigger to evict pods
