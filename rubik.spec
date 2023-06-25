@@ -1,6 +1,6 @@
 Name: rubik
 Version: 2.0.0
-Release: 2
+Release: 3
 Summary: Hybrid Deployment for Cloud Native
 License: Mulan PSL V2
 URL: https://gitee.com/openeuler/rubik
@@ -56,6 +56,12 @@ install -Dp ./build_rubik_image.sh %{buildroot}%{_sharedstatedir}/%{name}/build_
 rm -rf %{buildroot}
 
 %changelog
+* Mon Jun 19 2023 yangjiaqi <yangjiaqi16@huawei.com> - 2.0.0-3
+- Type:bugfix
+- CVE:NA
+- SUG:restart
+- DESC:optimize dynamicAdjust to be clear and add log
+
 * Mon Jun 19 2023 vegbir <yangjiaqi16@huawei.com> - 2.0.0-2
 - Type:bugfix
 - CVE:NA
