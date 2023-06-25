@@ -1,0 +1,135 @@
+From e30c428721ac2fd0da5152a28de04dbbf9c9d1ea Mon Sep 17 00:00:00 2001
+From: jingxiaolu <lujingxiao@huawei.com>
+Date: Sun, 11 Jun 2023 22:34:08 +0800
+Subject: [PATCH 1/2] rubik: test coverage improvement for pkg/config
+
+1. improve test coverage for pkg/config from 57.4% to 80.3%
+2. change cpuLimit to 1 in TestStatusStore_AddCgroup-TC5 for nano vm
+
+Signed-off-by: jingxiaolu <lujingxiao@huawei.com>
+---
+ pkg/config/config_test.go                  | 69 ++++++++++++++++++++--
+ pkg/lib/cpu/quotaturbo/statusstore_test.go |  2 +-
+ 2 files changed, 66 insertions(+), 5 deletions(-)
+
+diff --git a/pkg/config/config_test.go b/pkg/config/config_test.go
+index 03ff4ca..8766e04 100644
+--- a/pkg/config/config_test.go
++++ b/pkg/config/config_test.go
+@@ -27,7 +27,8 @@ import (
+ 	"isula.org/rubik/pkg/common/util"
+ )
+ 
+-var rubikConfig string = `
++func TestNewConfig(t *testing.T) {
++	var rubikConfig string = `
+ {
+ 	"agent": {
+ 	  "logDriver": "stdio",
+@@ -85,27 +86,87 @@ var rubikConfig string = `
+ 	}
+ }
+ `
++	if !util.PathExist(constant.TmpTestDir) {
++		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
++			assert.NoError(t, err)
++		}
++	}
+ 
+-func TestNewConfig(t *testing.T) {
++	defer os.RemoveAll(constant.TmpTestDir)
++
++	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
++	defer os.Remove(tmpConfigFile)
++	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
++		assert.NoError(t, err)
++	}
++
++	c := NewConfig(JSON)
++	if err := c.LoadConfig(tmpConfigFile); err != nil {
++		assert.NoError(t, err)
++	}
++	fmt.Printf("config: %v", c)
++}
++
++func TestNewConfigNoConfig(t *testing.T) {
++	c := &Config{}
++	if err := c.LoadConfig(""); err == nil {
++		t.Fatalf("Config file exists")
++	}
++}
++
++func TestNewConfigDamagedConfig(t *testing.T) {
++	var rubikConfig string = `{`
+ 	if !util.PathExist(constant.TmpTestDir) {
+ 		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+ 			assert.NoError(t, err)
+ 		}
+ 	}
++	defer os.RemoveAll(constant.TmpTestDir)
++
++	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
++	defer os.Remove(tmpConfigFile)
++	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
++		assert.NoError(t, err)
++	}
++
++	c := NewConfig(JSON)
++	if err := c.LoadConfig(tmpConfigFile); err == nil {
++		t.Fatalf("Damaged config file should not be loaded.")
++	}
++}
+ 
++func TestNewConfigNoAgentConfig(t *testing.T) {
++	var rubikConfig string = `{}`
++	if !util.PathExist(constant.TmpTestDir) {
++		if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
++			assert.NoError(t, err)
++		}
++	}
+ 	defer os.RemoveAll(constant.TmpTestDir)
+ 
+ 	tmpConfigFile := filepath.Join(constant.TmpTestDir, "config.json")
+ 	defer os.Remove(tmpConfigFile)
+ 	if err := ioutil.WriteFile(tmpConfigFile, []byte(rubikConfig), constant.DefaultFileMode); err != nil {
+ 		assert.NoError(t, err)
+-		return
+ 	}
+ 
+ 	c := NewConfig(JSON)
+ 	if err := c.LoadConfig(tmpConfigFile); err != nil {
+ 		assert.NoError(t, err)
+-		return
+ 	}
+ 	fmt.Printf("config: %v", c)
+ }
++
++func TestUnwrapServiceConfig(t *testing.T) {
++	c := &Config{}
++	c.Fields = make(map[string]interface{})
++	c.Fields["agent"] = nil
++	c.Fields["config"] = nil
++	sc := c.UnwrapServiceConfig()
++	if _, exist := sc["agent"]; exist {
++		t.Fatalf("agent is exists")
++	}
++	if _, exist := sc["config"]; !exist {
++		t.Fatalf("config is not exists")
++	}
++}
+diff --git a/pkg/lib/cpu/quotaturbo/statusstore_test.go b/pkg/lib/cpu/quotaturbo/statusstore_test.go
+index 68c01c5..ce1684d 100644
+--- a/pkg/lib/cpu/quotaturbo/statusstore_test.go
++++ b/pkg/lib/cpu/quotaturbo/statusstore_test.go
+@@ -354,7 +354,7 @@ func TestStatusStore_AddCgroup(t *testing.T) {
+ 			name: "TC5-add successfully",
+ 			args: args{
+ 				cgroupPath: contPath,
+-				cpuLimit:   2,
++				cpuLimit:   1,
+ 			},
+ 			fields: fields{
+ 				Config: &Config{
+-- 
+2.30.0
+
