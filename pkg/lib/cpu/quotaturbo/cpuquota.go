@@ -170,7 +170,7 @@ func writeQuota(mountPoint string, paths []string, delta int64) error {
 			h := cgroup.NewHierarchy(mountPoint, path)
 			curQuota, err := h.GetCgroupAttr(cpuQuotaKey).Int64()
 			if err != nil {
-				return fmt.Errorf("error getting cgroup %v quota: %v", path, err)
+				return fmt.Errorf("failed to get cgroup %v quota: %v", path, err)
 			}
 			if curQuota == -1 {
 				return nil
@@ -178,7 +178,7 @@ func writeQuota(mountPoint string, paths []string, delta int64) error {
 
 			nextQuota := curQuota + delta
 			if err := h.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(nextQuota)); err != nil {
-				return fmt.Errorf("error setting cgroup %v quota (%v to %v): %v", path, curQuota, nextQuota, err)
+				return fmt.Errorf("failed to set cgroup %v quota (%v to %v): %v", path, curQuota, nextQuota, err)
 			}
 			writed = append(writed, cgroupQuotaPair{h: h, value: curQuota})
 			return nil
@@ -187,7 +187,7 @@ func writeQuota(mountPoint string, paths []string, delta int64) error {
 		fallback = func() {
 			for _, w := range writed {
 				if err := w.h.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(w.value)); err != nil {
-					fmt.Printf("error recovering cgroup %v quota %v\n", w.h.Path, w.value)
+					fmt.Printf("failed to recover cgroup %v quota %v\n", w.h.Path, w.value)
 				}
 			}
 		}

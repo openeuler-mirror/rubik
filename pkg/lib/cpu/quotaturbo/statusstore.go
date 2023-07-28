@@ -99,7 +99,7 @@ func (store *StatusStore) RemoveCgroup(cgroupPath string) error {
 		return safeDel(cgroupPath)
 	}
 	if err := cq.recoverQuota(); err != nil {
-		return fmt.Errorf("fail to recover cpu.cfs_quota_us for cgroup %s : %v", cq.Path, err)
+		return fmt.Errorf("failed to recover cpu.cfs_quota_us for cgroup %s : %v", cq.Path, err)
 	}
 	return safeDel(cgroupPath)
 }
@@ -158,7 +158,7 @@ func (store *StatusStore) updateCPUQuotas() error {
 	var errs error
 	for id, c := range store.cpuQuotas {
 		if err := c.update(); err != nil {
-			errs = appendErr(errs, fmt.Errorf("error updating cpu quota %v: %v", id, err))
+			errs = appendErr(errs, fmt.Errorf("failed to update cpu quota %v: %v", id, err))
 		}
 	}
 	return errs
@@ -169,7 +169,7 @@ func (store *StatusStore) writeQuota() error {
 	var errs error
 	for id, c := range store.cpuQuotas {
 		if err := c.writeQuota(); err != nil {
-			errs = appendErr(errs, fmt.Errorf("error writing cgroup quota %v: %v", id, err))
+			errs = appendErr(errs, fmt.Errorf("failed to write cgroup quota %v: %v", id, err))
 		}
 	}
 	return errs

@@ -54,7 +54,7 @@ type Expulsion struct {
 func newKubeClient() *kubernetes.Clientset {
 	client, err := informer.InitKubeClient()
 	if err != nil {
-		log.Errorf("fail to connect k8s: %v", err)
+		log.Errorf("failed to connect kubernetes: %v", err)
 		return nil
 	}
 	return client
@@ -65,13 +65,13 @@ func (e *Expulsion) Execute(f Factor) (Factor, error) {
 	e.RLock()
 	defer e.RUnlock()
 	if e.client == nil {
-		return nil, fmt.Errorf("fail to use kubernetes client, please check")
+		return nil, fmt.Errorf("failed to use kubernetes client, please check")
 	}
 	var errs error
 	for name, pod := range f.TargetPods() {
 		log.Infof("evicting pod \"%v\"", name)
 		if err := inevictable(pod); err != nil {
-			errs = util.AppendErr(errs, fmt.Errorf("fail to evict pod \"%v\": %v", pod.Name, err))
+			errs = util.AppendErr(errs, fmt.Errorf("failed to evict pod \"%v\": %v", pod.Name, err))
 			continue
 		}
 		eviction := &policyv1beta1.Eviction{
@@ -82,7 +82,7 @@ func (e *Expulsion) Execute(f Factor) (Factor, error) {
 			DeleteOptions: &metav1.DeleteOptions{},
 		}
 		if err := e.client.CoreV1().Pods(pod.Namespace).Evict(context.TODO(), eviction); err != nil {
-			errs = util.AppendErr(errs, fmt.Errorf("fail to evict pod \"%v\": %v", pod.Name, err))
+			errs = util.AppendErr(errs, fmt.Errorf("failed to evict pod \"%v\": %v", pod.Name, err))
 			continue
 		}
 	}

@@ -76,10 +76,10 @@ func (c *Client) WithOptions(opts ...Option) error {
 	return nil
 }
 
-//  AdjustQuota is used to update status and adjust cgroup quota value
+// AdjustQuota is used to update status and adjust cgroup quota value
 func (c *Client) AdjustQuota() error {
 	if err := c.updateCPUUtils(); err != nil {
-		return fmt.Errorf("fail to get current cpu utilization: %v", err)
+		return fmt.Errorf("failed to get current cpu utilization: %v", err)
 	}
 	if len(c.cpuQuotas) == 0 {
 		return nil
@@ -153,7 +153,7 @@ func WithCgroupRoot(path string) Option {
 func WithElevateLimit(val float64) Option {
 	return func(c *Config) error {
 		if val < minimumUtilization || val > maximumUtilization {
-			return fmt.Errorf("the size range of SingleTotalIncreaseLimit is [0,100]")
+			return fmt.Errorf("invalid elevate limit value: %v (0 to 100)", val)
 		}
 		c.ElevateLimit = val
 		return nil
@@ -173,7 +173,7 @@ func WithSlowFallbackRatio(val float64) Option {
 func WithCPUFloatingLimit(val float64) Option {
 	return func(c *Config) error {
 		if val < minimumUtilization || val > maximumUtilization {
-			return fmt.Errorf("the size range of SingleTotalIncreaseLimit is [0,100]")
+			return fmt.Errorf("invalid CPU floating limit: %v (0 to 100)", val)
 		}
 		c.CPUFloatingLimit = val
 		return nil

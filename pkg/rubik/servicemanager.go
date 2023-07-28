@@ -74,7 +74,7 @@ func (manager *ServiceManager) InitServices(features []string,
 
 		conf, err := parser.MarshalIndent(s.GetConfig(), "", "\t")
 		if err != nil {
-			return fmt.Errorf("fail to get service %v configuration: %v", s.ID(), err)
+			return fmt.Errorf("failed to get service %v configuration: %v", s.ID(), err)
 		}
 
 		if err := manager.AddRunningService(feature, s); err != nil {
@@ -130,13 +130,13 @@ func terminatingServices(serviceMap map[string]services.Service, viewer api.View
 	for name, s := range serviceMap {
 		if s.IsRunner() {
 			if err := s.Stop(); err != nil {
-				log.Errorf("fail to stop service %v: %v", name, err)
+				log.Errorf("failed to stop service %v: %v", name, err)
 			} else {
 				log.Infof("service %v stop successfully", name)
 			}
 		}
 		if err := s.Terminate(viewer); err != nil {
-			log.Errorf("fail to terminate service %v: %v", name, err)
+			log.Errorf("failed to terminate service %v: %v", name, err)
 		} else {
 			log.Infof("service %v terminate successfully", name)
 		}
@@ -161,7 +161,7 @@ func (manager *ServiceManager) Setup(v api.Viewer) error {
 		*/
 		if err := s.PreStart(manager.Viewer); err != nil {
 			terminatingServices(preStarted, manager.Viewer)
-			return fmt.Errorf("fail to preStart service %v: %v", name, err)
+			return fmt.Errorf("failed to preStart service %v: %v", name, err)
 		}
 		preStarted[name] = s
 		log.Infof("service %v pre-start successfully", name)

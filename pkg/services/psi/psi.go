@@ -109,7 +109,7 @@ func (m *Manager) Run(ctx context.Context) {
 	wait.Until(
 		func() {
 			if err := m.monitor(); err != nil {
-				log.Errorf("fail to monitor PSI metrics: %v", err)
+				log.Errorf("failed to monitor PSI metrics: %v", err)
 			}
 		},
 		time.Second*time.Duration(m.conf.Interval),

@@ -98,7 +98,7 @@ func (a *Analyzer) Execute(f Factor) (Factor, error) {
 	a.RLock()
 	defer a.RUnlock()
 	if a.cadvisorManager == nil {
-		return nil, fmt.Errorf("fail to use cadvisor, please check")
+		return nil, fmt.Errorf("failed to use cadvisor, please check")
 	}
 	var (
 		target *typedef.PodInfo
@@ -142,7 +142,7 @@ func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
 		if err != nil {
-			log.Errorf("fail to get cgroup information %v: %v", pod.Path, err)
+			log.Errorf("failed to get cgroup information %v: %v", pod.Path, err)
 			continue
 		}
 		if len(podStats) < miniNum {
@@ -174,7 +174,7 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
 		if err != nil {
-			log.Errorf("fail to get cgroup information %v: %v", pod.Path, err)
+			log.Errorf("failed to get cgroup information %v: %v", pod.Path, err)
 			continue
 		}
 		last := podStats[len(podStats)-1].Memory.Usage
@@ -197,11 +197,11 @@ func (a *Analyzer) maxIOBandwidth(pods map[string]*typedef.PodInfo) *typedef.Pod
 func (a *Analyzer) cgroupCadvisorInfo(cgroupPath string, opts v2.RequestOptions) ([]*v2.ContainerStats, error) {
 	infoMap, err := a.cadvisorManager.ContainerInfoV2(cgroupPath, opts)
 	if err != nil {
-		return nil, fmt.Errorf("fail to get cgroup information %v: %v", cgroupPath, err)
+		return nil, fmt.Errorf("failed to get cgroup information %v: %v", cgroupPath, err)
 	}
 	info, existed := infoMap[cgroupPath]
 	if !existed {
-		return nil, fmt.Errorf("fail to get cgroup info from cadvisor")
+		return nil, fmt.Errorf("failed to get cgroup info from cadvisor")
 	}
 	return info.Stats, nil
 }

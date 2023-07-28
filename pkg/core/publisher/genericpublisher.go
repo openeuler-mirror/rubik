@@ -71,7 +71,7 @@ func (pub *genericPublisher) subscriberExisted(id string) bool {
 func (pub *genericPublisher) Subscribe(s api.Subscriber) error {
 	id := s.ID()
 	if pub.subscriberExisted(id) {
-		return fmt.Errorf("subscriber %v has registered", id)
+		return fmt.Errorf("subscriber has registered: %v", id)
 	}
 	pub.Lock()
 	for _, topic := range s.TopicsFunc() {
@@ -90,7 +90,7 @@ func (pub *genericPublisher) Subscribe(s api.Subscriber) error {
 func (pub *genericPublisher) Unsubscribe(s api.Subscriber) {
 	id := s.ID()
 	if !pub.subscriberExisted(id) {
-		log.Warnf("subscriber %v has not registered", id)
+		log.Warnf("subscriber has not registered: %v", id)
 		return
 	}
 	pub.Lock()

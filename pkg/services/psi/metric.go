@@ -77,7 +77,7 @@ func detectPSiMetric(resTyp string, conservation map[string]*typedef.PodInfo, av
 		log.Debugf("check psi of online pod: %v", pod.Name)
 		pressure, err := pod.GetCgroupAttr(key).PSI()
 		if err != nil {
-			log.Warnf("fail to get file %v: %v", key.FileName, err)
+			log.Warnf("failed to get file %v: %v", key.FileName, err)
 			continue
 		}
 		if pressure.Some.Avg10 > avg10Threshold {

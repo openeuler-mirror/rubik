@@ -90,15 +90,15 @@ func (c *Config) LoadConfig(path string) error {
 	}
 	data, err := loadConfigFile(path)
 	if err != nil {
-		return fmt.Errorf("error loading config file %s: %w", path, err)
+		return fmt.Errorf("failed to load config file %s: %w", path, err)
 	}
 	fields, err := c.ParseConfig(data)
 	if err != nil {
-		return fmt.Errorf("error parsing config: %v", err)
+		return fmt.Errorf("failed to parse config: %v", err)
 	}
 	c.Fields = fields
 	if err := c.parseAgentConfig(); err != nil {
-		return fmt.Errorf("error parsing agent config: %v", err)
+		return fmt.Errorf("failed to parse agent config: %v", err)
 	}
 	return nil
 }

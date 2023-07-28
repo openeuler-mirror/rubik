@@ -124,7 +124,7 @@ func (f *fssrDynMemAdapter) dealExistedPods() error {
 	pods := listOfflinePods(f.viewer)
 	for _, podInfo := range pods {
 		if err := f.setOfflinePod(podInfo.Path); err != nil {
-			log.Errorf("set fssr of offline pod[%v] error:%v", podInfo.UID, err)
+			log.Errorf("failed to set fssr of offline pod[%v]:%v", podInfo.UID, err)
 		}
 	}
 	return nil

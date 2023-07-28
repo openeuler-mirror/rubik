@@ -43,7 +43,7 @@ func (factory *informerFactory) GetInformerCreator(iType informerType) informerC
 		return NewAPIServerInformer
 	default:
 		return func(publisher api.Publisher) (api.Informer, error) {
-			return nil, fmt.Errorf("infomer not implemented")
+			return nil, fmt.Errorf("informer not implemented")
 		}
 	}
 }

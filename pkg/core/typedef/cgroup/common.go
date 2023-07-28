@@ -96,7 +96,7 @@ func (attr *Attr) Expect(arg interface{}) error {
 	case int:
 		value, err := attr.Int()
 		if err != nil {
-			return fmt.Errorf("fail to convert: %v", err)
+			return fmt.Errorf("failed to convert: %v", err)
 		}
 		if value != arg {
 			return fmt.Errorf("%v is not equal to %v", value, arg)
@@ -108,7 +108,7 @@ func (attr *Attr) Expect(arg interface{}) error {
 	case int64:
 		value, err := attr.Int64()
 		if err != nil {
-			return fmt.Errorf("fail to convert: %v", err)
+			return fmt.Errorf("failed to convert: %v", err)
 		}
 		if value != arg {
 			return fmt.Errorf("%v is not equal to %v", value, arg)

@@ -190,7 +190,7 @@ func (c *DynCache) Run(ctx context.Context) {
 // SetConfig sets and checks Config
 func (c *DynCache) SetConfig(f helper.ConfigHandler) error {
 	if f == nil {
-		return fmt.Errorf("config handler function callback is nil")
+		return fmt.Errorf("no config handler function callback")
 	}
 
 	config := newConfig()

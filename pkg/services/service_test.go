@@ -58,7 +58,7 @@ func TestErrorInitServiceComponents(t *testing.T) {
 	for _, feature := range errFeatures {
 		_, err := GetServiceComponent(feature.Name)
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "get service failed")
+			assert.Contains(t, err.Error(), "failed to get service")
 		}
 	}
 }
