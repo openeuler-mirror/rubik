@@ -164,7 +164,7 @@ func TestAttr_Expect(t *testing.T) {
 			name: "TC1-attribute error",
 			fields: fields{
 				Value: "",
-				Err:   fmt.Errorf("fail to get value"),
+				Err:   fmt.Errorf("failed to get value"),
 			},
 			wantErr: true,
 		},
@@ -285,7 +285,7 @@ func TestAttr_Int64(t *testing.T) {
 		{
 			name: "TC1-attribute error",
 			fields: fields{
-				Err: fmt.Errorf("fail to get value"),
+				Err: fmt.Errorf("failed to get value"),
 			},
 			wantErr: true,
 		},
@@ -339,7 +339,7 @@ func TestAttr_Int(t *testing.T) {
 		{
 			name: "TC1-attribute error",
 			fields: fields{
-				Err: fmt.Errorf("fail to get value"),
+				Err: fmt.Errorf("failed to get value"),
 			},
 			wantErr: true,
 		},
@@ -394,7 +394,7 @@ func TestAttr_Int64Map(t *testing.T) {
 		{
 			name: "TC1-attribute error",
 			fields: fields{
-				Err: fmt.Errorf("fail to get value"),
+				Err: fmt.Errorf("failed to get value"),
 			},
 			wantErr: true,
 		},
@@ -453,7 +453,7 @@ func TestAttr_CPUStat(t *testing.T) {
 		{
 			name: "TC1-attribute error",
 			fields: fields{
-				Err: fmt.Errorf("fail to get value"),
+				Err: fmt.Errorf("failed to get value"),
 			},
 			wantErr: true,
 		},

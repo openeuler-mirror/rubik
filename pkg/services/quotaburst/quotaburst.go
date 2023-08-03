@@ -74,7 +74,7 @@ func (conf *Burst) PreStart(viewer api.Viewer) error {
 	pods := viewer.ListPodsWithOptions()
 	for _, pod := range pods {
 		if err := setPodQuotaBurst(pod); err != nil {
-			log.Errorf("error prestart cont %v: %v", pod.Name, err)
+			log.Errorf("failed to set quota burst for pod %v: %v", pod.Name, err)
 		}
 	}
 	return nil
@@ -137,20 +137,20 @@ func matchQuota(burst int64, cgpath string) error {
 	)
 	quotaStr, err := util.ReadSmallFile(filepath.Join(cgpath, cpuQuotaFileName))
 	if err != nil {
-		return fmt.Errorf("fail to read cfs.cpu_quota_us: %v", err)
+		return fmt.Errorf("failed to read cfs.cpu_quota_us: %v", err)
 	}
 	quota, err := util.ParseInt64(strings.TrimSpace(string(quotaStr)))
 	if err != nil {
-		return fmt.Errorf("fail to parse quota as int64: %v", err)
+		return fmt.Errorf("failed to parse quota as int64: %v", err)
 	}
 
 	periodStr, err := util.ReadSmallFile(filepath.Join(cgpath, cpuPeriodFileName))
 	if err != nil {
-		return fmt.Errorf("fail to read cfs.cpu_period_us: %v", err)
+		return fmt.Errorf("failed to read cfs.cpu_period_us: %v", err)
 	}
 	period, err := util.ParseInt64(strings.TrimSpace(string(periodStr)))
 	if err != nil {
-		return fmt.Errorf("fail to parse period as int64: %v", err)
+		return fmt.Errorf("failed to parse period as int64: %v", err)
 	}
 
 	/*

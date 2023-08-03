@@ -64,11 +64,11 @@ var (
 
 func makeLogDir(logDir string) error {
 	if !filepath.IsAbs(logDir) {
-		return fmt.Errorf("log-dir %v must be an absolute path", logDir)
+		return fmt.Errorf("invalid path, log directory must be an absolute path: %v", logDir)
 	}
 
 	if err := os.MkdirAll(logDir, constant.DefaultDirMode); err != nil {
-		return fmt.Errorf("create log directory %v failed", logDir)
+		return fmt.Errorf("failed to create log directory %v : %v", logDir, err)
 	}
 
 	return nil
@@ -80,7 +80,7 @@ func InitConfig(driver, logdir, level string, size int64) error {
 		driver = constant.LogDriverStdio
 	}
 	if driver != constant.LogDriverStdio && driver != constant.LogDriverFile {
-		return fmt.Errorf("invalid log driver %s", driver)
+		return fmt.Errorf("invalid log driver: %s", driver)
 	}
 	logDriver = stdio
 	if driver == constant.LogDriverFile {
@@ -97,7 +97,7 @@ func InitConfig(driver, logdir, level string, size int64) error {
 	logLevel = levelstr
 
 	if size < logSizeMin || size > logSizeMax {
-		return fmt.Errorf("invalid log size %d", size)
+		return fmt.Errorf("invalid log size: %d (valid range is %d-%d)", size, logSizeMin, logSizeMax)
 	}
 	logSize = size
 	logFileMaxSize = logSize / logFileNum
@@ -155,7 +155,7 @@ func levelFromString(level string) (int, error) {
 	case constant.LogLevelError:
 		return logError, nil
 	default:
-		return logInfo, fmt.Errorf("invalid log level %s", level)
+		return logInfo, fmt.Errorf("invalid log level: %s", level)
 	}
 }
 

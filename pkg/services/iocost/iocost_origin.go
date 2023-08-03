@@ -58,7 +58,7 @@ func ConfigIOCostModel(devno string, p interface{}) error {
 			param.Wbps, param.Wseqiops, param.Wrandiops,
 		)
 	default:
-		return fmt.Errorf("model param is errror")
+		return fmt.Errorf("invalid model param")
 	}
 	return cgroup.WriteCgroupFile(paramStr, blkcgRootDir, iocostModelFile)
 }

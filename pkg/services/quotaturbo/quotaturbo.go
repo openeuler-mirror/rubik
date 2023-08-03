@@ -224,7 +224,7 @@ func (qt *QuotaTurbo) Terminate(viewer api.Viewer) error {
 func recoverOnePodQuota(pod *typedef.PodInfo) {
 	const unlimited = "-1"
 	if err := pod.SetCgroupAttr(cpuQuotaKey, unlimited); err != nil {
-		log.Errorf("Fail to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
+		log.Errorf("failed to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
 		return
 	}
 
@@ -238,32 +238,32 @@ func recoverOnePodQuota(pod *typedef.PodInfo) {
 		if cont.LimitResources[typedef.ResourceCPU] == 0 {
 			unlimitedContExistd = true
 			if err := cont.SetCgroupAttr(cpuQuotaKey, unlimited); err != nil {
-				log.Errorf("Fail to set the cpu quota of the container %v to -1: %v", cont.ID, err)
+				log.Errorf("failed to set the cpu quota of the container %v to -1: %v", cont.ID, err)
 				continue
 			}
-			log.Debugf("Set the cpu quota of the container %v to -1", cont.ID)
+			log.Debugf("set the cpu quota of the container %v to -1", cont.ID)
 			continue
 		}
 
 		period, err := cont.GetCgroupAttr(cpuPeriodKey).Int64()
 		if err != nil {
-			log.Errorf("Fail to get cpu period of container %v : %v", cont.ID, err)
+			log.Errorf("failed to get cpu period of container %v : %v", cont.ID, err)
 			continue
 		}
 
 		contQuota := int64(cont.LimitResources[typedef.ResourceCPU] * float64(period))
 		podQuota += contQuota
 		if err := cont.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(contQuota)); err != nil {
-			log.Errorf("Fail to set the cpu quota of the container %v: %v", cont.ID, err)
+			log.Errorf("failed to set the cpu quota of the container %v: %v", cont.ID, err)
 			continue
 		}
-		log.Debugf("Set the cpu quota of the container %v to %v", cont.ID, contQuota)
+		log.Debugf("set the cpu quota of the container %v to %v", cont.ID, contQuota)
 	}
 	if !unlimitedContExistd {
 		if err := pod.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(podQuota)); err != nil {
-			log.Errorf("Fail to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
+			log.Errorf("failed to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
 			return
 		}
-		log.Debugf("Set the cpu quota of the pod %v to %v", pod.UID, podQuota)
+		log.Debugf("set the cpu quota of the pod %v to %v", pod.UID, podQuota)
 	}
 }

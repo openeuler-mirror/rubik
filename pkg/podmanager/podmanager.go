@@ -53,7 +53,7 @@ func (manager *PodManager) HandleEvent(eventType typedef.EventType, event typede
 	case typedef.RAWPODSYNCALL:
 		manager.handleListEvent(eventType, event)
 	default:
-		log.Infof("fail to process %s type event", eventType.String())
+		log.Infof("failed to process %s type event", eventType.String())
 	}
 }
 
@@ -73,7 +73,7 @@ func (manager *PodManager) handleWatchEvent(eventType typedef.EventType, event t
 	case typedef.RAWPODDELETE:
 		manager.deleteFunc(pod)
 	default:
-		log.Errorf("code problem, should not go here...")
+		log.Errorf("invalid event type...")
 	}
 }
 
@@ -88,7 +88,7 @@ func (manager *PodManager) handleListEvent(eventType typedef.EventType, event ty
 	case typedef.RAWPODSYNCALL:
 		manager.sync(pods)
 	default:
-		log.Errorf("code problem, should not go here...")
+		log.Errorf("invalid event type...")
 	}
 }
 
@@ -105,7 +105,7 @@ func (manager *PodManager) EventTypes() []typedef.EventType {
 func eventToRawPod(e typedef.Event) (*typedef.RawPod, error) {
 	pod, ok := e.(*corev1.Pod)
 	if !ok {
-		return nil, fmt.Errorf("fail to get *typedef.RawPod which type is %T", e)
+		return nil, fmt.Errorf("failed to get raw pod information")
 	}
 	rawPod := typedef.RawPod(*pod)
 	return &rawPod, nil
@@ -115,7 +115,7 @@ func eventToRawPod(e typedef.Event) (*typedef.RawPod, error) {
 func eventToRawPods(e typedef.Event) ([]*typedef.RawPod, error) {
 	pods, ok := e.([]corev1.Pod)
 	if !ok {
-		return nil, fmt.Errorf("fail to get *typedef.RawPod which type is %T", e)
+		return nil, fmt.Errorf("failed to get raw pod information")
 	}
 	toRawPodPointer := func(pod corev1.Pod) *typedef.RawPod {
 		tmp := typedef.RawPod(pod)
@@ -137,13 +137,13 @@ func (manager *PodManager) addFunc(pod *typedef.RawPod) {
 	}
 	// condition2: pod is not existed
 	if manager.Pods.podExist(pod.ID()) {
-		log.Debugf("pod %v has added", pod.UID)
+		log.Debugf("pod %v has already added", pod.UID)
 		return
 	}
 	// step1: get pod information
 	podInfo := pod.ExtractPodInfo()
 	if podInfo == nil {
-		log.Errorf("fail to strip info from raw pod")
+		log.Errorf("failed to extract information from raw pod")
 		return
 	}
 	// step2. add pod information
@@ -161,7 +161,7 @@ func (manager *PodManager) updateFunc(pod *typedef.RawPod) {
 	// add or update information for running pod
 	podInfo := pod.ExtractPodInfo()
 	if podInfo == nil {
-		log.Errorf("fail to strip info from raw pod")
+		log.Errorf("failed to extract information from raw pod")
 		return
 	}
 	// The calling order must be updated first and then added

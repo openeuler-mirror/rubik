@@ -56,11 +56,11 @@ func WithStartArgs(args StartArgs) *Manager {
 		args.IncludeMetrics, http.DefaultClient, rawContainerCgroupPathPrefixWhiteList,
 		containerEnvMetadataWhiteList, perfEventsFile, resctrlInterval)
 	if err != nil {
-		log.Errorf("Failed to create cadvisor manager: %v", err)
+		log.Errorf("failed to create cadvisor manager: %v", err)
 		return nil
 	}
 	if err := m.Start(); err != nil {
-		log.Errorf("Failed to start cadvisor manager: %v", err)
+		log.Errorf("failed to start cadvisor manager: %v", err)
 		return nil
 	}
 	return &Manager{

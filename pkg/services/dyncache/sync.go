@@ -49,11 +49,11 @@ var validLevel = map[string]bool{
 func (c *DynCache) SyncCacheLimit() {
 	for _, p := range c.listOfflinePods() {
 		if err := c.syncLevel(p); err != nil {
-			log.Errorf("sync cache limit level err: %v", err)
+			log.Errorf("failed to sync cache limit level: %v", err)
 			continue
 		}
 		if err := c.writeTasksToResctrl(p); err != nil {
-			log.Errorf("set cache limit for pod %v err: %v", p.UID, err)
+			log.Errorf("failed to set cache limit for pod %v: %v", p.UID, err)
 			continue
 		}
 	}
@@ -83,10 +83,10 @@ func (c *DynCache) writeTasksToResctrl(pod *typedef.PodInfo) error {
 	for _, task := range taskList {
 		if err := util.WriteFile(resctrlTaskFile, task); err != nil {
 			if strings.Contains(err.Error(), "no such process") {
-				log.Errorf("pod %s task %s not exist", pod.UID, task)
+				log.Errorf("pod %s task %s does not exist", pod.UID, task)
 				continue
 			}
-			return fmt.Errorf("add task %v to file %v error: %v", task, resctrlTaskFile, err)
+			return fmt.Errorf("failed to add task %v to file %v: %v", task, resctrlTaskFile, err)
 		}
 	}
 

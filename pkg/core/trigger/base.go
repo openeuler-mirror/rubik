@@ -92,16 +92,15 @@ func (t *TreeTrigger) Name() string {
 // Execute executes the sub-triggers of the current trigger
 func (t *TreeTrigger) Execute(f Factor) error {
 	if t.exec == nil {
-		return fmt.Errorf("trigger %v can not execute", t.name)
+		return fmt.Errorf("trigger can not execute: %v", t.name)
 	}
 	var errs error
 	res, err := t.exec.Execute(f)
 	if err != nil {
-		return fmt.Errorf("fail to execute %v: %v", t.name, err)
+		return fmt.Errorf("failed to execute %v: %v", t.name, err)
 	}
-	log.Debugf("trigger %v done", t.name)
-	for i, next := range t.subTriggers {
-		log.Debugf("%v trigger %v(%v)", t.name, next.Name(), i)
+
+	for _, next := range t.subTriggers {
 		if err := next.Execute(res); err != nil {
 			errs = util.AppendErr(errs, util.AddErrorPrfix(err, t.name))
 		}
@@ -125,16 +124,16 @@ var (
 
 func appendUsedExecutors(name string, exec Executor) {
 	if exec == nil {
-		log.Errorf("nil executor %v can not be used", name)
+		log.Errorf("invalid executor: %v", name)
 		return
 	}
 	execLock.Lock()
 	defer execLock.Unlock()
 	if _, existed := runningExecutors[name]; existed {
-		log.Errorf("conflict executor %v", name)
+		log.Errorf("the executor already exist: %v", name)
 		return
 	}
-	log.Infof("using executor: %v", name)
+	log.Infof("append executor successfully: %v", name)
 	runningExecutors[name] = exec
 }
 
@@ -147,7 +146,7 @@ func StopUsedExecutors() error {
 	for name, exec := range runningExecutors {
 		log.Infof("stopping executor %v", name)
 		if exec == nil {
-			log.Infof("executor %v has stopped", name)
+			log.Infof("executor has already stopped: %v", name)
 			continue
 		}
 		if err := exec.Stop(); err != nil {

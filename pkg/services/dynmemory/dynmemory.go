@@ -54,7 +54,7 @@ func (dynMem *DynMemory) PreStart(viewer api.Viewer) error {
 // SetConfig is an interface that invoke the ConfigHandler to obtain the corresponding configuration.
 func (dynMem *DynMemory) SetConfig(f helper.ConfigHandler) error {
 	if f == nil {
-		return fmt.Errorf("config handler function callback is nil")
+		return fmt.Errorf("no config handler function callback")
 	}
 
 	var config dynMemoryConfig
@@ -62,7 +62,7 @@ func (dynMem *DynMemory) SetConfig(f helper.ConfigHandler) error {
 		return err
 	}
 	if dynMem.dynMemoryAdapter = newAdapter(config.Policy); dynMem.dynMemoryAdapter == nil {
-		return fmt.Errorf("dynamic memory policy is error")
+		return fmt.Errorf("invalid dynamic memory policy")
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (dynMem *DynMemory) Run(ctx context.Context) {
 			time.Second*time.Duration(dynMem.dynMemoryAdapter.getInterval()),
 			ctx.Done())
 	} else {
-		fmt.Println("dynamic memory policy is error")
+		fmt.Println("invalid dynamic memory policy")
 	}
 }
 
