@@ -239,10 +239,5 @@ func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
 	if podInfo.Annotations[constant.PriorityAnnotationKey] == "false" {
 		weight = onlineWeight
 	}
-	for _, container := range podInfo.IDContainersMap {
-		if err := ConfigContainerIOCostWeight(container.Path, weight); err != nil {
-			return err
-		}
-	}
-	return nil
+	return ConfigPodIOCostWeight(podInfo.Path, weight)
 }

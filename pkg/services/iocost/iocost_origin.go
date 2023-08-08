@@ -63,14 +63,14 @@ func ConfigIOCostModel(devno string, p interface{}) error {
 	return cgroup.WriteCgroupFile(paramStr, blkcgRootDir, iocostModelFile)
 }
 
-// ConfigContainerIOCostWeight for config iocost weight
+// ConfigPodIOCostWeight for config iocost weight
 // cgroup v1 iocost cannot be inherited. Therefore, only the container level can be configured.
-func ConfigContainerIOCostWeight(containerRelativePath string, weight uint64) error {
+func ConfigPodIOCostWeight(relativePath string, weight uint64) error {
 	if err := cgroup.WriteCgroupFile(strconv.FormatUint(weight, scale), blkcgRootDir,
-		containerRelativePath, iocostWeightFile); err != nil {
+		relativePath, iocostWeightFile); err != nil {
 		return err
 	}
-	if err := bindMemcgBlkcg(containerRelativePath); err != nil {
+	if err := bindMemcgBlkcg(relativePath); err != nil {
 		return err
 	}
 	return nil
