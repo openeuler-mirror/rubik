@@ -48,6 +48,8 @@ const (
 	DefaultFileMode os.FileMode = 0600
 	// DefaultDirMode is dir default mode
 	DefaultDirMode os.FileMode = 0700
+	// DefaultDumpLogFileMode is the permission of the log file (recorded or archived)
+	DefaultDumpLogFileMode os.FileMode = 0400
 )
 
 // Pod Annotation
