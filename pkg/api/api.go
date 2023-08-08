@@ -20,40 +20,6 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 )
 
-// Registry provides an interface for service discovery
-type Registry interface {
-	Init() error
-	Register(*Service, string) error
-	Deregister(*Service, string) error
-	GetService(string) (*Service, error)
-	ListServices() ([]*Service, error)
-}
-
-// ServiceDescriber describes services
-type ServiceDescriber interface {
-	ID() string
-}
-
-// EventFunc is the event handler for Service
-type EventFunc interface {
-	AddFunc(podInfo *typedef.PodInfo) error
-	UpdateFunc(old, new *typedef.PodInfo) error
-	DeleteFunc(podInfo *typedef.PodInfo) error
-}
-
-// Service contains progress that all services need to have
-type Service interface {
-	ServiceDescriber
-	EventFunc
-}
-
-// PersistentService is an abstract persistent running service
-type PersistentService interface {
-	ServiceDescriber
-	// Run is a service processing logic, which is blocking (implemented in an infinite loop, etc.)
-	Run(ctx context.Context)
-}
-
 // ListOption is for filtering podInfo
 type ListOption func(pi *typedef.PodInfo) bool
 
@@ -89,14 +55,3 @@ type Informer interface {
 	Start(ctx context.Context)
 }
 
-// Logger is the handler to print the log
-type Logger interface {
-	// Errorf logs bugs that affect normal functionality
-	Errorf(f string, args ...interface{})
-	// Warnf logs produce unexpected results
-	Warnf(f string, args ...interface{})
-	// Infof logs normal messages
-	Infof(f string, args ...interface{})
-	// Debugf logs verbose messages
-	Debugf(f string, args ...interface{})
-}
