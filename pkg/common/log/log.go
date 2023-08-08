@@ -160,6 +160,7 @@ func levelFromString(level string) (int, error) {
 }
 
 func renameLogFile() {
+	// rename the log that is no longer recorded, that is, the log of rubik.log.X
 	for i := logFileNum - 1; i > 1; i-- {
 		oldFile := logFname + fmt.Sprintf(".%d", i-1)
 		newFile := logFname + fmt.Sprintf(".%d", i)
@@ -167,7 +168,12 @@ func renameLogFile() {
 			DropError(os.Rename(oldFile, newFile))
 		}
 	}
-	DropError(os.Rename(logFname, logFname+".1"))
+
+	// dump the current rubik log
+	firstDumpLogName := logFname + ".1"
+	DropError(os.Rename(logFname, firstDumpLogName))
+	// change log file permissions
+	DropError(os.Chmod(firstDumpLogName, constant.DefaultDumpLogFileMode))
 }
 
 func rotateLog(line int64) string {
