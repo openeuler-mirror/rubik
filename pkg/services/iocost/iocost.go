@@ -97,7 +97,7 @@ func ioCostSupport() bool {
 	}
 
 	if !strings.Contains(string(cmdLine), "cgroup1_writeback") {
-		log.Warnf("this machine not support writeback, please add 'cgroup1_writeback' to cmdline")
+		log.Warnf("current machine does not support writeback, please add 'cgroup1_writeback' to cmdline")
 		return false
 	}
 
@@ -109,7 +109,7 @@ func ioCostSupport() bool {
 // SetConfig to config nodeConfig configure
 func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 	if f == nil {
-		return fmt.Errorf("config handler function callback is nil")
+		return fmt.Errorf("no config handler function callback")
 	}
 
 	var nodeConfigs []NodeConfig
@@ -133,7 +133,7 @@ func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 	// ensure that previous configuration is cleared.
 	if err := io.clearIOCost(); err != nil {
-		log.Errorf("clear iocost err:%v", err)
+		log.Errorf("failed to clear iocost:%v", err)
 		return err
 	}
 

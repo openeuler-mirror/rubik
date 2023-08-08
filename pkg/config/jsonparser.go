@@ -44,7 +44,7 @@ func (parser *jsonParser) ParseConfig(data []byte) (map[string]interface{}, erro
 	}
 	res, ok := m.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("fail to convert config to map[string]interface {}")
+		return nil, fmt.Errorf("failed to convert config to map[string]interface {}")
 	}
 	return res, nil
 }

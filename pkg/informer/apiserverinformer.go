@@ -49,14 +49,14 @@ func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
 	// create apiserver client
 	client, err := initKubeClient()
 	if err != nil {
-		return nil, fmt.Errorf("fail to init kubenetes client: %v", err)
+		return nil, fmt.Errorf("failed to init kubenetes client: %v", err)
 	}
 	informer.client = client
 
 	// filter pods on current nodes
 	nodeName := os.Getenv(constant.NodeNameEnvKey)
 	if nodeName == "" {
-		return nil, fmt.Errorf("missing %s", constant.NodeNameEnvKey)
+		return nil, fmt.Errorf("unable to get node name from environment variable %s", constant.NodeNameEnvKey)
 	}
 	informer.nodeName = nodeName
 
@@ -91,7 +91,7 @@ func (informer *APIServerInformer) listFunc(fieldSelector string) {
 	pods, err := informer.client.CoreV1().Pods("").List(context.Background(),
 		metav1.ListOptions{FieldSelector: fieldSelector})
 	if err != nil {
-		log.Errorf("error listing all pods: %v", err)
+		log.Errorf("failed to get pod list from APIServer informer: %v", err)
 		return
 	}
 	informer.Publish(typedef.RAWPODSYNCALL, pods.Items)

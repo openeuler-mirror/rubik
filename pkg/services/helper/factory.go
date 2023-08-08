@@ -36,7 +36,7 @@ func AddFactory(name string, factory ServiceFactory) error {
 	rwlock.Lock()
 	defer rwlock.Unlock()
 	if _, found := serviceFactories[name]; found {
-		return fmt.Errorf("factory is already exists")
+		return fmt.Errorf("factory already exists")
 	}
 	serviceFactories[name] = factory
 	return nil
@@ -49,6 +49,6 @@ func GetComponent(name string) (interface{}, error) {
 	if f, found := serviceFactories[name]; found {
 		return f.NewObj()
 	} else {
-		return nil, errors.New("factory is not found")
+		return nil, errors.New("factory not found")
 	}
 }

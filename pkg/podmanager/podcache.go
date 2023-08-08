@@ -55,25 +55,25 @@ func (cache *PodCache) addPod(pod *typedef.PodInfo) {
 		return
 	}
 	if ok := cache.podExist(pod.UID); ok {
-		log.Debugf("pod %v is existed", string(pod.UID))
+		log.Debugf("pod already exists: %v", string(pod.UID))
 		return
 	}
 	cache.Lock()
 	cache.Pods[pod.UID] = pod
 	cache.Unlock()
-	log.Debugf("add pod %v", string(pod.UID))
+	log.Debugf("add pod successfully: %v", string(pod.UID))
 }
 
 // delPod deletes pod information
 func (cache *PodCache) delPod(podID string) {
 	if ok := cache.podExist(podID); !ok {
-		log.Debugf("pod %v is not existed", string(podID))
+		log.Debugf("pod does not exist: %v", string(podID))
 		return
 	}
 	cache.Lock()
 	delete(cache.Pods, podID)
 	cache.Unlock()
-	log.Debugf("delete pod %v", podID)
+	log.Debugf("delete pod successfully: %v", podID)
 }
 
 // updatePod updates pod information
@@ -84,7 +84,7 @@ func (cache *PodCache) updatePod(pod *typedef.PodInfo) {
 	cache.Lock()
 	cache.Pods[pod.UID] = pod
 	cache.Unlock()
-	log.Debugf("update pod %v", pod.UID)
+	log.Debugf("update pod successfully: %v", pod.UID)
 }
 
 // substitute replaces all the data in the cache
@@ -100,7 +100,7 @@ func (cache *PodCache) substitute(pods []*typedef.PodInfo) {
 			continue
 		}
 		cache.Pods[pod.UID] = pod
-		log.Debugf("substituting pod %v", pod.UID)
+		log.Debugf("substituting pod successfully: %v", pod.UID)
 	}
 }
 

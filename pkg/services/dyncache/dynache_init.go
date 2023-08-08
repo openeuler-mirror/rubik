@@ -46,7 +46,7 @@ func (c *DynCache) InitCacheLimitDir() error {
 		defaultMbPercentMax = 100
 	)
 	if !perf.Support() {
-		return fmt.Errorf("perf event need by service %s not supported", c.ID())
+		return fmt.Errorf("current os does not support perf hw pmu events")
 	}
 	if err := checkHostPidns(c.config.DefaultPidNameSpace); err != nil {
 		return err
@@ -56,7 +56,7 @@ func (c *DynCache) InitCacheLimitDir() error {
 	}
 	numaNum, err := getNUMANum(c.Attr.NumaNodeDir)
 	if err != nil {
-		return fmt.Errorf("get NUMA nodes number error: %v", err)
+		return fmt.Errorf("failed to get NUMA nodes number: %v", err)
 	}
 	c.Attr.NumaNum = numaNum
 	c.Attr.L3PercentDynamic = c.config.L3Percent.Low
@@ -76,7 +76,7 @@ func (c *DynCache) InitCacheLimitDir() error {
 		}
 	}
 
-	log.Debugf("init cache limit directory success")
+	log.Debugf("initialize cache limit directory successfully")
 	return nil
 }
 
@@ -91,7 +91,7 @@ func (c *DynCache) newCacheLimitSet(level string, l3Per, mbPer int) *limitSet {
 
 func (cl *limitSet) setDir() error {
 	if err := os.Mkdir(cl.dir, constant.DefaultDirMode); err != nil && !os.IsExist(err) {
-		return fmt.Errorf("create cache limit directory error: %v", err)
+		return fmt.Errorf("failed to create cache limit directory: %v", err)
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func (cl *limitSet) writeResctrlSchemata(numaNum int) error {
 	maskFile := filepath.Join(filepath.Dir(cl.dir), "info", "L3", "cbm_mask")
 	llc, err := calcLimitedCacheValue(maskFile, cl.l3Percent)
 	if err != nil {
-		return fmt.Errorf("get limited cache value from L3 percent error: %v", err)
+		return fmt.Errorf("failed to get limited cache value from L3 percent: %v", err)
 	}
 
 	if err := cl.setDir(); err != nil {
@@ -118,7 +118,7 @@ func (cl *limitSet) writeResctrlSchemata(numaNum int) error {
 	mb := fmt.Sprintf("MB:%s\n", strings.Join(mbList, ";"))
 	content = l3 + mb
 	if err := util.WriteFile(schemetaFile, content); err != nil {
-		return fmt.Errorf("write %s to file %s error: %v", content, schemetaFile, err)
+		return fmt.Errorf("failed to write %s to file %s: %v", content, schemetaFile, err)
 	}
 
 	return nil
@@ -136,13 +136,13 @@ func getNUMANum(path string) (int, error) {
 func getBinaryMask(path string) (int, error) {
 	maskValue, err := util.ReadFile(path)
 	if err != nil {
-		return -1, fmt.Errorf("get L3 mask value error: %v", err)
+		return -1, fmt.Errorf("failed to get L3 mask value: %v", err)
 	}
 
 	// transfer mask to binary format
 	decMask, err := strconv.ParseInt(strings.TrimSpace(string(maskValue)), base16, bitSize)
 	if err != nil {
-		return -1, fmt.Errorf("transfer L3 mask value %v to decimal format error: %v", string(maskValue), err)
+		return -1, fmt.Errorf("failed to transfer L3 mask value %v to decimal format: %v", string(maskValue), err)
 	}
 	return len(strconv.FormatInt(decMask, base2)), nil
 }
@@ -163,7 +163,7 @@ func calcLimitedCacheValue(path string, l3Percent int) (string, error) {
 	}
 	decValue, err := strconv.ParseInt(strconv.Itoa(binValue), base2, bitSize)
 	if err != nil {
-		return "", fmt.Errorf("transfer %v to decimal format error: %v", binValue, err)
+		return "", fmt.Errorf("failed to transfer %v to decimal format: %v", binValue, err)
 	}
 
 	return strconv.FormatInt(decValue, base16), nil
@@ -172,7 +172,7 @@ func calcLimitedCacheValue(path string, l3Percent int) (string, error) {
 func checkHostPidns(path string) error {
 	ns, err := os.Readlink(path)
 	if err != nil {
-		return fmt.Errorf("get pid namespace inode error: %v", err)
+		return fmt.Errorf("failed to get pid namespace inode: %v", err)
 	}
 	hostPidInode := "4026531836"
 	if strings.Trim(ns, "pid:[]") != hostPidInode {
@@ -183,11 +183,11 @@ func checkHostPidns(path string) error {
 
 func checkResctrlPath(path string) error {
 	if !util.PathExist(path) {
-		return fmt.Errorf("resctrl path %v not exist, not support cache limit", path)
+		return fmt.Errorf("resctrl path %v does not exist, does not support cache limit", path)
 	}
 	schemataPath := filepath.Join(path, schemataFileName)
 	if !util.PathExist(schemataPath) {
-		return fmt.Errorf("resctrl schemata file %v not exist, check if %v directory is mounted",
+		return fmt.Errorf("resctrl schemata file %v does not exist, please check if %v directory is mounted",
 			schemataPath, path)
 	}
 	return nil

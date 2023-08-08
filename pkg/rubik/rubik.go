@@ -79,10 +79,10 @@ func (a *Agent) startInformer(ctx context.Context) error {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
 	informer, err := informer.GetInformerFactory().GetInformerCreator(informer.APISERVER)(publisher)
 	if err != nil {
-		return fmt.Errorf("fail to set informer: %v", err)
+		return fmt.Errorf("failed to set informer: %v", err)
 	}
 	if err := informer.Subscribe(a.podManager); err != nil {
-		return fmt.Errorf("fail to subscribe informer: %v", err)
+		return fmt.Errorf("failed to subscribe informer: %v", err)
 	}
 	a.informer = informer
 	informer.Start(ctx)
@@ -97,7 +97,7 @@ func (a *Agent) stopInformer() {
 // startServiceHandler starts and runs the service
 func (a *Agent) startServiceHandler(ctx context.Context) error {
 	if err := a.servicesManager.Setup(a.podManager); err != nil {
-		return fmt.Errorf("error setting service handler: %v", err)
+		return fmt.Errorf("failed to set service handler: %v", err)
 	}
 	a.servicesManager.Start(ctx)
 	a.podManager.Subscribe(a.servicesManager)
@@ -115,12 +115,12 @@ func runAgent(ctx context.Context) error {
 	// 1. read configuration
 	c := config.NewConfig(config.JSON)
 	if err := c.LoadConfig(constant.ConfigFile); err != nil {
-		return fmt.Errorf("error loading config: %v", err)
+		return fmt.Errorf("failed to load agent config: %v", err)
 	}
 
 	// 2. enable log system
 	if err := log.InitConfig(c.Agent.LogDriver, c.Agent.LogDir, c.Agent.LogLevel, c.Agent.LogSize); err != nil {
-		return fmt.Errorf("error initializing log: %v", err)
+		return fmt.Errorf("failed to initialize log: %v", err)
 	}
 
 	// 3. enable cgroup system
@@ -132,10 +132,10 @@ func runAgent(ctx context.Context) error {
 	// 5. Create and run the agent
 	agent, err := NewAgent(c)
 	if err != nil {
-		return fmt.Errorf("error new agent: %v", err)
+		return fmt.Errorf("failed to create agent: %v", err)
 	}
 	if err := agent.Run(ctx); err != nil {
-		return fmt.Errorf("error running agent: %v", err)
+		return fmt.Errorf("failed to start agent: %v", err)
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func Run() int {
 	// 0. file mask permission setting and parameter checking
 	unix.Umask(constant.DefaultUmask)
 	if len(os.Args) > 1 {
-		fmt.Println("args not allowed")
+		fmt.Println("invalid parameter, the length must be greater than 1")
 		return constant.ArgumentErrorExitCode
 	}
 	// 1. apply file locks, only one rubik process can run at the same time
@@ -166,7 +166,7 @@ func Run() int {
 
 	// 3. run rubik-agent
 	if err := runAgent(ctx); err != nil {
-		log.Errorf("error running rubik agent: %v", err)
+		log.Errorf("failed to run rubik agent: %v", err)
 		return constant.ErrorExitCode
 	}
 	return constant.NormalExitCode

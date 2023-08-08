@@ -79,12 +79,12 @@ func InitServiceComponents(specs []FeatureSpec) {
 
 		initFunc, found := serviceComponents[spec.Name]
 		if !found {
-			log.Errorf("init service failed, name:%v", spec.Name)
+			log.Errorf("initialize service failed, name:%v", spec.Name)
 			continue
 		}
 
 		if err := initFunc(spec.Name); err != nil {
-			log.Warnf("init component failed, name:%v,error:%v", spec.Name, err)
+			log.Warnf("initialize component failed, name:%v,error:%v", spec.Name, err)
 		}
 	}
 }
@@ -93,11 +93,11 @@ func InitServiceComponents(specs []FeatureSpec) {
 func GetServiceComponent(name string) (Service, error) {
 	si, err := helper.GetComponent(name)
 	if err != nil {
-		return nil, fmt.Errorf("get service failed, name:%v,err:%v", name, err)
+		return nil, fmt.Errorf("failed to get service %v,err:%v", name, err)
 	}
 	srv, ok := si.(Service)
 	if !ok || srv == nil {
-		return nil, fmt.Errorf("failed to convert the type,name:%v", name)
+		return nil, fmt.Errorf("failed to convert service %v", name)
 	}
 	return srv, nil
 }
