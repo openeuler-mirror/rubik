@@ -59,6 +59,10 @@ func (i PreemptionFactory) NewObj() (interface{}, error) {
 
 // SetConfig to config Preemption configure
 func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
+	if f == nil {
+		return fmt.Errorf("no config handler function callback")
+	}
+
 	var c PreemptionConfig
 	if err := f(q.Name, &c); err != nil {
 		return err
@@ -72,6 +76,9 @@ func (q *Preemption) SetConfig(f helper.ConfigHandler) error {
 
 // PreStart is the pre-start action
 func (q *Preemption) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	for _, pod := range viewer.ListPodsWithOptions() {
 		if err := q.SetQoSLevel(pod); err != nil {
 			log.Errorf("failed to set the qos level for the previously started pod %v: %v", pod.Name, err)
@@ -85,7 +92,7 @@ func (q *Preemption) AddPod(pod *typedef.PodInfo) error {
 	if err := q.SetQoSLevel(pod); err != nil {
 		return err
 	}
-	if err := q.ValidateConfig(pod); err != nil {
+	if err := q.validateConfig(pod); err != nil {
 		return err
 	}
 	return nil
@@ -100,7 +107,7 @@ func (q *Preemption) UpdatePod(old, new *typedef.PodInfo) error {
 	case newQos > oldQos:
 		return fmt.Errorf("does not support pod qos level setting from low to high")
 	default:
-		if err := q.ValidateConfig(new); err != nil {
+		if err := q.validateConfig(new); err != nil {
 			if err := q.SetQoSLevel(new); err != nil {
 				return fmt.Errorf("failed to update the qos level of pod %s(%s): %v", new.Name, new.UID, err)
 			}
@@ -114,9 +121,9 @@ func (q *Preemption) DeletePod(pod *typedef.PodInfo) error {
 	return nil
 }
 
-// ValidateConfig will validate pod's qos level between value from
+// validateConfig will validate pod's qos level between value from
 // cgroup file and the one from pod info
-func (q *Preemption) ValidateConfig(pod *typedef.PodInfo) error {
+func (q *Preemption) validateConfig(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
 	for _, r := range q.config.Resource {
 		if err := pod.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
@@ -138,7 +145,7 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 	}
 	qosLevel := getQoSLevel(pod)
 	if qosLevel == constant.Online {
-		log.Infof("pod %s has already been set to online", pod.Name)
+		log.Infof("pod %s(%s) has already been set to online(%d)", pod.Name, pod.UID, qosLevel)
 		return nil
 	}
 
@@ -152,7 +159,7 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 			}
 		}
 	}
-	log.Infof("the qos level of pod %s(%s) is set to %d successfully", pod.Name, pod.UID, qosLevel)
+	log.Infof("pod %s(%s) is set to offline(%d) successfully", pod.Name, pod.UID, qosLevel)
 	return nil
 }
 
@@ -170,7 +177,7 @@ func getQoSLevel(pod *typedef.PodInfo) int {
 // Validate will validate the qos service config
 func (conf *PreemptionConfig) Validate() error {
 	if len(conf.Resource) == 0 {
-		return fmt.Errorf("empty qos config")
+		return fmt.Errorf("empty resource preemption configuration")
 	}
 	for _, r := range conf.Resource {
 		if _, ok := supportCgroupTypes[r]; !ok {

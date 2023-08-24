@@ -26,9 +26,9 @@ import (
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
-// StartDynamic will continuously run to detect online pod cache miss and
+// startDynamic will continuously run to detect online pod cache miss and
 // limit offline pod cache usage
-func (c *DynCache) StartDynamic() {
+func (c *DynCache) startDynamic() {
 	if !c.dynamicExist() {
 		return
 	}

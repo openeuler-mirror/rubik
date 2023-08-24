@@ -28,7 +28,7 @@ const (
 	moduleName = "dynCache"
 )
 
-// TestCacheLimit_StartDynamic tests StartDynamic of CacheLimit
+// TestCacheLimit_StartDynamic tests startDynamic of CacheLimit
 func TestCacheLimit_Validate(t *testing.T) {
 	const num2 = 2
 	type fields struct {
@@ -236,7 +236,7 @@ func TestNewCacheLimit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewDynCache(moduleName); !reflect.DeepEqual(got, tt.want) {
+			if got := newDynCache(moduleName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewCacheLimit() = %v, want %v", got, tt.want)
 			}
 		})

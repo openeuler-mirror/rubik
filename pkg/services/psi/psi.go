@@ -118,6 +118,10 @@ func (m *Manager) Run(ctx context.Context) {
 
 // SetConfig sets and checks Config
 func (m *Manager) SetConfig(f helper.ConfigHandler) error {
+	if f == nil {
+		return fmt.Errorf("no config handler function callback")
+	}
+
 	var conf = NewConfig()
 	if err := f(m.Name, conf); err != nil {
 		return err
@@ -136,6 +140,9 @@ func (m *Manager) IsRunner() bool {
 
 // PreStart is the pre-start action
 func (m *Manager) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	m.Viewer = viewer
 	return nil
 }

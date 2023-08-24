@@ -27,7 +27,7 @@ import (
 	"isula.org/rubik/tests/try"
 )
 
-// TestCacheLimit_StartDynamic tests StartDynamic of CacheLimit
+// TestCacheLimit_StartDynamic tests startDynamic of CacheLimit
 func TestCacheLimit_StartDynamic(t *testing.T) {
 	if !perf.Support() {
 		t.Skipf("%s only run on physical machine", t.Name())
@@ -273,7 +273,7 @@ func TestCacheLimit_StartDynamic(t *testing.T) {
 			if tt.preHook != nil {
 				tt.preHook(t, c, tt.fields.FakePods)
 			}
-			c.StartDynamic()
+			c.startDynamic()
 			if tt.postHook != nil {
 				tt.postHook(t, c, tt.fields.FakePods)
 			}
