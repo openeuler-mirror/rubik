@@ -45,6 +45,9 @@ type DynMemory struct {
 
 // PreStart is an interface for calling a collection of methods when the service is pre-started
 func (dynMem *DynMemory) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	if dynMem.dynMemoryAdapter == nil {
 		return nil
 	}

@@ -43,7 +43,7 @@ func genNumaNodes(path string, num int) {
 	}
 }
 
-// TestCacheLimit_InitCacheLimitDir tests InitCacheLimitDir of CacheLimit
+// TestCacheLimit_InitCacheLimitDir tests initCacheLimitDir of CacheLimit
 func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 	if !perf.Support() {
 		t.Skipf("%s only run on physical machine", t.Name())
@@ -218,8 +218,8 @@ func TestCacheLimit_InitCacheLimitDir(t *testing.T) {
 			if tt.preHook != nil {
 				tt.preHook(t, c)
 			}
-			if err := c.InitCacheLimitDir(); (err != nil) != tt.wantErr {
-				t.Errorf("CacheLimit.InitCacheLimitDir() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.initCacheLimitDir(); (err != nil) != tt.wantErr {
+				t.Errorf("CacheLimit.initCacheLimitDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.postHook != nil {
 				tt.postHook(t, c)

@@ -73,18 +73,18 @@ type FeatureSpec struct {
 func InitServiceComponents(specs []FeatureSpec) {
 	for _, spec := range specs {
 		if !spec.Default {
-			log.Warnf("feature is disabled by default:%v", spec.Name)
+			log.Warnf("feature is disabled by default: %v", spec.Name)
 			continue
 		}
 
 		initFunc, found := serviceComponents[spec.Name]
 		if !found {
-			log.Errorf("initialize service failed, name:%v", spec.Name)
+			log.Errorf("initialize service failed: %v", spec.Name)
 			continue
 		}
 
 		if err := initFunc(spec.Name); err != nil {
-			log.Warnf("initialize component failed, name:%v,error:%v", spec.Name, err)
+			log.Warnf("initialize component failed: %v, error:%v", spec.Name, err)
 		}
 	}
 }

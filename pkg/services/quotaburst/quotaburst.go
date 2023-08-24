@@ -71,6 +71,9 @@ func (conf *Burst) DeletePod(podInfo *typedef.PodInfo) error {
 
 // PreStart is the pre-start action
 func (conf *Burst) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	pods := viewer.ListPodsWithOptions()
 	for _, pod := range pods {
 		if err := setPodQuotaBurst(pod); err != nil {

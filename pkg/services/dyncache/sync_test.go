@@ -253,7 +253,7 @@ func TestCacheLimit_SyncCacheLimit(t *testing.T) {
 			if tt.preHook != nil {
 				tt.preHook(t, c, tt.fields.FakePods)
 			}
-			c.SyncCacheLimit()
+			c.syncCacheLimit()
 			cleanFakePods(tt.fields.FakePods)
 		})
 	}

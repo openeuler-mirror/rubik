@@ -186,13 +186,13 @@ func rotateLog(line int64) string {
 }
 
 func writeLine(line string) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	if logDriver == stdio {
 		fmt.Printf("%s", line)
 		return
 	}
-
-	lock.Lock()
-	defer lock.Unlock()
 
 	f, err := os.OpenFile(rotateLog(int64(len(line))), os.O_CREATE|os.O_APPEND|os.O_WRONLY, constant.DefaultFileMode)
 	if err != nil {
@@ -311,18 +311,3 @@ func (e *Entry) Errorf(f string, args ...interface{}) {
 	}
 	output(e.level(logError), f, args...)
 }
-
-// EmptyLog is an empty log structure without any log processing
-type EmptyLog struct{}
-
-// Warnf write logs
-func (e *EmptyLog) Warnf(f string, args ...interface{}) {}
-
-// Infof write logs
-func (e *EmptyLog) Infof(f string, args ...interface{}) {}
-
-// Debugf write verbose logs
-func (e *EmptyLog) Debugf(f string, args ...interface{}) {}
-
-// Errorf write error logs
-func (e *EmptyLog) Errorf(f string, args ...interface{}) {}

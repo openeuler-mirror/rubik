@@ -123,7 +123,7 @@ func (i DynCacheFactory) Name() string {
 
 // NewObj to create object of dyncache.
 func (i DynCacheFactory) NewObj() (interface{}, error) {
-	return NewDynCache(i.ObjName), nil
+	return newDynCache(i.ObjName), nil
 }
 
 func newConfig() *Config {
@@ -146,8 +146,8 @@ func newConfig() *Config {
 	}
 }
 
-// NewDynCache return cache limit instance with default settings
-func NewDynCache(name string) *DynCache {
+// newDynCache return cache limit instance with default settings
+func newDynCache(name string) *DynCache {
 	return &DynCache{
 		ServiceBase: helper.ServiceBase{
 			Name: name,
@@ -168,9 +168,12 @@ func (c *DynCache) IsRunner() bool {
 
 // PreStart will do some pre-setting actions
 func (c *DynCache) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	c.Viewer = viewer
 
-	if err := c.InitCacheLimitDir(); err != nil {
+	if err := c.initCacheLimitDir(); err != nil {
 		return err
 	}
 	return nil
@@ -183,8 +186,8 @@ func (c *DynCache) GetConfig() interface{} {
 
 // Run implement service run function
 func (c *DynCache) Run(ctx context.Context) {
-	go wait.Until(c.SyncCacheLimit, time.Second, ctx.Done())
-	wait.Until(c.StartDynamic, time.Millisecond*time.Duration(c.config.AdjustInterval), ctx.Done())
+	go wait.Until(c.syncCacheLimit, time.Second, ctx.Done())
+	wait.Until(c.startDynamic, time.Millisecond*time.Duration(c.config.AdjustInterval), ctx.Done())
 }
 
 // SetConfig sets and checks Config
