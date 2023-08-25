@@ -105,25 +105,23 @@ func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 		existedCgroupPathMap[id] = struct{}{}
 		if _, found := conts[id]; !found {
 			if err := qt.client.RemoveCgroup(path); err != nil {
-				log.Errorf("error removing container %v: %v", id, err)
+				log.Errorf("failed to remove container %v: %v", id, err)
 			} else {
-				log.Infof("remove container %v", id)
+				log.Infof("remove container %v successfully", id)
 			}
 		}
 	}
 	for id, cont := range conts {
-		/*
-			Currently, modifying the cpu limit and container id of the container will cause the container to restart,
-			so it is considered that the cgroup path and cpulimit will not change during the life cycle of the container
-		*/
+		// Currently, modifying the cpu limit and container id of the container will cause the container to restart,
+		// so it is considered that the cgroup path and cpulimit will not change during the life cycle of the container
 		if _, ok := existedCgroupPathMap[id]; ok {
 			continue
 		}
 		// add container to quotaturbo
 		if err := qt.client.AddCgroup(cont.Path, cont.LimitResources[typedef.ResourceCPU]); err != nil {
-			log.Errorf("error adding container %v: %v", cont.Name, err)
+			log.Errorf("failed to add container %v: %v", cont.Name, err)
 		} else {
-			log.Infof("add container %v", id)
+			log.Infof("add container %v successfully", id)
 		}
 	}
 }
@@ -132,7 +130,7 @@ func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 func (qt *QuotaTurbo) AdjustQuota(conts map[string]*typedef.ContainerInfo) {
 	qt.syncCgroups(conts)
 	if err := qt.client.AdjustQuota(); err != nil {
-		log.Errorf("error occur when adjust quota: %v", err)
+		log.Errorf("an error occurred while adjusting the quota: %v", err)
 	}
 }
 
@@ -174,6 +172,10 @@ func (conf *Config) Validate() error {
 
 // SetConfig sets and checks Config
 func (qt *QuotaTurbo) SetConfig(f helper.ConfigHandler) error {
+	if f == nil {
+		return fmt.Errorf("no config handler function callback")
+	}
+
 	var conf = NewConfig()
 	if err := f(qt.Name, conf); err != nil {
 		return err
@@ -197,6 +199,9 @@ func (qt *QuotaTurbo) IsRunner() bool {
 
 // PreStart is the pre-start action
 func (qt *QuotaTurbo) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	// 1. set the parameters of the quotaturbo client
 	qt.client.WithOptions(
 		quotaturbo.WithCgroupRoot(cgroup.GetMountDir()),
@@ -224,7 +229,7 @@ func (qt *QuotaTurbo) Terminate(viewer api.Viewer) error {
 func recoverOnePodQuota(pod *typedef.PodInfo) {
 	const unlimited = "-1"
 	if err := pod.SetCgroupAttr(cpuQuotaKey, unlimited); err != nil {
-		log.Errorf("failed to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
+		log.Errorf("failed to set the cpu quota of the pod %v to unlimited(-1): %v", pod.UID, err)
 		return
 	}
 
@@ -238,10 +243,10 @@ func recoverOnePodQuota(pod *typedef.PodInfo) {
 		if cont.LimitResources[typedef.ResourceCPU] == 0 {
 			unlimitedContExistd = true
 			if err := cont.SetCgroupAttr(cpuQuotaKey, unlimited); err != nil {
-				log.Errorf("failed to set the cpu quota of the container %v to -1: %v", cont.ID, err)
+				log.Errorf("failed to set the cpu quota of the container %v to unlimited(-1): %v", cont.ID, err)
 				continue
 			}
-			log.Debugf("set the cpu quota of the container %v to -1", cont.ID)
+			log.Debugf("set the cpu quota of the container %v to unlimited(-1)", cont.ID)
 			continue
 		}
 
@@ -250,7 +255,8 @@ func recoverOnePodQuota(pod *typedef.PodInfo) {
 			log.Errorf("failed to get cpu period of container %v : %v", cont.ID, err)
 			continue
 		}
-
+		// the value range of cpu.cfs_period_us is 1000 (1ms) to 1000000 (1s),
+		// the number of CPUs configured to the container will not exceed the number of physical machine cores
 		contQuota := int64(cont.LimitResources[typedef.ResourceCPU] * float64(period))
 		podQuota += contQuota
 		if err := cont.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(contQuota)); err != nil {
@@ -261,7 +267,7 @@ func recoverOnePodQuota(pod *typedef.PodInfo) {
 	}
 	if !unlimitedContExistd {
 		if err := pod.SetCgroupAttr(cpuQuotaKey, util.FormatInt64(podQuota)); err != nil {
-			log.Errorf("failed to set the cpu quota of the pod %v to -1: %v", pod.UID, err)
+			log.Errorf("failed to set the cpu quota of the pod %v to unlimited(-1): %v", pod.UID, err)
 			return
 		}
 		log.Debugf("set the cpu quota of the pod %v to %v", pod.UID, podQuota)

@@ -154,6 +154,9 @@ func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
 
 // PreStart is the pre-start action
 func (io *IOCost) PreStart(viewer api.Viewer) error {
+	if viewer == nil {
+		return fmt.Errorf("invalid pods viewer")
+	}
 	return io.dealExistedPods(viewer)
 }
 

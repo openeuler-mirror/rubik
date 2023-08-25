@@ -125,7 +125,7 @@ func WriteFile(path, content string) error {
 	dirPath := filepath.Dir(path)
 	if !PathExist(dirPath) {
 		if err := os.MkdirAll(dirPath, constant.DefaultDirMode); err != nil {
-			return fmt.Errorf("error create dir %v: %v", dirPath, err)
+			return fmt.Errorf("error creating dir %v: %v", dirPath, err)
 		}
 	}
 	return ioutil.WriteFile(path, []byte(content), constant.DefaultFileMode)
@@ -146,10 +146,10 @@ func AppendFile(path, content string) error {
 		}
 	}()
 	if err != nil {
-		return fmt.Errorf("error open file: %v", err)
+		return fmt.Errorf("error opening file: %v", err)
 	}
 	if _, err := f.WriteString(content); err != nil {
-		return fmt.Errorf("error write file: %v", err)
+		return fmt.Errorf("error writing file: %v", err)
 	}
 	return nil
 }

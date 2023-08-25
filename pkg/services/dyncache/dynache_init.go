@@ -38,9 +38,8 @@ type limitSet struct {
 	mbPercent int
 }
 
-// InitCacheLimitDir init multi-level cache limit directories
-func (c *DynCache) InitCacheLimitDir() error {
-	log.Debugf("init cache limit directory")
+// initCacheLimitDir init multi-level cache limit directories
+func (c *DynCache) initCacheLimitDir() error {
 	const (
 		defaultL3PercentMax = 100
 		defaultMbPercentMax = 100

@@ -46,7 +46,7 @@ var validLevel = map[string]bool{
 }
 
 // SyncCacheLimit will continuously set cache limit with corresponding offline pods
-func (c *DynCache) SyncCacheLimit() {
+func (c *DynCache) syncCacheLimit() {
 	for _, p := range c.listOfflinePods() {
 		if err := c.syncLevel(p); err != nil {
 			log.Errorf("failed to sync cache limit level: %v", err)

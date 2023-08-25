@@ -32,13 +32,8 @@ var (
 )
 
 func init() {
-	var showVersion bool
 	const maxArgLen = 2
 	if len(os.Args) == maxArgLen && os.Args[1] == "-v" {
-		showVersion = true
-	}
-
-	if showVersion {
 		fmt.Println("Version:      ", Version)
 		fmt.Println("Release:      ", Release)
 		fmt.Println("Go Version:   ", runtime.Version())
