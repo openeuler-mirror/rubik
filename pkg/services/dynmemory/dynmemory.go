@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"isula.org/rubik/pkg/api"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/services/helper"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -107,6 +108,8 @@ func newAdapter(policy string) DynMemoryAdapter {
 	switch policy {
 	case "fssr":
 		return initFssrDynMemAdapter()
+	default:
+		log.Errorf("no matching policy[%v] is found", policy)
 	}
 	return nil
 }

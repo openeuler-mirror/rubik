@@ -109,14 +109,13 @@ func (f *fssrDynMemAdapter) adjustMemoryHigh(memHigh int64) {
 }
 
 // adjustOfflinePodHighMemory adjusts the memory.high of offline pods.
-func (f *fssrDynMemAdapter) adjustOfflinePodHighMemory() error {
+func (f *fssrDynMemAdapter) adjustOfflinePodHighMemory() {
 	pods := listOfflinePods(f.viewer)
 	for _, podInfo := range pods {
 		if err := setOfflinePodHighMemory(podInfo.Path, f.memHigh); err != nil {
-			return err
+			log.Errorf("failed to adjust high memory of offline pod[%v]:%v", podInfo.UID, err)
 		}
 	}
-	return nil
 }
 
 // dealExistedPods handles offline pods by setting their memory.high and memory.high_async_ratio
