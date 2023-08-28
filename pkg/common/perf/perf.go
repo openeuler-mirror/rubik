@@ -256,14 +256,11 @@ func (p *perf) Destroy() {
 // CgroupStat report perf stat for cgroup
 func CgroupStat(cgpath string, dur time.Duration) (*Stat, error) {
 	p, err := newPerf(cgpath)
-	defer func() {
-		if p != nil {
-			p.Destroy()
-		}
-	}()
 	if err != nil {
 		return nil, errors.Errorf("perf init failed: %v", err)
 	}
+
+	defer p.Destroy()
 
 	if err := p.Start(); err != nil {
 		return nil, errors.Errorf("perf start failed: %v", err)
