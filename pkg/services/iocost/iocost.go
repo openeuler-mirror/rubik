@@ -161,17 +161,17 @@ func (io *IOCost) PreStart(viewer api.Viewer) error {
 }
 
 // Terminate is the terminating action
-func (b *IOCost) Terminate(viewer api.Viewer) error {
-	if err := b.clearIOCost(); err != nil {
+func (io *IOCost) Terminate(viewer api.Viewer) error {
+	if err := io.clearIOCost(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *IOCost) dealExistedPods(viewer api.Viewer) error {
+func (io *IOCost) dealExistedPods(viewer api.Viewer) error {
 	pods := viewer.ListPodsWithOptions()
 	for _, pod := range pods {
-		if err := b.configPodIOCostWeight(pod); err != nil {
+		if err := io.configPodIOCostWeight(pod); err != nil {
 			log.Errorf("config pod iocost failed, err:%v", err)
 		}
 	}
@@ -179,35 +179,35 @@ func (b *IOCost) dealExistedPods(viewer api.Viewer) error {
 }
 
 // AddPod to deal the event of adding a pod.
-func (b *IOCost) AddPod(podInfo *typedef.PodInfo) error {
-	return b.configPodIOCostWeight(podInfo)
+func (io *IOCost) AddPod(podInfo *typedef.PodInfo) error {
+	return io.configPodIOCostWeight(podInfo)
 }
 
 // UpdatePod to deal the pod update event.
-func (b *IOCost) UpdatePod(old, new *typedef.PodInfo) error {
-	return b.configPodIOCostWeight(new)
+func (io *IOCost) UpdatePod(old, new *typedef.PodInfo) error {
+	return io.configPodIOCostWeight(new)
 }
 
 // DeletePod to deal the pod deletion event.
-func (b *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
+func (io *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
 	return nil
 }
 
-func (b *IOCost) configIOCost(configs []IOCostConfig) error {
+func (io *IOCost) configIOCost(configs []IOCostConfig) error {
 	for _, config := range configs {
 		devno, err := getBlkDeviceNo(config.Dev)
 		if err != nil {
 			return err
 		}
 		if config.Model == "linear" {
-			if err := ConfigIOCostModel(devno, config.Param); err != nil {
+			if err := configIOCostModel(devno, config.Param); err != nil {
 				return err
 			}
 		} else {
 			return fmt.Errorf("non-linear models are not supported")
 		}
 
-		if err := ConfigIOCostQoS(devno, true); err != nil {
+		if err := configIOCostQoS(devno, true); err != nil {
 			return err
 		}
 	}
@@ -215,7 +215,7 @@ func (b *IOCost) configIOCost(configs []IOCostConfig) error {
 }
 
 // clearIOCost used to disable all iocost
-func (b *IOCost) clearIOCost() error {
+func (io *IOCost) clearIOCost() error {
 	qosbytes, err := cgroup.ReadCgroupFile(blkcgRootDir, iocostQosFile)
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func (b *IOCost) clearIOCost() error {
 	for _, qosParam := range qosParams {
 		words := strings.FieldsFunc(qosParam, unicode.IsSpace)
 		if len(words) != 0 {
-			if err := ConfigIOCostQoS(words[0], false); err != nil {
+			if err := configIOCostQoS(words[0], false); err != nil {
 				return err
 			}
 		}
@@ -237,10 +237,10 @@ func (b *IOCost) clearIOCost() error {
 	return nil
 }
 
-func (b *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
+func (io *IOCost) configPodIOCostWeight(podInfo *typedef.PodInfo) error {
 	var weight uint64 = offlineWeight
 	if podInfo.Online() {
 		weight = onlineWeight
 	}
-	return ConfigPodIOCostWeight(podInfo.Path, weight)
+	return configPodIOCostWeight(podInfo.Path, weight)
 }
