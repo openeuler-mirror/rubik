@@ -32,8 +32,8 @@ const (
 	wbBlkioinoFile = "memory.wb_blkio_ino"
 )
 
-// ConfigIOCostQoS for config iocost qos.
-func ConfigIOCostQoS(devno string, enable bool) error {
+// configIOCostQoS for config iocost qos.
+func configIOCostQoS(devno string, enable bool) error {
 	t := 0
 	if enable {
 		t = 1
@@ -42,8 +42,8 @@ func ConfigIOCostQoS(devno string, enable bool) error {
 	return cgroup.WriteCgroupFile(qosParam, blkcgRootDir, iocostQosFile)
 }
 
-// ConfigIOCostModel for config iocost model
-func ConfigIOCostModel(devno string, p interface{}) error {
+// configIOCostModel for config iocost model
+func configIOCostModel(devno string, p interface{}) error {
 	var paramStr string
 	switch param := p.(type) {
 	case LinearParam:
@@ -63,9 +63,9 @@ func ConfigIOCostModel(devno string, p interface{}) error {
 	return cgroup.WriteCgroupFile(paramStr, blkcgRootDir, iocostModelFile)
 }
 
-// ConfigPodIOCostWeight for config iocost weight
+// configPodIOCostWeight for config iocost weight
 // cgroup v1 iocost cannot be inherited. Therefore, only the container level can be configured.
-func ConfigPodIOCostWeight(relativePath string, weight uint64) error {
+func configPodIOCostWeight(relativePath string, weight uint64) error {
 	if err := cgroup.WriteCgroupFile(strconv.FormatUint(weight, scale), blkcgRootDir,
 		relativePath, iocostWeightFile); err != nil {
 		return err

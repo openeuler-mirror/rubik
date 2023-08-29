@@ -334,7 +334,7 @@ func TestSetPodWeight(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ConfigPodIOCostWeight(tt.cgroupPath, uint64(tt.weight))
+			err := configPodIOCostWeight(tt.cgroupPath, uint64(tt.weight))
 			if tt.wantErr {
 				assert.Contains(t, err.Error(), tt.errMsg)
 				return
