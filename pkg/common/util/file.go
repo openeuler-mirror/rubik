@@ -140,14 +140,12 @@ func AppendFile(path, content string) error {
 		return fmt.Errorf("%v is not a file", path)
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, constant.DefaultFileMode)
-	defer func() {
-		if err != f.Close() {
-			return
-		}
-	}()
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
 	}
+
+	defer f.Close()
+
 	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("error writing file: %v", err)
 	}
