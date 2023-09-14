@@ -35,7 +35,7 @@ rubik支持两种方式为业务Pod配置访存带宽和LLC控制组：
   - 取值为`static`时，pod将被加入到`rubik_max`控制组。
   - 取值为`dynamic`时，pod将被加入到`rubik_dynamic`控制组。
 - 手动指定
-用户可手动通过为业务Pod增加注解`volcano.sh/cache-limit`设置其控制组（我们建议不建议将）, 如下列配置的pod将被加入rubik_low控制组:
+用户可手动通过为业务Pod增加注解`volcano.sh/cache-limit`设置其控制组（我们不建议）, 如下列配置的pod将被加入rubik_low控制组:
 ```yaml
 annotations:
     volcano.sh/cache-limit: "low"
