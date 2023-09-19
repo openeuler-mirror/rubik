@@ -26,7 +26,7 @@ type mockSubscriber struct {
 	name string
 }
 
-//  ID returns the unique ID of the subscriber
+// ID returns the unique ID of the subscriber
 func (s *mockSubscriber) ID() string {
 	return s.name
 }
