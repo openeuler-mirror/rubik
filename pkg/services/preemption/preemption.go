@@ -21,6 +21,7 @@ import (
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 	"isula.org/rubik/pkg/services/helper"
@@ -149,15 +150,21 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 		return nil
 	}
 
+	var errs error
 	for _, r := range q.config.Resource {
 		if err := pod.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
-			return err
+			log.Warnf("failed to set %s-qos-level for pod %s: %v", r, pod.Name, err)
+			errs = util.AppendErr(errs, err)
 		}
 		for _, container := range pod.IDContainersMap {
 			if err := container.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
-				return err
+				log.Warnf("failed to set %s-qos-level for container %s: %v", r, container.Name, err)
+				errs = util.AppendErr(errs, err)
 			}
 		}
+	}
+	if errs != nil {
+		return errs
 	}
 	log.Infof("pod %s(%s) is set to offline(%d) successfully", pod.Name, pod.UID, qosLevel)
 	return nil
