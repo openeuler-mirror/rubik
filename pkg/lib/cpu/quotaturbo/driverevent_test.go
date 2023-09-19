@@ -370,7 +370,7 @@ func TestFastFallback(t *testing.T) {
 	}
 }
 
-//  TestSharpFluctuates tests sharpFluctuates
+// TestSharpFluctuates tests sharpFluctuates
 func TestSharpFluctuates(t *testing.T) {
 	const cpuUtil90 = 90
 	var sharpFluctuatesTests = []struct {

@@ -54,4 +54,3 @@ type Informer interface {
 	Publisher
 	Start(ctx context.Context)
 }
-
