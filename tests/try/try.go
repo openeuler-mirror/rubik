@@ -20,7 +20,6 @@
 // noisy warnings.
 //
 // 2. Provide testdir helper to generate tmpdir for unitest.
-//
 package try
 
 import (
