@@ -149,7 +149,11 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 	podCgroupPath := pod.CgroupPath()
 	for _, rawContainer := range nameRawContainersMap {
 		id, err := rawContainer.GetRealContainerID()
-		if id == "" || err != nil {
+		if err != nil {
+			fmt.Printf("failed to parse container ID: %v\n", err)
+			continue
+		}
+		if id == "" {
 			continue
 		}
 		idContainersMap[id] = NewContainerInfo(id, podCgroupPath, rawContainer)
@@ -169,7 +173,7 @@ func (cont *RawContainer) GetRealContainerID() (string, error) {
 	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
 
 	if !currentContainerEngines.Support(cont) {
-		return "", fmt.Errorf("fatal error : unsupported container engine")
+		return "", fmt.Errorf("unsupported container engine: %v", cont.status.ContainerID)
 	}
 
 	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]

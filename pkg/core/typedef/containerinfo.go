@@ -15,6 +15,7 @@
 package typedef
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -32,12 +33,15 @@ const (
 	DOCKER
 	// CONTAINERD means containerd container engine
 	CONTAINERD
+	// ISULAD means isulad container engine
+	ISULAD
 )
 
 var (
 	supportEnginesPrefixMap = map[ContainerEngineType]string{
 		DOCKER:     "docker://",
 		CONTAINERD: "containerd://",
+		ISULAD:     "iSulad://",
 	}
 	currentContainerEngines = UNDEFINED
 	setContainerEnginesOnce sync.Once
@@ -85,6 +89,7 @@ func fixContainerEngine(containerID string) {
 	for engine, prefix := range supportEnginesPrefixMap {
 		if strings.HasPrefix(containerID, prefix) {
 			currentContainerEngines = engine
+			fmt.Printf("The container engine is %v\n", strings.Split(currentContainerEngines.Prefix(), ":")[0])
 			return
 		}
 	}
