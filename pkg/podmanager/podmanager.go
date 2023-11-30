@@ -165,9 +165,9 @@ func (manager *PodManager) updateFunc(pod *typedef.RawPod) {
 		return
 	}
 	// The calling order must be updated first and then added
-	// step2: process exsited and running pod
+	// step2: process exited and running pod
 	manager.tryUpdate(podInfo)
-	// step3: process not exsited and running pod
+	// step3: process not exited and running pod
 	manager.tryAdd(podInfo)
 }
 

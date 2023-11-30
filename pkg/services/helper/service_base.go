@@ -78,7 +78,7 @@ func (s *ServiceBase) AddPod(*typedef.PodInfo) error {
 }
 
 // UpdatePod to deal the pod update event.
-func (S *ServiceBase) UpdatePod(old, new *typedef.PodInfo) error {
+func (s *ServiceBase) UpdatePod(old, new *typedef.PodInfo) error {
 	return nil
 }
 

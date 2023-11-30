@@ -117,17 +117,17 @@ func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 		return err
 	}
 
-	var nodeConfig *NodeConfig
+	var nodeConfig NodeConfig
 	for _, config := range nodeConfigs {
 		if config.NodeName == nodeName {
-			nodeConfig = &config
+			nodeConfig = config
 			break
 		}
 		if config.NodeName == "global" {
-			nodeConfig = &config
+			nodeConfig = config
 		}
 	}
-	return io.loadConfig(nodeConfig)
+	return io.loadConfig(&nodeConfig)
 }
 
 func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {
@@ -161,7 +161,7 @@ func (io *IOCost) PreStart(viewer api.Viewer) error {
 }
 
 // Terminate is the terminating action
-func (io *IOCost) Terminate(viewer api.Viewer) error {
+func (io *IOCost) Terminate(_ api.Viewer) error {
 	return io.clearIOCost()
 }
 
@@ -181,12 +181,12 @@ func (io *IOCost) AddPod(podInfo *typedef.PodInfo) error {
 }
 
 // UpdatePod to deal the pod update event.
-func (io *IOCost) UpdatePod(old, new *typedef.PodInfo) error {
+func (io *IOCost) UpdatePod(_, new *typedef.PodInfo) error {
 	return io.configPodIOCostWeight(new)
 }
 
 // DeletePod to deal the pod deletion event.
-func (io *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
+func (io *IOCost) DeletePod(_ *typedef.PodInfo) error {
 	return nil
 }
 

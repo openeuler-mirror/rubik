@@ -105,7 +105,7 @@ func (c *Config) String() string {
 	if err != nil {
 		return "{}"
 	}
-	return fmt.Sprintf("%s", string(data))
+	return string(data)
 }
 
 // filterNonServiceKeys returns true when inputting a non-service name

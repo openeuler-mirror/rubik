@@ -25,7 +25,7 @@ type genericSubscriber struct {
 }
 
 // NewGenericSubscriber returns the generic subscriber entity
-func NewGenericSubscriber(handler api.EventHandler, id string) *genericSubscriber {
+func NewGenericSubscriber(handler api.EventHandler, id string) api.Subscriber {
 	return &genericSubscriber{
 		id:           id,
 		EventHandler: handler,

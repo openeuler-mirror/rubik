@@ -34,7 +34,7 @@ func AbsoluteCgroupPath(elem ...string) string {
 
 // ReadCgroupFile reads data from cgroup files
 func ReadCgroupFile(elem ...string) ([]byte, error) {
-	return readCgroupFile(filepath.Join(AbsoluteCgroupPath(elem...)))
+	return readCgroupFile(AbsoluteCgroupPath(elem...))
 }
 
 // WriteCgroupFile writes data to cgroup file

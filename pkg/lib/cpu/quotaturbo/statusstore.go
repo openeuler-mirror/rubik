@@ -124,8 +124,8 @@ func (store *StatusStore) getLastCPUUtil() float64 {
 // updateCPUUtils updates the cpu usage of a node
 func (store *StatusStore) updateCPUUtils() error {
 	var (
-		curUtil float64 = 0
-		index           = 0
+		curUtil float64
+		index   int
 		t       cpuUtil
 	)
 	ps, err := getProcStat()
