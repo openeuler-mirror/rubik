@@ -49,7 +49,6 @@ func TestPodManager_ListContainersWithOptions(t *testing.T) {
 		args   args
 		want   map[string]*typedef.ContainerInfo
 	}{
-		// TODO: Add test cases.
 		{
 			name: "TC1-filter priority container",
 			args: args{

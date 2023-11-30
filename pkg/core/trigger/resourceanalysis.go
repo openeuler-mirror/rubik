@@ -120,12 +120,6 @@ func (a *Analyzer) Execute(f Factor) (Factor, error) {
 		errMsg = "unable to find pod with maximum memory utilization"
 		target = a.maxMemoryUtil(f.TargetPods())
 	case "max_io":
-		/*
-			TODO: a better way to reduce io bandwidth
-				Cadvisor's processing of io bandwidth is not so suitable for comparison,
-				so when io is high, we use the most cpu utilization to eliminate.
-				Temporarily adopt the maximum CPU utilization method.
-		*/
 		errMsg = "unable to find pod with maximum I/O bandwidth"
 		target = a.maxCPUUtil(f.TargetPods())
 	default:
