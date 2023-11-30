@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to implement iolimit
 
-// Package iolimit
+// Package iolimit provide io-limit feature.
 package iolimit
 
 import (

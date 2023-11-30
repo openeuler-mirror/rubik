@@ -234,8 +234,8 @@ func recoverOnePodQuota(pod *typedef.PodInfo) {
 	}
 
 	var (
-		podQuota            int64 = 0
-		unlimitedContExistd       = false
+		podQuota            int64
+		unlimitedContExistd bool
 	)
 
 	for _, cont := range pod.IDContainersMap {

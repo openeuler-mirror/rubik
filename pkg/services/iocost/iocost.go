@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to implement iocost
 
-// Package iocost
+// Package iocost provide iocost isolate feature.
 package iocost
 
 import (
@@ -162,10 +162,7 @@ func (io *IOCost) PreStart(viewer api.Viewer) error {
 
 // Terminate is the terminating action
 func (io *IOCost) Terminate(viewer api.Viewer) error {
-	if err := io.clearIOCost(); err != nil {
-		return err
-	}
-	return nil
+	return io.clearIOCost()
 }
 
 func (io *IOCost) dealExistedPods(viewer api.Viewer) error {

@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to initilize all components
 
-// Package services
+// Package services provide services to handle isolate features.
 package services
 
 import (

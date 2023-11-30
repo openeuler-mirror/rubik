@@ -173,10 +173,7 @@ func (c *DynCache) PreStart(viewer api.Viewer) error {
 	}
 	c.Viewer = viewer
 
-	if err := c.initCacheLimitDir(); err != nil {
-		return err
-	}
-	return nil
+	return c.initCacheLimitDir()
 }
 
 // GetConfig returns Config

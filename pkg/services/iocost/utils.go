@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to implement blkio system call
 
-// Package iocost
+// Package iocost provide iocost isolate feature.
 package iocost
 
 import (

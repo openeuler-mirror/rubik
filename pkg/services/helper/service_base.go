@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is the base of service.
 
-// Package helper
+// Package helper provide some helper for service.
 package helper
 
 import (

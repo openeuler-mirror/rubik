@@ -1,3 +1,4 @@
+// Package main provide main function for rubik.
 package main
 
 import (

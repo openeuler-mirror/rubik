@@ -11,7 +11,7 @@
 // Create: 2023-02-10
 // Description: This file implement qos level setting service
 
-// Package qos is the service used for qos level setting
+// Package preemption is the service used for qos level setting
 package preemption
 
 import (

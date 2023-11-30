@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file for defining rubik support features
 
-// Package rubik
+// Package rubik provide rubik main logic.
 package rubik
 
 import (

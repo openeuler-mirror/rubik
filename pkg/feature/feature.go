@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file for defining Features
 
-// Package feature
+// Package feature provide features define.
 package feature
 
 const (

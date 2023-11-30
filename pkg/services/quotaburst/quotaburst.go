@@ -11,7 +11,7 @@
 // Date: 2023-03-01
 // Description: This file is used for quota burst
 
-// Package  quotaburst is for Quota Burst
+// Package quotaburst is for Quota Burst
 package quotaburst
 
 import (
@@ -91,7 +91,7 @@ func setPodQuotaBurst(podInfo *typedef.PodInfo) error {
 	if err != nil {
 		return err
 	}
-	var podBurst int64 = 0
+	var podBurst int64
 	const subsys = "cpu"
 	// 1. Try to write container burst value firstly
 	for _, c := range podInfo.IDContainersMap {

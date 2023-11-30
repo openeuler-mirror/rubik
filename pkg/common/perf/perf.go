@@ -137,17 +137,11 @@ func (e *cgEvent) start() error {
 	if err := unix.IoctlSetInt(e.leader, unix.PERF_EVENT_IOC_RESET, 0); err != nil {
 		return err
 	}
-	if err := unix.IoctlSetInt(e.leader, unix.PERF_EVENT_IOC_ENABLE, 0); err != nil {
-		return err
-	}
-	return nil
+	return unix.IoctlSetInt(e.leader, unix.PERF_EVENT_IOC_ENABLE, 0)
 }
 
 func (e *cgEvent) stop() error {
-	if err := unix.IoctlSetInt(e.leader, unix.PERF_EVENT_IOC_DISABLE, 0); err != nil {
-		return err
-	}
-	return nil
+	return unix.IoctlSetInt(e.leader, unix.PERF_EVENT_IOC_DISABLE, 0)
 }
 
 func (e *cgEvent) read(eventName string) uint64 {

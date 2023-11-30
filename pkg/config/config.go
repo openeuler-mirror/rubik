@@ -77,10 +77,7 @@ func (c *Config) parseAgentConfig() error {
 		// not setting agent means using the default configuration file
 		return nil
 	}
-	if err := c.UnmarshalSubConfig(content, c.Agent); err != nil {
-		return err
-	}
-	return nil
+	return c.UnmarshalSubConfig(content, c.Agent)
 }
 
 // LoadConfig loads and parses configuration data from the file, and save it to the Config

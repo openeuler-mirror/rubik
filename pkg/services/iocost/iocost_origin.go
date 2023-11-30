@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to implement system iocost interface
 
-// Package iocost
+// Package iocost provide iocost isolate feature.
 package iocost
 
 import (
@@ -70,10 +70,7 @@ func configPodIOCostWeight(relativePath string, weight uint64) error {
 		relativePath, iocostWeightFile); err != nil {
 		return err
 	}
-	if err := bindMemcgBlkcg(relativePath); err != nil {
-		return err
-	}
-	return nil
+	return bindMemcgBlkcg(relativePath)
 }
 
 // bindMemcgBlkcg for bind memcg and blkcg
@@ -84,9 +81,5 @@ func bindMemcgBlkcg(containerRelativePath string) error {
 		return err
 	}
 
-	if err := cgroup.WriteCgroupFile(strconv.FormatUint(ino, scale),
-		memcgRootDir, containerRelativePath, wbBlkioinoFile); err != nil {
-		return err
-	}
-	return nil
+	return cgroup.WriteCgroupFile(strconv.FormatUint(ino, scale), memcgRootDir, containerRelativePath, wbBlkioinoFile)
 }

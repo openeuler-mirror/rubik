@@ -40,7 +40,7 @@ const (
 
 type triggerCreator func() Trigger
 
-var triggerCreatorMap map[Typ]triggerCreator = map[Typ]triggerCreator{
+var triggerCreatorMap = map[Typ]triggerCreator{
 	EXPULSION:        expulsionCreator,
 	RESOURCEANALYSIS: analyzerCreator,
 }

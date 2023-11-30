@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is the Interface set of services
 
-// Package services
+// Package services provide service to handle isolate features.
 package services
 
 import (

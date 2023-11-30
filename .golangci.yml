@@ -15,19 +15,14 @@ linters:
   enable:
     - gomnd
     - govet
-    - golint
     - staticcheck
     - errcheck
     - ineffassign
-    - varcheck
-    - structcheck
-    - deadcode
     - bodyclose
     - nakedret
     - gofmt
     - misspell
     - unconvert
-    - scopelint
     - gocritic
     - dogsled
     - gosec
@@ -36,17 +31,11 @@ linters:
     - godox
     - misspell
     - goconst
-  disable:
-    - lll
-    - wsl
-    - depguard
-    - stylecheck
-    - dupl
-    - interfacer
-    - gosimple
     - unused
-    - rowserrcheck
-    - goprintffuncname
+    - gosimple
+    - revive
+    - exportloopref
+  disable:
   fast: false
 
 output:

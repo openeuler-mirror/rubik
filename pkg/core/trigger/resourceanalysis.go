@@ -120,12 +120,6 @@ func (a *Analyzer) Execute(f Factor) (Factor, error) {
 		errMsg = "unable to find pod with maximum memory utilization"
 		target = a.maxMemoryUtil(f.TargetPods())
 	case "max_io":
-		/*
-			TODO: a better way to reduce io bandwidth
-				Cadvisor's processing of io bandwidth is not so suitable for comparison,
-				so when io is high, we use the most cpu utilization to eliminate.
-				Temporarily adopt the maximum CPU utilization method.
-		*/
 		errMsg = "unable to find pod with maximum I/O bandwidth"
 		target = a.maxCPUUtil(f.TargetPods())
 	default:
@@ -137,7 +131,7 @@ func (a *Analyzer) Execute(f Factor) (Factor, error) {
 func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
 	var (
 		chosen  *typedef.PodInfo
-		maxUtil float64 = 0
+		maxUtil float64
 	)
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
@@ -169,7 +163,7 @@ func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo
 func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
 	var (
 		chosen  *typedef.PodInfo
-		maxUtil uint64 = 0
+		maxUtil uint64
 	)
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
@@ -190,7 +184,7 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
 	return chosen
 }
 
-func (a *Analyzer) maxIOBandwidth(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
+func (a *Analyzer) maxIOBandwidth(_ map[string]*typedef.PodInfo) *typedef.PodInfo {
 	return nil
 }
 

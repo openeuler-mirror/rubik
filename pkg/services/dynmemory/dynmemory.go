@@ -1,3 +1,4 @@
+// Package dynmemory provide memory control
 package dynmemory
 
 import (

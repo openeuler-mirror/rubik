@@ -101,10 +101,7 @@ func LockFile(path string) (*os.File, error) {
 // UnlockFile unlock file - this function used cleanup resource,
 func UnlockFile(lock *os.File) error {
 	// errors will ignored to make sure more source is cleaned.
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_UN); err != nil {
-		return err
-	}
-	return nil
+	return syscall.Flock(int(lock.Fd()), syscall.LOCK_UN)
 }
 
 // ReadFile reads a file

@@ -198,7 +198,6 @@ func TestParseInt64Map(t *testing.T) {
 		want    map[string]int64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "TC1-length of fields is 3",
 			args: args{
@@ -246,7 +245,6 @@ func TestPercentageToDecimal(t *testing.T) {
 		args args
 		want float64
 	}{
-		// TODO: Add test cases.
 		{
 			name: "TC1-1% to 0.01",
 			args: args{
