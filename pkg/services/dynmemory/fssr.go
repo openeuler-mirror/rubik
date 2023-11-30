@@ -71,7 +71,7 @@ func (f *fssrDynMemAdapter) dynamicAdjust() {
 		return
 	}
 
-	var memHigh int64 = 0
+	var memHigh int64
 	if freeMem > 2*f.reservedMem {
 		if f.count < fssrIntervalCount {
 			f.count++
@@ -148,20 +148,14 @@ func (f *fssrDynMemAdapter) setOfflinePod(path string) error {
 // setOfflinePodHighMemory sets the high memory limit for the specified pod in the
 // cgroup memory
 func setOfflinePodHighMemory(podPath string, memHigh int64) error {
-	if err := cgroup.WriteCgroupFile(strconv.FormatUint(uint64(memHigh), scale), memcgRootDir,
-		podPath, highMemFile); err != nil {
-		return err
-	}
-	return nil
+	return cgroup.WriteCgroupFile(strconv.FormatUint(uint64(memHigh), scale), memcgRootDir,
+		podPath, highMemFile)
 }
 
 // setOfflinePodHighAsyncRatio sets the high memory async ratio for a pod in an offline state.
 func setOfflinePodHighAsyncRatio(podPath string, ratio uint) error {
-	if err := cgroup.WriteCgroupFile(strconv.FormatUint(uint64(ratio), scale), memcgRootDir,
-		podPath, highMemAsyncRatioFile); err != nil {
-		return err
-	}
-	return nil
+	return cgroup.WriteCgroupFile(strconv.FormatUint(uint64(ratio), scale), memcgRootDir,
+		podPath, highMemAsyncRatioFile)
 }
 
 // getFieldMemory retrieves the amount of memory used by a certain field in the

@@ -11,7 +11,7 @@
 // Create: 2021-09-28
 // Description: This file is used for rubik log
 
-// Package tinylog is for rubik log
+// Package log is for rubik log
 package log
 
 import (

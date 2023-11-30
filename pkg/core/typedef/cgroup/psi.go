@@ -10,6 +10,8 @@
 // Author: Jiaqi Yang
 // Date: 2023-05-18
 // Description: This file is used for psi cgroup
+
+// Package cgroup provide cgroup operations.
 package cgroup
 
 import (

@@ -12,6 +12,8 @@
 // Author: Jiaqi Yang
 // Date: 2023-05-16
 // Description: This file is used for psi service
+
+// Package psi provide psi operations
 package psi
 
 import (
@@ -177,8 +179,5 @@ func (m *Manager) monitor() error {
 		trigger.NewTrigger(trigger.RESOURCEANALYSIS).
 			SetNext(trigger.NewTrigger(trigger.EXPULSION)),
 	)
-	if err := metric.Update(); err != nil {
-		return err
-	}
-	return nil
+	return metric.Update()
 }

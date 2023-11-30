@@ -11,7 +11,7 @@
 // Create: 2023-03-11
 // Description: This file is used to implement the factory
 
-// Package helper
+// Package helper provide some helper for services.
 package helper
 
 import (

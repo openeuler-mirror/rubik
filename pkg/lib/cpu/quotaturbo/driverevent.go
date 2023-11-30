@@ -63,7 +63,7 @@ func (e *EventDriver) elevate(status *StatusStore) {
 		return
 	}
 	// sumDelta : total number of cores to be adjusted
-	var sumDelta float64 = 0
+	var sumDelta float64
 	delta := make(map[string]float64, 0)
 	for id, c := range status.cpuQuotas {
 		if c.curThrottle.NrThrottled > c.preThrottle.NrThrottled {
@@ -94,7 +94,7 @@ func (e *EventDriver) fastFallback(status *StatusStore) {
 	// sub: the total number of CPU quotas to be reduced on a node.
 	sub := util.PercentageToDecimal(float64(status.AlarmWaterMark)-status.getLastCPUUtil()) * float64(runtime.NumCPU())
 	// sumDelta ：total number of cpu cores that can be decreased.
-	var sumDelta float64 = 0
+	var sumDelta float64
 	delta := make(map[string]float64, 0)
 	for id, c := range status.cpuQuotas {
 		delta[id] = float64(c.curQuota)/float64(c.period) - c.cpuLimit
@@ -128,8 +128,8 @@ func (e *EventDriver) slowFallback(status *StatusStore) {
 // sharpFluctuates checks whether the node CPU utilization exceeds the specified value within one minute.
 func sharpFluctuates(status *StatusStore) bool {
 	var (
-		min float64 = maximumUtilization
-		max float64 = minimumUtilization
+		min = maximumUtilization
+		max = minimumUtilization
 	)
 	for _, u := range status.cpuUtils {
 		min = math.Min(min, u.util)

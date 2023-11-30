@@ -11,7 +11,7 @@
 // Create: 2023-01-28
 // Description: This file defines ServiceManager to manage the lifecycle of services
 
-// Package services implements service registration, discovery and management functions
+// Package rubik implements service registration, discovery and management functions
 package rubik
 
 import (
@@ -178,7 +178,7 @@ func (manager *ServiceManager) Start(ctx context.Context) {
 	*/
 	const restartDuration = 2 * time.Second
 	runner := func(ctx context.Context, id string, runFunc func(ctx context.Context)) {
-		var restartCount int64 = 0
+		var restartCount int64
 		wait.UntilWithContext(ctx, func(ctx context.Context) {
 			defer func() {
 				if err := recover(); err != nil {

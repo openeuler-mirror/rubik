@@ -10,6 +10,8 @@
 // Author: Jiaqi Yang
 // Date: 2023-02-08
 // Description: This file is used for math
+
+// Package util provide some util help functions.
 package util
 
 import (
@@ -22,9 +24,9 @@ import (
 // format indicates the output format, for example, "%.2f" with two decimal places.
 func Div(dividend, divisor float64, args ...interface{}) float64 {
 	var (
-		format           = ""
-		accuracy float64 = 1e-9
-		maxValue         = math.MaxFloat64
+		format   = ""
+		accuracy = 1e-9
+		maxValue = math.MaxFloat64
 	)
 	const (
 		maxValueIndex int = iota

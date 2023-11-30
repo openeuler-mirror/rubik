@@ -131,7 +131,7 @@ func (a *Analyzer) Execute(f Factor) (Factor, error) {
 func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
 	var (
 		chosen  *typedef.PodInfo
-		maxUtil float64 = 0
+		maxUtil float64
 	)
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
@@ -163,7 +163,7 @@ func (a *Analyzer) maxCPUUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo
 func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
 	var (
 		chosen  *typedef.PodInfo
-		maxUtil uint64 = 0
+		maxUtil uint64
 	)
 	for name, pod := range pods {
 		podStats, err := a.cgroupCadvisorInfo("/"+pod.Path, reqOpt)
@@ -184,7 +184,7 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
 	return chosen
 }
 
-func (a *Analyzer) maxIOBandwidth(pods map[string]*typedef.PodInfo) *typedef.PodInfo {
+func (a *Analyzer) maxIOBandwidth(_ map[string]*typedef.PodInfo) *typedef.PodInfo {
 	return nil
 }
 
