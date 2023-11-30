@@ -117,17 +117,17 @@ func (io *IOCost) SetConfig(f helper.ConfigHandler) error {
 		return err
 	}
 
-	var nodeConfig *NodeConfig
+	var nodeConfig NodeConfig
 	for _, config := range nodeConfigs {
 		if config.NodeName == nodeName {
-			nodeConfig = &config
+			nodeConfig = config
 			break
 		}
 		if config.NodeName == "global" {
-			nodeConfig = &config
+			nodeConfig = config
 		}
 	}
-	return io.loadConfig(nodeConfig)
+	return io.loadConfig(&nodeConfig)
 }
 
 func (io *IOCost) loadConfig(nodeConfig *NodeConfig) error {

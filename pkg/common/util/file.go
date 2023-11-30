@@ -130,6 +130,7 @@ func WriteFile(path, content string) error {
 
 // AppendFile appends content to the file
 func AppendFile(path, content string) error {
+	path = filepath.Clean(path)
 	if !PathExist(path) {
 		return fmt.Errorf("%v: No such file or directory", path)
 	}
