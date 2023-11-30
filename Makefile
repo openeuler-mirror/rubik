@@ -76,12 +76,12 @@ image: release
 
 check:
 	@echo "Static check for last commit ..."
-	@./hack/static_check.sh last
+	@bash ./hack/static_check.sh last
 	@echo "Static check for last commit finished"
 
 checkall:
 	@echo "Static check for all ..."
-	@./hack/static_check.sh all
+	@bash ./hack/static_check.sh all
 	@echo "Static check for all finished"
 
 tests: test-unit test-integration
