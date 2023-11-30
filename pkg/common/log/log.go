@@ -15,7 +15,6 @@
 package log
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,8 +27,7 @@ import (
 	"isula.org/rubik/pkg/common/constant"
 )
 
-// CtxKey used for UUID
-type CtxKey string
+type level uint32
 
 const (
 	logStack           = 20
@@ -46,7 +44,7 @@ const (
 )
 
 const (
-	logDebug int = iota
+	logDebug level = iota
 	logInfo
 	logWarn
 	logError
@@ -75,7 +73,7 @@ func makeLogDir(logDir string) error {
 }
 
 // InitConfig initializes log config
-func InitConfig(driver, logdir, level string, size int64) error {
+func InitConfig(driver, logdir, lvl string, size int64) error {
 	if driver == "" {
 		driver = constant.LogDriverStdio
 	}
@@ -87,10 +85,10 @@ func InitConfig(driver, logdir, level string, size int64) error {
 		logDriver = file
 	}
 
-	if level == "" {
-		level = constant.LogLevelInfo
+	if lvl == "" {
+		lvl = constant.LogLevelInfo
 	}
-	levelstr, err := levelFromString(level)
+	levelstr, err := levelFromString(lvl)
 	if err != nil {
 		return err
 	}
@@ -127,8 +125,8 @@ func DropError(args ...interface{}) {
 	}
 }
 
-func levelToString(level int) string {
-	switch level {
+func levelToString(lvl level) string {
+	switch lvl {
 	case logDebug:
 		return constant.LogLevelDebug
 	case logInfo:
@@ -144,8 +142,8 @@ func levelToString(level int) string {
 	}
 }
 
-func levelFromString(level string) (int, error) {
-	switch level {
+func levelFromString(lvl string) (level, error) {
+	switch lvl {
 	case constant.LogLevelDebug:
 		return logDebug, nil
 	case constant.LogLevelInfo, "":
@@ -155,7 +153,7 @@ func levelFromString(level string) (int, error) {
 	case constant.LogLevelError:
 		return logError, nil
 	default:
-		return logInfo, fmt.Errorf("invalid log level: %s", level)
+		return logInfo, fmt.Errorf("invalid log level: %s", lvl)
 	}
 }
 
@@ -203,12 +201,12 @@ func writeLine(line string) {
 	DropError(f.Close())
 }
 
-func output(level string, format string, args ...interface{}) {
-	tag := fmt.Sprintf("%s [rubik] level=%s ", time.Now().Format("2006-01-02 15:04:05.000"), level)
+func output(lvl string, format string, args ...interface{}) {
+	tag := fmt.Sprintf("%s [rubik] level=%s ", time.Now().Format("2006-01-02 15:04:05.000"), lvl)
 	raw := fmt.Sprintf(format, args...) + "\n"
 
 	depth := 1
-	if level == constant.LogLevelStack {
+	if lvl == constant.LogLevelStack {
 		depth = logStack
 	}
 
@@ -220,94 +218,35 @@ func output(level string, format string, args ...interface{}) {
 			fs = strings.Split("."+fs[len(fs)-1], ".")
 			fn := fs[len(fs)-1]
 			line = tag + fmt.Sprintf("%s:%d:%s() ", file, linum, fn) + raw
-		} else if level == constant.LogLevelStack {
+		} else if lvl == constant.LogLevelStack {
 			break
 		}
 		writeLine(line)
 	}
 }
 
-// Warnf log warn level
-func Warnf(format string, args ...interface{}) {
-	if logWarn >= logLevel {
-		output(levelToString(logWarn), format, args...)
+func logln(lvl level, format string, args ...interface{}) {
+	if lvl >= logLevel {
+		output(levelToString(lvl), format, args...)
 	}
 }
 
-// Infof log info level
-func Infof(format string, args ...interface{}) {
-	if logInfo >= logLevel {
-		output(levelToString(logInfo), format, args...)
-	}
-}
-
-// Debugf log debug level
+// Debugf output debug level logs when then log level of the logger is less than or equal to debug level
 func Debugf(format string, args ...interface{}) {
-	if logDebug >= logLevel {
-		output(levelToString(logDebug), format, args...)
-	}
+	logln(logDebug, format, args...)
 }
 
-// Errorf log error level
+// Infof output info level logs when then log level of the logger is less than or equal to info level
+func Infof(format string, args ...interface{}) {
+	logln(logInfo, format, args...)
+}
+
+// Warnf output warn level logs when then log level of the logger is less than or equal to warn level
+func Warnf(format string, args ...interface{}) {
+	logln(logWarn, format, args...)
+}
+
+// Errorf output warn level logs when then log level of the logger is less than or equal to error level
 func Errorf(format string, args ...interface{}) {
-	if logError >= logLevel {
-		output(levelToString(logError), format, args...)
-	}
-}
-
-// Stackf log stack dump
-func Stackf(format string, args ...interface{}) {
-	output("stack", format, args...)
-}
-
-// Entry is log entry
-type Entry struct {
-	Ctx context.Context
-}
-
-// WithCtx create entry with ctx
-func WithCtx(ctx context.Context) *Entry {
-	return &Entry{
-		Ctx: ctx,
-	}
-}
-
-func (e *Entry) level(l int) string {
-	id, ok := e.Ctx.Value(CtxKey(constant.LogEntryKey)).(string)
-	if ok {
-		return levelToString(l) + " " + constant.LogEntryKey + "=" + id
-	}
-	return levelToString(l)
-}
-
-// Warnf write logs
-func (e *Entry) Warnf(f string, args ...interface{}) {
-	if logInfo < logLevel {
-		return
-	}
-	output(e.level(logWarn), f, args...)
-}
-
-// Infof write logs
-func (e *Entry) Infof(f string, args ...interface{}) {
-	if logInfo < logLevel {
-		return
-	}
-	output(e.level(logInfo), f, args...)
-}
-
-// Debugf write verbose logs
-func (e *Entry) Debugf(f string, args ...interface{}) {
-	if logDebug < logLevel {
-		return
-	}
-	output(e.level(logDebug), f, args...)
-}
-
-// Errorf write error logs
-func (e *Entry) Errorf(f string, args ...interface{}) {
-	if logError < logLevel {
-		return
-	}
-	output(e.level(logError), f, args...)
+	logln(logError, format, args...)
 }

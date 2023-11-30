@@ -14,8 +14,6 @@
 package log
 
 import (
-	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -162,18 +160,6 @@ func TestInitConfigLogLevel(t *testing.T) {
 				assert.Equal(t, tt.error, strings.Contains(string(b), errorLogSting))
 				os.Remove(logFilePath)
 
-				ctx := context.WithValue(context.Background(), CtxKey(constant.LogEntryKey), "abc123")
-				WithCtx(ctx).Debugf(debugLogSting)
-				WithCtx(ctx).Infof(infoLogSting)
-				WithCtx(ctx).Errorf(errorLogSting)
-				WithCtx(ctx).Warnf(logLogString)
-				b, err = ioutil.ReadFile(logFilePath)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.debug, strings.Contains(string(b), debugLogSting))
-				assert.Equal(t, tt.info, strings.Contains(string(b), infoLogSting))
-				assert.Equal(t, tt.error, strings.Contains(string(b), errorLogSting))
-				assert.Equal(t, tt.info, strings.Contains(string(b), logLogString))
-				assert.Equal(t, true, strings.Contains(string(b), "abc123"))
 				err = os.RemoveAll(logDir)
 				assert.NoError(t, err)
 			}
@@ -217,23 +203,6 @@ func TestInitConfigLogSize(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TestLogStack is Stackf function test
-func TestLogStack(t *testing.T) {
-	logDir := try.GenTestDir().String()
-	logFilePath := filepath.Join(logDir, "rubik.log")
-
-	err := InitConfig("file", logDir, "", logSize)
-	assert.NoError(t, err)
-	Stackf("test stack log")
-	b, err := ioutil.ReadFile(logFilePath)
-	assert.NoError(t, err)
-	fmt.Println(string(b))
-	assert.Equal(t, true, strings.Contains(string(b), t.Name()))
-	line := strings.Split(string(b), "\n")
-	maxLineNum := 5
-	assert.Equal(t, true, len(line) < maxLineNum)
-}
-
 // TestDropError is DropError function test
 func TestDropError(t *testing.T) {
 	logDir := try.GenTestDir().String()
@@ -263,15 +232,4 @@ func TestLogOthers(t *testing.T) {
 	const stackLoglevel = 20
 	s = levelToString(stackLoglevel)
 	assert.Equal(t, "stack", s)
-
-	logDriver = 1
-	logFname = filepath.Join(constant.TmpTestDir, "log-not-exist")
-	os.MkdirAll(logFname, constant.DefaultDirMode)
-	writeLine("abc")
-
-	s = WithCtx(context.Background()).level(1)
-	assert.Equal(t, "info", s)
-
-	logLevel = logError + 1
-	WithCtx(context.Background()).Errorf("abc")
 }
