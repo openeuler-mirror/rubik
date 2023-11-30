@@ -55,19 +55,19 @@ func (cache *PodCache) addPod(pod *typedef.PodInfo) {
 		return
 	}
 	if ok := cache.podExist(pod.UID); ok {
-		log.Debugf("pod already exists: %v", string(pod.UID))
+		log.Debugf("pod already exists: %v", pod.UID)
 		return
 	}
 	cache.Lock()
 	cache.Pods[pod.UID] = pod
 	cache.Unlock()
-	log.Debugf("add pod successfully: %v", string(pod.UID))
+	log.Debugf("add pod successfully: %v", pod.UID)
 }
 
 // delPod deletes pod information
 func (cache *PodCache) delPod(podID string) {
 	if ok := cache.podExist(podID); !ok {
-		log.Debugf("pod does not exist: %v", string(podID))
+		log.Debugf("pod does not exist: %v", podID)
 		return
 	}
 	cache.Lock()

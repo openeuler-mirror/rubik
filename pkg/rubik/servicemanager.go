@@ -59,17 +59,17 @@ func (manager *ServiceManager) InitServices(features []string,
 			return fmt.Errorf("get component failed %s: %v", feature, err)
 		}
 
-		if err := s.SetConfig(func(configName string, v interface{}) error {
+		if err1 := s.SetConfig(func(configName string, v interface{}) error {
 			config := serviceConfig[configName]
 			if config == nil {
 				return fmt.Errorf("this configuration is not available,configName:%v", configName)
 			}
-			if err := parser.UnmarshalSubConfig(config, v); err != nil {
-				return fmt.Errorf("this configuration failed to be serialized,configName:%v,error:%v", configName, err)
+			if err2 := parser.UnmarshalSubConfig(config, v); err2 != nil {
+				return fmt.Errorf("this configuration failed to be serialized,configName:%v,error:%v", configName, err2)
 			}
 			return nil
-		}); err != nil {
-			return fmt.Errorf("set configuration failed, err:%v", err)
+		}); err1 != nil {
+			return fmt.Errorf("set configuration failed, err:%v", err1)
 		}
 
 		conf, err := parser.MarshalIndent(s.GetConfig(), "", "\t")
@@ -105,7 +105,7 @@ func (manager *ServiceManager) AddRunningService(name string, s services.Service
 func (manager *ServiceManager) HandleEvent(eventType typedef.EventType, event typedef.Event) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("panic occurr: %v", err)
+			log.Errorf("panic occur: %v", err)
 		}
 	}()
 	switch eventType {

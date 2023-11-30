@@ -48,7 +48,6 @@ func GetComponent(name string) (interface{}, error) {
 	defer rwlock.RUnlock()
 	if f, found := serviceFactories[name]; found {
 		return f.NewObj()
-	} else {
-		return nil, errors.New("factory not found")
 	}
+	return nil, errors.New("factory not found")
 }

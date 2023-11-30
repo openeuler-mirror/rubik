@@ -73,8 +73,8 @@ func NewCadvisorManager() *cadvisor.Manager {
 	)
 	var (
 		allowDynamic            = true
-		maxHousekeepingInterval = time.Duration(keepingIntervalSec * time.Second)
-		cacheAge                = time.Duration(cacheMinutes * time.Minute)
+		maxHousekeepingInterval = keepingIntervalSec * time.Second
+		cacheAge                = cacheMinutes * time.Minute
 	)
 	args := cadvisor.StartArgs{
 		MemCache: memory.New(cacheAge, nil),
@@ -182,10 +182,6 @@ func (a *Analyzer) maxMemoryUtil(pods map[string]*typedef.PodInfo) *typedef.PodI
 		log.Infof("find the pod(%v) with the highest memory utilization(%v)", chosen.Name, maxUtil)
 	}
 	return chosen
-}
-
-func (a *Analyzer) maxIOBandwidth(_ map[string]*typedef.PodInfo) *typedef.PodInfo {
-	return nil
 }
 
 func (a *Analyzer) cgroupCadvisorInfo(cgroupPath string, opts v2.RequestOptions) ([]*v2.ContainerStats, error) {

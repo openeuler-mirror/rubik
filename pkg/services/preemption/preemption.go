@@ -93,10 +93,7 @@ func (q *Preemption) AddPod(pod *typedef.PodInfo) error {
 	if err := q.SetQoSLevel(pod); err != nil {
 		return err
 	}
-	if err := q.validateConfig(pod); err != nil {
-		return err
-	}
-	return nil
+	return q.validateConfig(pod)
 }
 
 // UpdatePod implement update function when pod info is changed
@@ -118,7 +115,7 @@ func (q *Preemption) UpdatePod(old, new *typedef.PodInfo) error {
 }
 
 // DeletePod implement delete function when pod is deleted by k8s
-func (q *Preemption) DeletePod(pod *typedef.PodInfo) error {
+func (q *Preemption) DeletePod(_ *typedef.PodInfo) error {
 	return nil
 }
 

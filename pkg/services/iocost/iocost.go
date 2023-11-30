@@ -161,7 +161,7 @@ func (io *IOCost) PreStart(viewer api.Viewer) error {
 }
 
 // Terminate is the terminating action
-func (io *IOCost) Terminate(viewer api.Viewer) error {
+func (io *IOCost) Terminate(_ api.Viewer) error {
 	return io.clearIOCost()
 }
 
@@ -181,12 +181,12 @@ func (io *IOCost) AddPod(podInfo *typedef.PodInfo) error {
 }
 
 // UpdatePod to deal the pod update event.
-func (io *IOCost) UpdatePod(old, new *typedef.PodInfo) error {
+func (io *IOCost) UpdatePod(_, new *typedef.PodInfo) error {
 	return io.configPodIOCostWeight(new)
 }
 
 // DeletePod to deal the pod deletion event.
-func (io *IOCost) DeletePod(podInfo *typedef.PodInfo) error {
+func (io *IOCost) DeletePod(_ *typedef.PodInfo) error {
 	return nil
 }
 
