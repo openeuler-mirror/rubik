@@ -56,9 +56,35 @@ func (conf *Burst) AddPod(podInfo *typedef.PodInfo) error {
 	return setPodQuotaBurst(podInfo)
 }
 
+func same(oldPod, newPod *typedef.PodInfo) bool {
+	// There are currently three ways to trigger the Update event:
+	// 1. Annotation changes
+	// 2. The number of containers is different
+	// 3. Container ID changes
+	oldBurstVal := oldPod.Annotations[constant.QuotaBurstAnnotationKey]
+	newBurstVal := newPod.Annotations[constant.QuotaBurstAnnotationKey]
+	if oldBurstVal != newBurstVal {
+		log.Infof("the burst annotation of the pod %v changes from %v to %v", newPod.Name, oldBurstVal, newBurstVal)
+		return false
+	}
+
+	if len(oldPod.IDContainersMap) != len(newPod.IDContainersMap) {
+		log.Infof("the number of containers of the pod %v changes from %v to %v", newPod.Name,
+			len(oldPod.IDContainersMap), len(newPod.IDContainersMap))
+		return false
+	}
+	for id := range newPod.IDContainersMap {
+		if _, ok := oldPod.IDContainersMap[id]; !ok {
+			log.Infof("pod %v added a new container %v", newPod.Name, id)
+			return false
+		}
+	}
+	return true
+}
+
 // UpdatePod implement update function when pod info is changed
 func (conf *Burst) UpdatePod(oldPod, newPod *typedef.PodInfo) error {
-	if oldPod.Annotations[constant.QuotaBurstAnnotationKey] == newPod.Annotations[constant.QuotaBurstAnnotationKey] {
+	if same(oldPod, newPod) {
 		return nil
 	}
 	return setPodQuotaBurst(newPod)
