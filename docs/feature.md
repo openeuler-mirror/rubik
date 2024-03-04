@@ -119,7 +119,7 @@ metadata:
 ## ioCost 支持iocost对IO权重控制
 为了有效解决由离线业务IO占用过高，导致在线业务QoS下降的问题，rubik容器提供了基于cgroup v1 iocost的IO权重控制功能。
 资料参见：
-[iocost内核相关功能介绍]([https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#io:~:text=correct%20memory%20ownership.-,IO,-%C2%B6)
+[iocost内核相关功能介绍](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#io:~:text=correct%20memory%20ownership.-,IO,-%C2%B6)
 
 ### 约束限制
 - kernel需要支持cgroup v1 iocost
