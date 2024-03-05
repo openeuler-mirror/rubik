@@ -108,7 +108,7 @@ Rubik配置分为两类：通用配置和特性配置。通用配置由agent关�
 | resource=[]     | string数组 | 资源类型，声明何种资源需要被访问 | cpu, memory |
 
 ### dynCache
-`dynCache`字段用于标识支持Pod访存带宽和LLC限制特性配置。`l3Percent`字段用于标识最后一级缓存（LLC）水位控制线，`memBandPercent`字段用于标识访存带宽（MB）水位控制线。
+`dynCache`字段用于标识支持Pod内存带宽和LLC限制特性配置。`l3Percent`字段用于标识最后一级缓存（LLC）水位控制线，`memBandPercent`字段用于标识内存带宽（MB）水位控制线。
 
 | 配置键[=默认值]         | 类型   | 描述               | 可选值          |
 | ----------------------- | ------ | ------------------ | --------------- |
@@ -120,7 +120,7 @@ Rubik配置分为两类：通用配置和特性配置。通用配置由agent关�
 | .mid=30                  | int    | L3 Cache中水位组控制线  | [low, 100]   |
 | .high=50                 | int    | L3 Cache高水位组控制线  | [mid, 100]   |
 | memBandPercent           | map    | dynCache控制中MB各级别对应水位（%）|   | 
-| .low=10                  | int    | MB（访存带宽）低水位组控制线 | [10, 100]  |
+| .low=10                  | int    | MB（内存带宽）低水位组控制线 | [10, 100]  |
 | .mid=30                  | int    | MB中水位组控制线  | [low, 100]   |
 | .high=50                 | int    | MB高水位组控制线 | [mid, 100]   |
 
