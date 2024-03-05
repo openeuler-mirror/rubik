@@ -24,12 +24,12 @@ annotations:
 -   内核支持针对cgroup的memory优先级配置，memory子系统存在接口`memory.qos_level`。建议使用内核版本openEuler-22.03+。
 -   开启内存优先级支持: `echo 1 > /proc/sys/vm/memcg_qos_enable`
 
-## dynCache 访存带宽和LLC限制
-rubik支持业务的Pod访存带宽(memory bandwidth)和LLC(Last Level Cache)限制，通过限制离线业务的访存带宽/LLC使用，减少其对在线业务的干扰。
+## dynCache 内存带宽和LLC限制
+rubik支持业务的Pod内存带宽(memory bandwidth)和LLC(Last Level Cache)限制，通过限制离线业务的内存带宽/LLC使用，减少其对在线业务的干扰。
 
 该特性依赖于物理机支持intel RDT（x86）和mapm（arm）功能。其将集群中的业务划分为5个控制组(分别为`rubik_max`、`rubik_high`、`rubik_middle`、`rubik_low`、`rubik_dynamic`)，每一个控制组会根据配置限制业务对访存待宽和最后一级缓存的使用。rubik启动后，将水位线写入对应控制组的schemata。其中，`rubik_high`、`rubik_middle`、`rubik_low`控制组对应的水位线是全局的，可在`dynCache`中配置；max控制组为默认最大值, dynamic控制组初始水位线和low控制组一致。
 
-rubik支持两种方式为业务Pod配置访存带宽和LLC控制组：
+rubik支持两种方式为业务Pod配置内存带宽和LLC控制组：
 - 全局方式
 用户可在rubik的全局参数中配置`defaultLimitMode`字段，rubik会自动为离线业务Pod（即绝对抢占特性中的注解`volcano.sh/preemptable`）配置控制组。
   - 取值为`static`时，pod将被加入到`rubik_max`控制组。

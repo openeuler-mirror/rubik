@@ -11,7 +11,7 @@ When services are deployed in hybrid mode, the rubik engine helps to improve CPU
 Rubik currently supports the following [features](./docs/feature.md) :
 
  *  [Absolute-preemptive CPU Scheduling and MEM allocation](./docs/feature.md#preemption-绝对抢占)
- *  [dynCache: memory bandwidth and LLC limit](./docs/feature.md#dyncache-访存带宽和llc限制)
+ *  [dynCache: memory bandwidth and LLC limit](./docs/feature.md#dyncache-内存带宽和LLC限制)
  *  [ioLimit: Block device read/write limit](./docs/feature.md#iolimit-块设备读写限制)
  *  [Elastic CPU limiting](./docs/feature.md#支持弹性限流)
 	 * [quotaBurst: kernel-space solution](./docs/feature.md#quotaburst-内核态解决方案)

@@ -10,7 +10,7 @@ rubik容器调度在业务混合部署的场景下，根据用户对业务的配
 
 Rubik当前支持如下[特性列表](./docs/feature.md)：
 - [preemption 绝对抢占](./docs/feature.md#preemption-绝对抢占)
-- [dynCache 访存带宽和LLC限制](./docs/feature.md#dyncache-访存带宽和llc限制)
+- [dynCache 内存带宽和LLC限制](./docs/feature.md#dyncache-内存带宽和LLC限制)
 - [ioLimit 块设备读写限制](./docs/feature.md#iolimit-块设备读写限制)
 - [支持弹性限流](./docs/feature.md#支持弹性限流)
   - [quotaBurst 支持弹性限流内核态解决方案](./docs/feature.md#quotaburst-内核态解决方案)
