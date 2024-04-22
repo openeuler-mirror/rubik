@@ -113,3 +113,10 @@ const (
 	// PSIIOCgroupFileName is name of cgroup file used for detecting io psi
 	PSIIOCgroupFileName = "io.pressure"
 )
+
+const (
+	// CgroupDriverSystemd is global config for cgroupfs driver choice:  systemd driver
+	CgroupDriverSystemd = "systemd"
+	// CgroupDriverCgroupfs is global config for cgroupfs driver choice:  cgroupfs driver
+	CgroupDriverCgroupfs = "cgroupfs"
+)

@@ -126,6 +126,9 @@ func runAgent(ctx context.Context) error {
 
 	// 3. enable cgroup system
 	cgroup.InitMountDir(c.Agent.CgroupRoot)
+	if c.Agent.CgroupDriver != "" {
+		cgroup.SetCgroupDriver(c.Agent.CgroupDriver)
+	}
 
 	// 4. init service components
 	services.InitServiceComponents(defaultRubikFeature)
