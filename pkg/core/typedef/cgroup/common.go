@@ -25,6 +25,17 @@ import (
 )
 
 var rootDir = constant.DefaultCgroupRoot
+var cgroupDriver = constant.CgroupDriverCgroupfs
+
+// SetCgroupDriver is the setter of global cgroup driver
+func SetCgroupDriver(driver string) {
+	cgroupDriver = driver
+}
+
+// GetCgroupDriver is the getter of global cgroup driver
+func GetCgroupDriver() string {
+	return cgroupDriver
+}
 
 // AbsoluteCgroupPath returns the absolute path of the cgroup
 func AbsoluteCgroupPath(elem ...string) string {

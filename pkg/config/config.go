@@ -44,6 +44,7 @@ type AgentConfig struct {
 	LogDir          string   `json:"logDir,omitempty"`
 	CgroupRoot      string   `json:"cgroupRoot,omitempty"`
 	EnabledFeatures []string `json:"enabledFeatures,omitempty"`
+	CgroupDriver    string   `json:"cgroupDriver,omitempty"`
 }
 
 // NewConfig returns an config object pointer
@@ -51,11 +52,12 @@ func NewConfig(pType parserType) *Config {
 	c := &Config{
 		ConfigParser: defaultParserFactory.getParser(pType),
 		Agent: &AgentConfig{
-			LogDriver:  constant.LogDriverStdio,
-			LogSize:    constant.DefaultLogSize,
-			LogLevel:   constant.DefaultLogLevel,
-			LogDir:     constant.DefaultLogDir,
-			CgroupRoot: constant.DefaultCgroupRoot,
+			LogDriver:    constant.LogDriverStdio,
+			LogSize:      constant.DefaultLogSize,
+			LogLevel:     constant.DefaultLogLevel,
+			LogDir:       constant.DefaultLogDir,
+			CgroupRoot:   constant.DefaultCgroupRoot,
+			CgroupDriver: constant.CgroupDriverCgroupfs,
 		},
 	}
 	return c

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 
+	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
@@ -45,6 +46,11 @@ var (
 	}
 	currentContainerEngines = UNDEFINED
 	setContainerEnginesOnce sync.Once
+	containerEngineScopes   = map[ContainerEngineType]string{
+		DOCKER:     "docker",
+		CONTAINERD: "cri-containerd",
+		ISULAD:     "isulad",
+	}
 )
 
 // Support returns true when the container uses the container engine
@@ -76,10 +82,18 @@ type ContainerInfo struct {
 // NewContainerInfo creates a ContainerInfo instance
 func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *ContainerInfo {
 	requests, limits := rawContainer.GetResourceMaps()
+	var path string
+	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
+		scopeName := containerEngineScopes[currentContainerEngines]
+		path = filepath.Join(podCgroupPath, scopeName+"-"+id+".scope")
+	} else {
+		path = filepath.Join(podCgroupPath, id)
+	}
+
 	return &ContainerInfo{
 		Name:             rawContainer.status.Name,
 		ID:               id,
-		Hierarchy:        cgroup.Hierarchy{Path: filepath.Join(podCgroupPath, id)},
+		Hierarchy:        cgroup.Hierarchy{Path: path},
 		RequestResources: requests,
 		LimitResources:   limits,
 	}

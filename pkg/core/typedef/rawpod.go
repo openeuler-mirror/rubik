@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
 const (
@@ -103,7 +104,7 @@ func (pod *RawPod) CgroupPath() string {
 		return ""
 	}
 	/*
-		example:
+		for cgroupfs cgroup driver
 		1. Burstable: pod requests are less than the value of limits and not 0;
 		kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
 		2. BestEffort: pod requests and limits are both 0;
@@ -111,7 +112,32 @@ func (pod *RawPod) CgroupPath() string {
 		3. Guaranteed: pod requests are equal to the value set by limits;
 		kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
 	*/
-	return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
+	/*
+	   for systemd cgroup driver
+	   1. burstable:
+	   kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
+	   2. besteffort
+	   kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
+	   3. guaranteed
+	   kubepods.slice/kubepods-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice/
+	*/
+
+	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
+		if qosClassPath == "" {
+			return filepath.Join(
+				constant.KubepodsCgroup+".slice",
+				constant.KubepodsCgroup+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
+			)
+		}
+		return filepath.Join(
+			constant.KubepodsCgroup+".slice",
+			constant.KubepodsCgroup+"-"+qosClassPath+".slice",
+			constant.KubepodsCgroup+"-"+qosClassPath+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
+		)
+	} else {
+		return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
+	}
+
 }
 
 // ListRawContainers returns all RawContainers in the RawPod
