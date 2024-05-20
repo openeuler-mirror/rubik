@@ -36,6 +36,8 @@ const (
 	CONTAINERD
 	// ISULAD means isulad container engine
 	ISULAD
+	// CRIO means crio container engine
+	CRIO
 )
 
 var (
@@ -43,6 +45,7 @@ var (
 		DOCKER:     "docker://",
 		CONTAINERD: "containerd://",
 		ISULAD:     "iSulad://",
+		CRIO:       "cri-o://",
 	}
 	currentContainerEngines = UNDEFINED
 	setContainerEnginesOnce sync.Once
@@ -50,6 +53,7 @@ var (
 		DOCKER:     "docker",
 		CONTAINERD: "cri-containerd",
 		ISULAD:     "isulad",
+		CRIO:       "crio",
 	}
 )
 
