@@ -31,6 +31,7 @@ type (
 const (
 	// APISERVER instructs the informer to interact with the api server of kubernetes to obtain data
 	APISERVER informerType = iota
+	NRI
 )
 
 // defaultInformerFactory is globally unique informer factory
@@ -41,6 +42,8 @@ func (factory *informerFactory) GetInformerCreator(iType informerType) informerC
 	switch iType {
 	case APISERVER:
 		return NewAPIServerInformer
+	case NRI:
+		return NewNRIInformer
 	default:
 		return func(publisher api.Publisher) (api.Informer, error) {
 			return nil, fmt.Errorf("informer not implemented")

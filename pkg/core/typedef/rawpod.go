@@ -87,6 +87,7 @@ func (pod *RawPod) ID() string {
 }
 
 // CgroupPath returns cgroup path of raw pod
+// handle different combinations of cgroupdriver and pod qos and container runtime
 func (pod *RawPod) CgroupPath() string {
 	id := string(pod.UID)
 	if configHash := pod.Annotations[configHashAnnotationKey]; configHash != "" {
@@ -103,41 +104,65 @@ func (pod *RawPod) CgroupPath() string {
 	default:
 		return ""
 	}
+
 	/*
-		for cgroupfs cgroup driver
+		Kubernetes defines three different pods:
 		1. Burstable: pod requests are less than the value of limits and not 0;
-		kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
 		2. BestEffort: pod requests and limits are both 0;
-		kubepods/bestEffort/pod34152897-dbaf-11ea-8cb9-0653660051c3
 		3. Guaranteed: pod requests are equal to the value set by limits;
-		kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
-	*/
-	/*
-	   for systemd cgroup driver
-	   1. burstable:
-	   kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-	   2. besteffort
-	   kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-	   3. guaranteed
-	   kubepods.slice/kubepods-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice/
+
+		When using cgroupfs as cgroup driver:
+		1. The Burstable path looks like: kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
+		2. The BestEffort path is in the form: kubepods/bestEffort/pod34152897-dbaf-11ea-8cb9-0653660051c3
+		3. The Guaranteed path is in the form: kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
+
+		When using systemd as cgroup driver:
+		1. The Burstable path looks like: kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
+		2. The BestEffort path is in the form: kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
+		3. The Guaranteed path is in the form: kubepods.slice/kubepods-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice/
 	*/
 
 	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
 		if qosClassPath == "" {
-			return filepath.Join(
-				constant.KubepodsCgroup+".slice",
-				constant.KubepodsCgroup+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
-			)
-		}
-		return filepath.Join(
-			constant.KubepodsCgroup+".slice",
-			constant.KubepodsCgroup+"-"+qosClassPath+".slice",
-			constant.KubepodsCgroup+"-"+qosClassPath+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
-		)
-	} else {
-		return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
-	}
+			switch containerEngineScopes[currentContainerEngines] {
+			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
+				return filepath.Join(
+					constant.KubepodsCgroup+".slice",
+					constant.KubepodsCgroup+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
+				)
+			default:
+				return ""
+			}
+		} else {
+			switch containerEngineScopes[currentContainerEngines] {
+			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
+				return filepath.Join(
+					constant.KubepodsCgroup+".slice",
+					constant.KubepodsCgroup+"-"+qosClassPath+".slice",
+					constant.KubepodsCgroup+"-"+qosClassPath+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
+				)
+			default:
+				return ""
+			}
 
+		}
+	} else {
+		if qosClassPath == "" {
+			switch containerEngineScopes[currentContainerEngines] {
+			case constant.ContainerEngineDocker, constant.ContainerEngineContainerd, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
+				return filepath.Join(constant.KubepodsCgroup, constant.PodCgroupNamePrefix+id)
+			default:
+				return ""
+			}
+		} else {
+			switch containerEngineScopes[currentContainerEngines] {
+			case constant.ContainerEngineDocker, constant.ContainerEngineContainerd, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
+				return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
+			default:
+				return ""
+			}
+		}
+	}
 }
 
 // ListRawContainers returns all RawContainers in the RawPod
@@ -196,7 +221,6 @@ func (cont *RawContainer) GetRealContainerID() (string, error) {
 		So we don't consider the case of midway container engine changes
 		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
 	*/
-	setContainerEnginesOnce.Do(func() { fixContainerEngine(cont.status.ContainerID) })
 
 	if !currentContainerEngines.Support(cont) {
 		return "", fmt.Errorf("unsupported container engine: %v", cont.status.ContainerID)

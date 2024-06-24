@@ -36,18 +36,36 @@ const (
 	INFODELETE
 	// RAWPODSYNCALL means Full amount of kubernetes pods
 	RAWPODSYNCALL
+	// NRIPODADD means nri starts a new Pod event
+	NRIPODADD
+	// NRIPODDELETE means nri deletes Pod event
+	NRIPODDELETE
+	// NRICONTAINERCREATE means nri starts container event
+	NRICONTAINERSTART
+	// NRICONTAINERREMOVE means nri removes Container event
+	NRICONTAINERREMOVE
+	// NRIPODSYNCALL means sync all Pods event
+	NRIPODSYNCALL
+	// NRICONTAINERSYNCALL means sync all Containers event
+	NRICONTAINERSYNCALL
 )
 
 const undefinedType = "undefined"
 
 var eventTypeToString = map[EventType]string{
-	RAWPODADD:     "addrawpod",
-	RAWPODUPDATE:  "updaterawpod",
-	RAWPODDELETE:  "deleterawpod",
-	INFOADD:       "addinfo",
-	INFOUPDATE:    "updateinfo",
-	INFODELETE:    "deleteinfo",
-	RAWPODSYNCALL: "syncallrawpods",
+	RAWPODADD:           "addrawpod",
+	RAWPODUPDATE:        "updaterawpod",
+	RAWPODDELETE:        "deleterawpod",
+	INFOADD:             "addinfo",
+	INFOUPDATE:          "updateinfo",
+	INFODELETE:          "deleteinfo",
+	RAWPODSYNCALL:       "syncallrawpods",
+	NRIPODADD:           "addnripod",
+	NRIPODDELETE:        "deletenripod",
+	NRICONTAINERSTART:   "createnricontainer",
+	NRICONTAINERREMOVE:  "removenricontainer",
+	NRIPODSYNCALL:       "syncallnrirawpods",
+	NRICONTAINERSYNCALL: "syncallnrirawcontainers",
 }
 
 // String returns the string of the current event type

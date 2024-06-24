@@ -104,6 +104,21 @@ func (cache *PodCache) substitute(pods []*typedef.PodInfo) {
 	}
 }
 
+// sync containers to podcache pods
+func (cache *PodCache) syncContainers2Pods(containers []*typedef.ContainerInfo) {
+	cache.Lock()
+	defer cache.Unlock()
+	pods := cache.Pods
+	for _, pod := range pods {
+		for _, container := range containers {
+			if pod.ID == container.PodSandboxId {
+				pod.IDContainersMap[container.ID] = container
+				log.Infof("sync container %v to pod %v", container.Name, pod.Name)
+			}
+		}
+	}
+}
+
 // listPod returns the deepcopy object of all pod
 func (cache *PodCache) listPod() map[string]*typedef.PodInfo {
 	res := make(map[string]*typedef.PodInfo, len(cache.Pods))

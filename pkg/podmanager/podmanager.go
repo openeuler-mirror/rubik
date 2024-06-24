@@ -19,6 +19,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	nriapi "github.com/containerd/nri/pkg/api"
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/subscriber"
@@ -52,6 +53,14 @@ func (manager *PodManager) HandleEvent(eventType typedef.EventType, event typede
 		manager.handleWatchEvent(eventType, event)
 	case typedef.RAWPODSYNCALL:
 		manager.handleListEvent(eventType, event)
+	case typedef.NRIPODADD, typedef.NRIPODDELETE:
+		manager.handleNRIPodEvent(eventType, event)
+	case typedef.NRICONTAINERSTART, typedef.NRICONTAINERREMOVE:
+		manager.handleNRIContainerEvent(eventType, event)
+	case typedef.NRIPODSYNCALL:
+		manager.handleSYNCNRIPodsEvent(eventType, event)
+	case typedef.NRICONTAINERSYNCALL:
+		manager.handleSYNCNRIContainersEvent(eventType, event)
 	default:
 		log.Infof("failed to process %s type event", eventType.String())
 	}
@@ -77,6 +86,42 @@ func (manager *PodManager) handleWatchEvent(eventType typedef.EventType, event t
 	}
 }
 
+// handlenripodevent handles the nri pod event
+func (manager *PodManager) handleNRIPodEvent(eventType typedef.EventType, event typedef.Event) {
+	pod, err := eventToNRIRawPod(event)
+	if err != nil {
+		log.Warnf(err.Error())
+		return
+	}
+
+	switch eventType {
+	case typedef.NRIPODADD:
+		manager.addNRIPodFunc(pod)
+	case typedef.NRIPODDELETE:
+		manager.deleteNRIPodFunc(pod)
+	default:
+		log.Errorf("code problem, should not go here...")
+	}
+}
+
+// handlenricontainerevent handles the nri container event
+func (manager *PodManager) handleNRIContainerEvent(eventType typedef.EventType, event typedef.Event) {
+	container, err := eventToNRIRawContainer(event)
+	if err != nil {
+		log.Warnf(err.Error())
+		return
+	}
+	switch eventType {
+	case typedef.NRICONTAINERSTART:
+		manager.addNRIContainerFunc(container)
+	case typedef.NRICONTAINERREMOVE:
+		manager.removeNRIContainerFunc(container)
+	default:
+		log.Errorf("code Problem, should not go here...")
+	}
+
+}
+
 // handleListEvent handles the list event
 func (manager *PodManager) handleListEvent(eventType typedef.EventType, event typedef.Event) {
 	pods, err := eventToRawPods(event)
@@ -92,12 +137,102 @@ func (manager *PodManager) handleListEvent(eventType typedef.EventType, event ty
 	}
 }
 
+// handleSYNCNRIPodsEvent handles sync pod event
+func (manager *PodManager) handleSYNCNRIPodsEvent(eventType typedef.EventType, event typedef.Event) {
+	pods, err := eventToNRIRawPods(event)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	switch eventType {
+	case typedef.NRIPODSYNCALL:
+		manager.nripodssync(pods)
+	default:
+		log.Errorf("code problem, should not go here...")
+	}
+}
+
+// handleSYNCNRIContainersEvent handles sync container event
+func (manager *PodManager) handleSYNCNRIContainersEvent(eventType typedef.EventType, event typedef.Event) {
+	containers, err := eventToNRIRawContainers(event)
+	if err != nil {
+		log.Errorf(err.Error())
+		return
+	}
+	switch eventType {
+	case typedef.NRICONTAINERSYNCALL:
+		manager.nricontainerssync(containers)
+	default:
+		log.Errorf("code problem, should not go here...")
+	}
+}
+
+// eventToNRIRawContainers handles nri containers event
+func eventToNRIRawContainers(e typedef.Event) ([]*typedef.NRIRawContainer, error) {
+	containers, ok := e.([]*nriapi.Container)
+	if !ok {
+		return nil, fmt.Errorf("fail to get *typedef.NRIRawContainer which type is %T", e)
+	}
+	toRawContainerPointer := func(pod nriapi.Container) *typedef.NRIRawContainer {
+		tmp := typedef.NRIRawContainer(pod)
+		return &tmp
+	}
+	var pointerContainers []*typedef.NRIRawContainer
+	for _, pod := range containers {
+		pointerContainers = append(pointerContainers, toRawContainerPointer(*pod))
+	}
+	return pointerContainers, nil
+}
+
+// eventToNRIRawPods handles nri pods event
+func eventToNRIRawPods(e typedef.Event) ([]*typedef.NRIRawPod, error) {
+	pods, ok := e.([]*nriapi.PodSandbox)
+	if !ok {
+		return nil, fmt.Errorf("fail to get *typedef.NRIRawPod which type is %T", e)
+	}
+	toRawPodPointer := func(pod nriapi.PodSandbox) *typedef.NRIRawPod {
+		tmp := typedef.NRIRawPod(pod)
+		return &tmp
+	}
+	var pointerPods []*typedef.NRIRawPod
+	for _, pod := range pods {
+		pointerPods = append(pointerPods, toRawPodPointer(*pod))
+	}
+	return pointerPods, nil
+}
+
+// eventToNRIRawPod handles nri pod event
+func eventToNRIRawPod(e typedef.Event) (*typedef.NRIRawPod, error) {
+	pod, ok := e.(*nriapi.PodSandbox)
+	if !ok {
+		return nil, fmt.Errorf("fail to get *typedef.NRIRawPod which type is %T", e)
+	}
+	nriRawPod := typedef.NRIRawPod(*pod)
+	return &nriRawPod, nil
+}
+
+// eventToNRIRawContainer handles nri container event
+func eventToNRIRawContainer(e typedef.Event) (*typedef.NRIRawContainer, error) {
+	container, ok := e.(*nriapi.Container)
+	if !ok {
+		return nil, fmt.Errorf("fail to get *typedef.NRIRawContainer which type is %T", e)
+	}
+	nriRawContainer := typedef.NRIRawContainer(*container)
+	return &nriRawContainer, nil
+}
+
 // EventTypes returns the intersted event types
 func (manager *PodManager) EventTypes() []typedef.EventType {
 	return []typedef.EventType{typedef.RAWPODADD,
 		typedef.RAWPODUPDATE,
 		typedef.RAWPODDELETE,
 		typedef.RAWPODSYNCALL,
+		typedef.NRIPODADD,
+		typedef.NRICONTAINERSTART,
+		typedef.NRIPODDELETE,
+		typedef.NRIPODSYNCALL,
+		typedef.NRICONTAINERSYNCALL,
+		typedef.NRICONTAINERREMOVE,
 	}
 }
 
@@ -126,6 +261,49 @@ func eventToRawPods(e typedef.Event) ([]*typedef.RawPod, error) {
 		pointerPods = append(pointerPods, toRawPodPointer(pod))
 	}
 	return pointerPods, nil
+}
+
+// addNRIPodFunc handles nri pod add event
+func (manager *PodManager) addNRIPodFunc(pod *typedef.NRIRawPod) {
+	// condition 1: only add running pod
+	if !pod.Running() {
+		log.Debugf("pod %v is not running", pod.Uid)
+		return
+	}
+	// condition2: pod is not existed
+	if manager.Pods.podExist(pod.ID()) {
+		log.Debugf("pod %v has added", pod.Uid)
+		return
+	}
+	// step1: get pod information
+	podInfo := pod.ConvertNRIRawPod2PodInfo()
+	if podInfo == nil {
+		log.Errorf("fail to strip info from raw pod")
+		return
+	}
+	// step2. add pod information
+	manager.tryAddNRIPod(podInfo)
+}
+
+// addNRIContainerFunc handles add nri container event
+func (manager *PodManager) addNRIContainerFunc(container *typedef.NRIRawContainer) {
+	containerInfo := container.ConvertNRIRawContainer2ContainerInfo()
+	for _, pod := range manager.Pods.Pods {
+		if containerInfo.PodSandboxId == pod.ID {
+			pod.IDContainersMap[containerInfo.ID] = containerInfo
+			manager.Publish(typedef.INFOADD, pod.DeepCopy())
+		}
+	}
+}
+
+// sync to podCache after remove container
+func (manager *PodManager) removeNRIContainerFunc(container *typedef.NRIRawContainer) {
+	containerInfo := container.ConvertNRIRawContainer2ContainerInfo()
+	for _, pod := range manager.Pods.Pods {
+		if containerInfo.PodSandboxId == pod.ID {
+			delete(pod.IDContainersMap, containerInfo.ID)
+		}
+	}
 }
 
 // addFunc handles the pod add event
@@ -171,6 +349,11 @@ func (manager *PodManager) updateFunc(pod *typedef.RawPod) {
 	manager.tryAdd(podInfo)
 }
 
+// deleteNRIPodFunc handles delete nri pod
+func (manager *PodManager) deleteNRIPodFunc(pod *typedef.NRIRawPod) {
+	manager.tryDelete(pod.ID())
+}
+
 // deleteFunc handles the pod delete event
 func (manager *PodManager) deleteFunc(pod *typedef.RawPod) {
 	manager.tryDelete(pod.ID())
@@ -182,6 +365,14 @@ func (manager *PodManager) tryAdd(podInfo *typedef.PodInfo) {
 	if !manager.Pods.podExist(podInfo.UID) {
 		manager.Pods.addPod(podInfo)
 		manager.Publish(typedef.INFOADD, podInfo.DeepCopy())
+	}
+}
+
+// tryAddNRIPod tries to add nri pod info which is not added
+func (manager *PodManager) tryAddNRIPod(podInfo *typedef.PodInfo) {
+	// only add when pod is not existed
+	if !manager.Pods.podExist(podInfo.UID) {
+		manager.Pods.addPod(podInfo)
 	}
 }
 
@@ -215,6 +406,27 @@ func (manager *PodManager) sync(pods []*typedef.RawPod) {
 		newPods = append(newPods, pod.ExtractPodInfo())
 	}
 	manager.Pods.substitute(newPods)
+}
+
+// nripodssync handles sync all pods
+func (manager *PodManager) nripodssync(pods []*typedef.NRIRawPod) {
+	var newPods []*typedef.PodInfo
+	for _, pod := range pods {
+		if pod == nil || !pod.Running() {
+			continue
+		}
+		newPods = append(newPods, pod.ConvertNRIRawPod2PodInfo())
+	}
+	manager.Pods.substitute(newPods)
+}
+
+// nricontainerssync handles sync all containers
+func (manager *PodManager) nricontainerssync(containers []*typedef.NRIRawContainer) {
+	var newContainers []*typedef.ContainerInfo
+	for _, container := range containers {
+		newContainers = append(newContainers, container.ConvertNRIRawContainer2ContainerInfo())
+	}
+	manager.Pods.syncContainers2Pods(newContainers)
 }
 
 // ListOfflinePods returns offline pods

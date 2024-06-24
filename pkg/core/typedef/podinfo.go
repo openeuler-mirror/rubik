@@ -28,6 +28,8 @@ type PodInfo struct {
 	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
 	Annotations     map[string]string         `json:"annotations,omitempty"`
 	Labels          map[string]string         `json:"labels,omitempty"`
+	// ID means id of the pod in sandbox but not uid
+	ID string `json:"id,omitempty"`
 }
 
 // NewPodInfo creates the PodInfo instance

@@ -78,6 +78,9 @@ func InitKubeClient() (*kubernetes.Clientset, error) {
 	return kubeClient, nil
 }
 
+func (informer *APIServerInformer) WaitReady() {
+}
+
 // Start starts and enables PIServerInformer
 func (informer *APIServerInformer) Start(ctx context.Context) {
 	const specNodeNameField = "spec.nodeName"

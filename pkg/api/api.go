@@ -53,4 +53,5 @@ type EventHandler interface {
 type Informer interface {
 	Publisher
 	Start(ctx context.Context)
+	WaitReady()
 }
