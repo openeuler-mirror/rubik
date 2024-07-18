@@ -45,6 +45,7 @@ type AgentConfig struct {
 	CgroupRoot      string   `json:"cgroupRoot,omitempty"`
 	EnabledFeatures []string `json:"enabledFeatures,omitempty"`
 	CgroupDriver    string   `json:"cgroupDriver,omitempty"`
+	InformerType    string   `json:"informerType,omitempty"`
 }
 
 // NewConfig returns an config object pointer
@@ -58,6 +59,7 @@ func NewConfig(pType parserType) *Config {
 			LogDir:       constant.DefaultLogDir,
 			CgroupRoot:   constant.DefaultCgroupRoot,
 			CgroupDriver: constant.CgroupDriverCgroupfs,
+			InformerType: constant.APIServerInformer,
 		},
 	}
 	return c

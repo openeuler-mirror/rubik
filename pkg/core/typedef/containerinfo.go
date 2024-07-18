@@ -81,26 +81,34 @@ type ContainerInfo struct {
 	ID               string      `json:"id"`
 	RequestResources ResourceMap `json:"requests,omitempty"`
 	LimitResources   ResourceMap `json:"limits,omitempty"`
+	// PodSandboxId means the id of the pod which the container belongs to
+	PodSandboxId string `json:"podisandid,omitempty"`
 }
 
 // NewContainerInfo creates a ContainerInfo instance
 func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *ContainerInfo {
+	scopeName := containerEngineScopes[currentContainerEngines]
 	requests, limits := rawContainer.GetResourceMaps()
 	var path string
 	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
-		scopeName := containerEngineScopes[currentContainerEngines]
-		path = filepath.Join(podCgroupPath, scopeName+"-"+id+".scope")
+		switch containerEngineScopes[currentContainerEngines] {
+		case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
+			path = filepath.Join(podCgroupPath, scopeName+"-"+id+".scope")
+		}
 	} else {
-		path = filepath.Join(podCgroupPath, id)
+		switch containerEngineScopes[currentContainerEngines] {
+		case constant.ContainerEngineContainerd, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
+			path = filepath.Join(podCgroupPath, id)
+		case constant.ContainerEngineCrio:
+			path = filepath.Join(podCgroupPath, scopeName+"-"+id)
+		}
 	}
-
 	return &ContainerInfo{
 		Name:             rawContainer.status.Name,
 		ID:               id,
 		Hierarchy:        cgroup.Hierarchy{Path: path},
 		RequestResources: requests,
-		LimitResources:   limits,
-	}
+		LimitResources:   limits}
 }
 
 func fixContainerEngine(containerID string) {

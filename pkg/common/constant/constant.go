@@ -114,9 +114,30 @@ const (
 	PSIIOCgroupFileName = "io.pressure"
 )
 
+// cgroup driver
 const (
 	// CgroupDriverSystemd is global config for cgroupfs driver choice:  systemd driver
 	CgroupDriverSystemd = "systemd"
 	// CgroupDriverCgroupfs is global config for cgroupfs driver choice:  cgroupfs driver
 	CgroupDriverCgroupfs = "cgroupfs"
+)
+
+// container engine
+const (
+	// ContainerEngineCrio is name of crio container engine
+	ContainerEngineCrio = "crio"
+	// ContainerEngineContainerd is name of containerd container engine
+	ContainerEngineContainerd = "cri-containerd"
+	// ContainerEngineIsula is name of isula container engine
+	ContainerEngineIsula = "isula"
+	// ContainerEngineDocker is name of docker container engine
+	ContainerEngineDocker = "docker"
+)
+
+// informer type
+const (
+	// APIServerInformer is global config for informerType choice: informerType: "apiserver"
+	APIServerInformer = "apiserver"
+	// NRIInformer is global config for informerType choice: informerType: "nri"
+	NRIInformer = "nri"
 )

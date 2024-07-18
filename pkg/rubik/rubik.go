@@ -63,9 +63,15 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 // Run starts and runs the agent until receiving stop signal
 func (a *Agent) Run(ctx context.Context) error {
 	log.Infof("agent run with config:\n%s", a.config.String())
-	if err := a.startInformer(ctx); err != nil {
+	var informerName string
+	informerName = a.config.Agent.InformerType
+	if informerName == "nil" {
+		informerName = constant.APIServerInformer
+	}
+	if err := a.startInformer(ctx, informerName); err != nil {
 		return err
 	}
+	a.informer.WaitReady()
 	if err := a.startServiceHandler(ctx); err != nil {
 		return err
 	}
@@ -76,17 +82,23 @@ func (a *Agent) Run(ctx context.Context) error {
 }
 
 // startInformer starts informer to obtain external data
-func (a *Agent) startInformer(ctx context.Context) error {
+func (a *Agent) startInformer(ctx context.Context, informerName string) error {
 	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
-	informer, err := informer.GetInformerFactory().GetInformerCreator(informer.APISERVER)(publisher)
+	var i api.Informer
+	var err error
+	if informerName == constant.APIServerInformer {
+		i, err = informer.GetInformerFactory().GetInformerCreator(informer.APISERVER)(publisher)
+	} else {
+		i, err = informer.GetInformerFactory().GetInformerCreator(informer.NRI)(publisher)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to set informer: %v", err)
 	}
-	if err := informer.Subscribe(a.podManager); err != nil {
+	if err := i.Subscribe(a.podManager); err != nil {
 		return fmt.Errorf("failed to subscribe informer: %v", err)
 	}
-	a.informer = informer
-	informer.Start(ctx)
+	a.informer = i
+	i.Start(ctx)
 	return nil
 }
 
