@@ -16,13 +16,11 @@ package typedef
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
@@ -86,83 +84,30 @@ func (pod *RawPod) ID() string {
 	return string(pod.UID)
 }
 
+// Kubernetes defines three different pods:
+// 1. Burstable: pod requests are less than the value of limits and not 0;
+// 2. BestEffort: pod requests and limits are both 0;
+// 3. Guaranteed: pod requests are equal to the value set by limits;
+var k8sQosClass = map[corev1.PodQOSClass]string{
+	corev1.PodQOSGuaranteed: "",
+	corev1.PodQOSBurstable:  strings.ToLower(string(corev1.PodQOSBurstable)),
+	corev1.PodQOSBestEffort: strings.ToLower(string(corev1.PodQOSBestEffort)),
+}
+
 // CgroupPath returns cgroup path of raw pod
 // handle different combinations of cgroupdriver and pod qos and container runtime
-func (pod *RawPod) CgroupPath() string {
+func (pod *RawPod) CgroupPath() (res string) {
 	id := string(pod.UID)
 	if configHash := pod.Annotations[configHashAnnotationKey]; configHash != "" {
 		id = configHash
 	}
 
-	qosClassPath := ""
-	switch pod.Status.QOSClass {
-	case corev1.PodQOSGuaranteed:
-	case corev1.PodQOSBurstable:
-		qosClassPath = strings.ToLower(string(corev1.PodQOSBurstable))
-	case corev1.PodQOSBestEffort:
-		qosClassPath = strings.ToLower(string(corev1.PodQOSBestEffort))
-	default:
+	qosPrefix, existed := k8sQosClass[pod.Status.QOSClass]
+	if !existed {
+		fmt.Printf("unsupported qos class: %v", pod.Status.QOSClass)
 		return ""
 	}
-
-	/*
-		Kubernetes defines three different pods:
-		1. Burstable: pod requests are less than the value of limits and not 0;
-		2. BestEffort: pod requests and limits are both 0;
-		3. Guaranteed: pod requests are equal to the value set by limits;
-
-		When using cgroupfs as cgroup driver:
-		1. The Burstable path looks like: kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
-		2. The BestEffort path is in the form: kubepods/bestEffort/pod34152897-dbaf-11ea-8cb9-0653660051c3
-		3. The Guaranteed path is in the form: kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
-
-		When using systemd as cgroup driver:
-		1. The Burstable path looks like: kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-		2. The BestEffort path is in the form: kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-		3. The Guaranteed path is in the form: kubepods.slice/kubepods-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice/
-	*/
-
-	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
-		if qosClassPath == "" {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-				return filepath.Join(
-					constant.KubepodsCgroup+".slice",
-					constant.KubepodsCgroup+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
-				)
-			default:
-				return ""
-			}
-		} else {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-				return filepath.Join(
-					constant.KubepodsCgroup+".slice",
-					constant.KubepodsCgroup+"-"+qosClassPath+".slice",
-					constant.KubepodsCgroup+"-"+qosClassPath+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
-				)
-			default:
-				return ""
-			}
-
-		}
-	} else {
-		if qosClassPath == "" {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineDocker, constant.ContainerEngineContainerd, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
-				return filepath.Join(constant.KubepodsCgroup, constant.PodCgroupNamePrefix+id)
-			default:
-				return ""
-			}
-		} else {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineDocker, constant.ContainerEngineContainerd, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
-				return filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
-			default:
-				return ""
-			}
-		}
-	}
+	return cgroup.ConcatPodCgroupPath(qosPrefix, id)
 }
 
 // ListRawContainers returns all RawContainers in the RawPod
@@ -221,6 +166,13 @@ func (cont *RawContainer) GetRealContainerID() (string, error) {
 		So we don't consider the case of midway container engine changes
 		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
 	*/
+	setContainerEnginesOnce.Do(func() {
+		getEngineFromCgroup()
+		_, exist := supportEnginesPrefixMap[currentContainerEngines]
+		if !exist {
+			getEngineFromContainerID(cont.status.ContainerID)
+		}
+	})
 
 	if !currentContainerEngines.Support(cont) {
 		return "", fmt.Errorf("unsupported container engine: %v", cont.status.ContainerID)

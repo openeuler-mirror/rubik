@@ -27,11 +27,6 @@ import (
 var rootDir = constant.DefaultCgroupRoot
 var cgroupDriver = constant.CgroupDriverCgroupfs
 
-// SetCgroupDriver is the setter of global cgroup driver
-func SetCgroupDriver(driver string) {
-	cgroupDriver = driver
-}
-
 // GetCgroupDriver is the getter of global cgroup driver
 func GetCgroupDriver() string {
 	return cgroupDriver
