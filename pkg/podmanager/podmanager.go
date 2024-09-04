@@ -173,13 +173,13 @@ func eventToNRIRawContainers(e typedef.Event) ([]*typedef.NRIRawContainer, error
 	if !ok {
 		return nil, fmt.Errorf("fail to get *typedef.NRIRawContainer which type is %T", e)
 	}
-	toRawContainerPointer := func(pod nriapi.Container) *typedef.NRIRawContainer {
-		tmp := typedef.NRIRawContainer(pod)
+	toRawContainerPointer := func(container nriapi.Container) *typedef.NRIRawContainer {
+		tmp := typedef.NRIRawContainer(container)
 		return &tmp
 	}
 	var pointerContainers []*typedef.NRIRawContainer
-	for _, pod := range containers {
-		pointerContainers = append(pointerContainers, toRawContainerPointer(*pod))
+	for _, container := range containers {
+		pointerContainers = append(pointerContainers, toRawContainerPointer(*container))
 	}
 	return pointerContainers, nil
 }
