@@ -85,33 +85,30 @@ type ContainerInfo struct {
 	PodSandboxId string `json:"podisandid,omitempty"`
 }
 
+func containerPath(id, podCgroupPath string) string {
+	if cgroup.Type() == constant.CgroupDriverSystemd {
+		return filepath.Join(podCgroupPath, containerEngineScopes[currentContainerEngines]+"-"+id+".scope")
+	}
+	// In the case of cgroupfs, the path of crio contains a special prefix
+	if containerEngineScopes[currentContainerEngines] == constant.ContainerEngineCrio {
+		return filepath.Join(podCgroupPath, constant.ContainerEngineCrio+"-"+id)
+	}
+	return filepath.Join(podCgroupPath, id)
+}
+
 // NewContainerInfo creates a ContainerInfo instance
 func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *ContainerInfo {
-	scopeName := containerEngineScopes[currentContainerEngines]
 	requests, limits := rawContainer.GetResourceMaps()
-	var path string
-	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
-		switch containerEngineScopes[currentContainerEngines] {
-		case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-			path = filepath.Join(podCgroupPath, scopeName+"-"+id+".scope")
-		}
-	} else {
-		switch containerEngineScopes[currentContainerEngines] {
-		case constant.ContainerEngineContainerd, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-			path = filepath.Join(podCgroupPath, id)
-		case constant.ContainerEngineCrio:
-			path = filepath.Join(podCgroupPath, scopeName+"-"+id)
-		}
-	}
 	return &ContainerInfo{
 		Name:             rawContainer.status.Name,
 		ID:               id,
-		Hierarchy:        cgroup.Hierarchy{Path: path},
+		Hierarchy:        cgroup.Hierarchy{Path: containerPath(id, podCgroupPath)},
 		RequestResources: requests,
-		LimitResources:   limits}
+		LimitResources:   limits,
+	}
 }
 
-func fixContainerEngine(containerID string) {
+func getEngineFromContainerID(containerID string) {
 	for engine, prefix := range supportEnginesPrefixMap {
 		if strings.HasPrefix(containerID, prefix) {
 			currentContainerEngines = engine
@@ -119,7 +116,6 @@ func fixContainerEngine(containerID string) {
 			return
 		}
 	}
-	currentContainerEngines = UNDEFINED
 }
 
 // DeepCopy returns deepcopy object.

@@ -49,10 +49,6 @@ const (
 	fileMode      os.FileMode = 0666
 )
 
-func init() {
-	setContainerEnginesOnce.Do(FixContainerEngine)
-}
-
 // convert NRIRawPod structure to PodInfo structure
 func (pod *NRIRawPod) ConvertNRIRawPod2PodInfo() *PodInfo {
 	if pod == nil {
@@ -87,7 +83,6 @@ func (pod *NRIRawPod) GetQosClass() string {
 
 // get pod cgroupPath
 func (pod *NRIRawPod) CgroupPath() string {
-	var path string
 	id := pod.Uid
 
 	qosClassPath := ""
@@ -100,61 +95,7 @@ func (pod *NRIRawPod) CgroupPath() string {
 	default:
 		return ""
 	}
-	/*
-		Kubernetes defines three different pods:
-		1. Burstable: pod requests are less than the value of limits and not 0;
-		2. BestEffort: pod requests and limits are both 0;
-		3. Guaranteed: pod requests are equal to the value set by limits;
-
-		When using cgroupfs as cgroup driver,
-		1. The Burstable path looks like: kubepods/burstable/pod34152897-dbaf-11ea-8cb9-0653660051c3
-		2. The BestEffort path is in the form: kubepods/besteffort/pod34152897-dbaf-11ea-8cb9-0653660051c3
-		3. The Guaranteed path is in the form: kubepods/pod34152897-dbaf-11ea-8cb9-0653660051c3
-
-		When using systemd as cgroup driver:
-		1. The Burstable path looks like: kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-		2. The BestEffort path is in the form: kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
-		3. The Guaranteed path is in the form: kubepods.slice/kubepods-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice/
-	*/
-
-	if cgroup.GetCgroupDriver() == constant.CgroupDriverSystemd {
-		if qosClassPath == "" {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-				path = filepath.Join(
-					constant.KubepodsCgroup+".slice",
-					constant.KubepodsCgroup+"-"+constant.PodCgroupNamePrefix+strings.Replace(id, "-", "_", -1)+".slice",
-				)
-			}
-		} else {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineCrio, constant.ContainerEngineDocker, constant.ContainerEngineIsula:
-				path = filepath.Join(
-					constant.KubepodsCgroup+".slice",
-					constant.KubepodsCgroup+"-"+qosClassPath+".slice",
-					pod.Linux.CgroupParent,
-				)
-
-			}
-		}
-	} else {
-		if qosClassPath == "" {
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineDocker, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
-				path = filepath.Join(constant.KubepodsCgroup, constant.PodCgroupNamePrefix+id)
-			}
-		} else {
-
-			switch containerEngineScopes[currentContainerEngines] {
-			case constant.ContainerEngineContainerd, constant.ContainerEngineDocker, constant.ContainerEngineIsula, constant.ContainerEngineCrio:
-				path = filepath.Join(constant.KubepodsCgroup, qosClassPath, constant.PodCgroupNamePrefix+id)
-			default:
-				path = ""
-			}
-		}
-
-	}
-	return path
+	return cgroup.ConcatPodCgroupPath(qosClassPath, id)
 }
 
 // get pod running state
@@ -437,7 +378,7 @@ func (container *NRIRawContainer) GetResourceMaps() (ResourceMap, ResourceMap) {
 }
 
 // get current container engine
-func FixContainerEngine() {
+func getEngineFromCgroup() {
 	file, err := os.OpenFile(procSelfCgroupFile, os.O_RDONLY, fileMode)
 	if err != nil {
 		return
