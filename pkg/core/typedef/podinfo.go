@@ -22,14 +22,15 @@ import (
 // PodInfo represents pod
 type PodInfo struct {
 	cgroup.Hierarchy
-	Name            string                    `json:"name"`
-	UID             string                    `json:"uid"`
-	Namespace       string                    `json:"namespace"`
-	IDContainersMap map[string]*ContainerInfo `json:"containers,omitempty"`
-	Annotations     map[string]string         `json:"annotations,omitempty"`
-	Labels          map[string]string         `json:"labels,omitempty"`
-	// ID means id of the pod in sandbox but not uid
-	ID string `json:"id,omitempty"`
+	Name                string                    `json:"name"`
+	UID                 string                    `json:"uid"`
+	Namespace           string                    `json:"namespace"`
+	IDContainersMap     map[string]*ContainerInfo `json:"containers,omitempty"`
+	Annotations         map[string]string         `json:"annotations,omitempty"`
+	Labels              map[string]string         `json:"labels,omitempty"`
+	ID                  string                    `json:"id,omitempty"` // id of the sandbox container in pod
+	nriContainerRequest map[string]ResourceMap
+	nriContainerLimit   map[string]ResourceMap
 }
 
 // NewPodInfo creates the PodInfo instance
@@ -50,42 +51,49 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 	if pod == nil {
 		return nil
 	}
-	var (
-		contMap  map[string]*ContainerInfo
-		annoMap  map[string]string
-		labelMap map[string]string
-	)
+
+	var copy = *pod
 	// nil is different from empty value in golang
 	if pod.IDContainersMap != nil {
-		contMap = make(map[string]*ContainerInfo)
+		contMap := make(map[string]*ContainerInfo)
 		for id, cont := range pod.IDContainersMap {
 			contMap[id] = cont.DeepCopy()
 		}
+		copy.IDContainersMap = contMap
 	}
 
 	if pod.Annotations != nil {
-		annoMap = make(map[string]string)
+		annoMap := make(map[string]string)
 		for k, v := range pod.Annotations {
 			annoMap[k] = v
 		}
+		copy.Annotations = annoMap
 	}
 
 	if pod.Labels != nil {
-		labelMap = make(map[string]string)
+		labelMap := make(map[string]string)
 		for k, v := range pod.Labels {
 			labelMap[k] = v
 		}
+		copy.Labels = labelMap
 	}
 
-	return &PodInfo{
-		Name:            pod.Name,
-		UID:             pod.UID,
-		Hierarchy:       pod.Hierarchy,
-		Namespace:       pod.Namespace,
-		Annotations:     annoMap,
-		Labels:          labelMap,
-		IDContainersMap: contMap,
+	if pod.nriContainerLimit != nil {
+		limits := make(map[string]ResourceMap)
+		for k, v := range pod.nriContainerLimit {
+			limits[k] = v.DeepCopy()
+		}
+		copy.nriContainerLimit = limits
 	}
+
+	if pod.nriContainerRequest != nil {
+		requests := make(map[string]ResourceMap)
+		for k, v := range pod.nriContainerRequest {
+			requests[k] = v.DeepCopy()
+		}
+		copy.nriContainerRequest = requests
+	}
+	return &copy
 }
 
 // Offline is used to determine whether the pod is offline
@@ -108,4 +116,12 @@ func (pod *PodInfo) Offline() bool {
 // Online is used to determine whether the pod is online
 func (pod *PodInfo) Online() bool {
 	return !pod.Offline()
+}
+
+func (pod *PodInfo) GetNriContainerRequest() map[string]ResourceMap {
+	return pod.nriContainerRequest
+}
+
+func (pod *PodInfo) GetNriContainerLimit() map[string]ResourceMap {
+	return pod.nriContainerLimit
 }
