@@ -16,63 +16,10 @@ package typedef
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
-	"sync"
 
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
-
-// ContainerEngineType indicates the type of container engine
-type ContainerEngineType int8
-
-const (
-	// UNDEFINED means undefined container engine
-	UNDEFINED ContainerEngineType = iota
-	// DOCKER means docker container engine
-	DOCKER
-	// CONTAINERD means containerd container engine
-	CONTAINERD
-	// ISULAD means isulad container engine
-	ISULAD
-	// CRIO means crio container engine
-	CRIO
-)
-
-var (
-	supportEnginesPrefixMap = map[ContainerEngineType]string{
-		DOCKER:     "docker://",
-		CONTAINERD: "containerd://",
-		ISULAD:     "iSulad://",
-		CRIO:       "cri-o://",
-	}
-	currentContainerEngines = UNDEFINED
-	setContainerEnginesOnce sync.Once
-	containerEngineScopes   = map[ContainerEngineType]string{
-		DOCKER:     "docker",
-		CONTAINERD: "cri-containerd",
-		ISULAD:     "isulad",
-		CRIO:       "crio",
-	}
-)
-
-// Support returns true when the container uses the container engine
-func (engine *ContainerEngineType) Support(cont *RawContainer) bool {
-	if *engine == UNDEFINED {
-		return false
-	}
-	return strings.HasPrefix(cont.status.ContainerID, engine.Prefix())
-}
-
-// Prefix returns the ID prefix of the container engine
-func (engine *ContainerEngineType) Prefix() string {
-	prefix, ok := supportEnginesPrefixMap[*engine]
-	if !ok {
-		return ""
-	}
-	return prefix
-}
 
 // ContainerInfo contains the interested information of container
 type ContainerInfo struct {
@@ -81,41 +28,7 @@ type ContainerInfo struct {
 	ID               string      `json:"id"`
 	RequestResources ResourceMap `json:"requests,omitempty"`
 	LimitResources   ResourceMap `json:"limits,omitempty"`
-	// PodSandboxId means the id of the pod which the container belongs to
-	PodSandboxId string `json:"podisandid,omitempty"`
-}
-
-func containerPath(id, podCgroupPath string) string {
-	if cgroup.Type() == constant.CgroupDriverSystemd {
-		return filepath.Join(podCgroupPath, containerEngineScopes[currentContainerEngines]+"-"+id+".scope")
-	}
-	// In the case of cgroupfs, the path of crio contains a special prefix
-	if containerEngineScopes[currentContainerEngines] == constant.ContainerEngineCrio {
-		return filepath.Join(podCgroupPath, constant.ContainerEngineCrio+"-"+id)
-	}
-	return filepath.Join(podCgroupPath, id)
-}
-
-// NewContainerInfo creates a ContainerInfo instance
-func NewContainerInfo(id, podCgroupPath string, rawContainer *RawContainer) *ContainerInfo {
-	requests, limits := rawContainer.GetResourceMaps()
-	return &ContainerInfo{
-		Name:             rawContainer.status.Name,
-		ID:               id,
-		Hierarchy:        cgroup.Hierarchy{Path: containerPath(id, podCgroupPath)},
-		RequestResources: requests,
-		LimitResources:   limits,
-	}
-}
-
-func getEngineFromContainerID(containerID string) {
-	for engine, prefix := range supportEnginesPrefixMap {
-		if strings.HasPrefix(containerID, prefix) {
-			currentContainerEngines = engine
-			fmt.Printf("The container engine is %v\n", strings.Split(currentContainerEngines.Prefix(), ":")[0])
-			return
-		}
-	}
+	PodSandboxId     string      `json:"podisandid,omitempty"` // id of the sandbox which can uniquely determine a pod
 }
 
 // DeepCopy returns deepcopy object.
@@ -124,4 +37,115 @@ func (cont *ContainerInfo) DeepCopy() *ContainerInfo {
 	copyObject.LimitResources = cont.LimitResources.DeepCopy()
 	copyObject.RequestResources = cont.RequestResources.DeepCopy()
 	return &copyObject
+}
+
+type ContainerConfig struct {
+	rawCont       *RawContainer
+	nriCont       *NRIRawContainer
+	request       ResourceMap
+	limit         ResourceMap
+	podCgroupPath string
+}
+
+type ConfigOpt func(b *ContainerConfig)
+
+func WithRawContainer(cont *RawContainer) ConfigOpt {
+	return func(conf *ContainerConfig) {
+		conf.rawCont = cont
+	}
+}
+
+func WithNRIContainer(cont *NRIRawContainer) ConfigOpt {
+	return func(conf *ContainerConfig) {
+		conf.nriCont = cont
+	}
+}
+
+func WithRequest(req ResourceMap) ConfigOpt {
+	return func(conf *ContainerConfig) {
+		conf.request = req
+	}
+}
+
+func WithLimit(limit ResourceMap) ConfigOpt {
+	return func(conf *ContainerConfig) {
+		conf.limit = limit
+	}
+}
+
+func WithPodCgroup(path string) ConfigOpt {
+	return func(conf *ContainerConfig) {
+		conf.podCgroupPath = path
+	}
+}
+
+func NewContainerInfo(opts ...ConfigOpt) *ContainerInfo {
+	var (
+		conf = &ContainerConfig{}
+		ci   = &ContainerInfo{}
+	)
+	for _, opt := range opts {
+		opt(conf)
+	}
+
+	if err := fromRawContainer(ci, conf.rawCont); err != nil {
+		fmt.Printf("failed to parse raw container: %v", err)
+	}
+	fromNRIContainer(ci, conf.nriCont)
+	fromPodCgroupPath(ci, conf.podCgroupPath)
+
+	if conf.request != nil {
+		ci.RequestResources = conf.request
+	}
+
+	if conf.limit != nil {
+		ci.LimitResources = conf.limit
+	}
+
+	return ci
+}
+
+func fromRawContainer(ci *ContainerInfo, rawCont *RawContainer) error {
+	if rawCont == nil {
+		return nil
+	}
+	requests, limits := rawCont.GetResourceMaps()
+	id, err := rawCont.GetRealContainerID()
+	if err != nil {
+		return fmt.Errorf("failed to parse container ID: %v", err)
+	}
+	if id == "" {
+		return fmt.Errorf("empty container id")
+	}
+
+	ci.Name = rawCont.status.Name
+	ci.ID = id
+	ci.RequestResources = requests
+	ci.LimitResources = limits
+	return nil
+}
+
+// convert NRIRawContainer structure to ContainerInfo structure
+func fromNRIContainer(ci *ContainerInfo, nriCont *NRIRawContainer) {
+	if nriCont == nil {
+		return
+	}
+	ci.ID = nriCont.Id
+	ci.Hierarchy = cgroup.Hierarchy{
+		Path: cgroup.GetNRIContainerCgroupPath(nriCont.Linux.GetCgroupsPath()),
+	}
+	ci.Name = nriCont.Name
+	ci.PodSandboxId = nriCont.PodSandboxId
+}
+
+func fromPodCgroupPath(ci *ContainerInfo, podCgroupPath string) {
+	if podCgroupPath == "" {
+		return
+	}
+	// TODO : don't need to judge cgroup driver
+	var prefix = containerEngineScopes[currentContainerEngines]
+	if cgroup.Type() == constant.CgroupDriverCgroupfs && currentContainerEngines != CRIO {
+		prefix = ""
+	}
+	ci.Hierarchy = cgroup.Hierarchy{Path: cgroup.ConcatContainerCgroup(podCgroupPath, prefix, ci.ID)}
 }

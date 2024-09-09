@@ -96,7 +96,7 @@ var k8sQosClass = map[corev1.PodQOSClass]string{
 
 // CgroupPath returns cgroup path of raw pod
 // handle different combinations of cgroupdriver and pod qos and container runtime
-func (pod *RawPod) CgroupPath() (res string) {
+func (pod *RawPod) CgroupPath() string {
 	id := string(pod.UID)
 	if configHash := pod.Annotations[configHashAnnotationKey]; configHash != "" {
 		id = configHash
@@ -142,17 +142,16 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 	}
 
 	// 2. generate ID-Container mapping
-	podCgroupPath := pod.CgroupPath()
 	for _, rawContainer := range nameRawContainersMap {
-		id, err := rawContainer.GetRealContainerID()
-		if err != nil {
-			fmt.Printf("failed to parse container ID: %v\n", err)
+		ci := NewContainerInfo(
+			WithRawContainer(rawContainer),
+			WithPodCgroup(pod.CgroupPath()),
+		)
+		if ci.ID == "" {
+			fmt.Printf("failed to parse id from raw container\n")
 			continue
 		}
-		if id == "" {
-			continue
-		}
-		idContainersMap[id] = NewContainerInfo(id, podCgroupPath, rawContainer)
+		idContainersMap[ci.ID] = ci
 	}
 	return idContainersMap
 }
@@ -167,7 +166,6 @@ func (cont *RawContainer) GetRealContainerID() (string, error) {
 		`fixContainerEngine` is only executed when `getRealContainerID` is called for the first time
 	*/
 	setContainerEnginesOnce.Do(func() {
-		getEngineFromCgroup()
 		_, exist := supportEnginesPrefixMap[currentContainerEngines]
 		if !exist {
 			getEngineFromContainerID(cont.status.ContainerID)
@@ -214,4 +212,14 @@ func (m ResourceMap) DeepCopy() ResourceMap {
 		res[k] = v
 	}
 	return res
+}
+
+func getEngineFromContainerID(containerID string) {
+	for engine, prefix := range supportEnginesPrefixMap {
+		if strings.HasPrefix(containerID, prefix) {
+			currentContainerEngines = engine
+			fmt.Printf("The container engine is %v\n", strings.Split(currentContainerEngines.Prefix(), ":")[0])
+			return
+		}
+	}
 }

@@ -285,23 +285,48 @@ func (manager *PodManager) addNRIPodFunc(pod *typedef.NRIRawPod) {
 	manager.tryAddNRIPod(podInfo)
 }
 
+func parseNRIContainer(manager *PodManager, container *typedef.NRIRawContainer) *typedef.ContainerInfo {
+	pod := manager.getPodBySandboxId(container.PodSandboxId)
+	if pod == nil {
+		fmt.Printf("failed to find pod by sandbox id %v\n", container.PodSandboxId)
+		return nil
+	}
+
+	opts := []typedef.ConfigOpt{
+		typedef.WithNRIContainer(container),
+	}
+	if req, existed := pod.GetNriContainerRequest()[container.Name]; existed {
+		opts = append(opts, typedef.WithRequest(req))
+	}
+	if limit, existed := pod.GetNriContainerLimit()[container.Name]; existed {
+		opts = append(opts, typedef.WithLimit(limit))
+	}
+	return typedef.NewContainerInfo(opts...)
+}
+
 // addNRIContainerFunc handles add nri container event
 func (manager *PodManager) addNRIContainerFunc(container *typedef.NRIRawContainer) {
-	containerInfo := container.ConvertNRIRawContainer2ContainerInfo()
+	ci := parseNRIContainer(manager, container)
+	if ci == nil {
+		return
+	}
+	// TODO: add logics to update pod's container
+	manager.Pods.Lock()
 	for _, pod := range manager.Pods.Pods {
-		if containerInfo.PodSandboxId == pod.ID {
-			pod.IDContainersMap[containerInfo.ID] = containerInfo
+		if container.PodSandboxId == pod.ID {
+			pod.IDContainersMap[ci.ID] = ci
 			manager.Publish(typedef.INFOADD, pod.DeepCopy())
+			break
 		}
 	}
+	manager.Pods.Unlock()
 }
 
 // sync to podCache after remove container
 func (manager *PodManager) removeNRIContainerFunc(container *typedef.NRIRawContainer) {
-	containerInfo := container.ConvertNRIRawContainer2ContainerInfo()
 	for _, pod := range manager.Pods.Pods {
-		if containerInfo.PodSandboxId == pod.ID {
-			delete(pod.IDContainersMap, containerInfo.ID)
+		if container.PodSandboxId == pod.ID {
+			delete(pod.IDContainersMap, container.Id)
 		}
 	}
 }
@@ -424,7 +449,11 @@ func (manager *PodManager) nripodssync(pods []*typedef.NRIRawPod) {
 func (manager *PodManager) nricontainerssync(containers []*typedef.NRIRawContainer) {
 	var newContainers []*typedef.ContainerInfo
 	for _, container := range containers {
-		newContainers = append(newContainers, container.ConvertNRIRawContainer2ContainerInfo())
+		ci := parseNRIContainer(manager, container)
+		if ci == nil {
+			continue
+		}
+		newContainers = append(newContainers, ci)
 	}
 	manager.Pods.syncContainers2Pods(newContainers)
 }
@@ -471,4 +500,13 @@ func (manager *PodManager) ListPodsWithOptions(options ...api.ListOption) map[st
 		pods[pod.UID] = pod
 	}
 	return pods
+}
+
+func (manager *PodManager) getPodBySandboxId(sandboxId string) *typedef.PodInfo {
+	for _, pod := range manager.ListPodsWithOptions() {
+		if sandboxId == pod.ID {
+			return pod
+		}
+	}
+	return nil
 }

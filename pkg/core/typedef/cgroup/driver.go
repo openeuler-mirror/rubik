@@ -21,6 +21,8 @@ import (
 type Driver interface {
 	Name() string
 	ConcatPodCgroupPath(qosClass string, id string) string
+	ConcatContainerCgroup(podCgroupPath, prefix, containerID string) string
+	GetNRIContainerCgroupPath(nriCgroupPath string) string
 }
 
 var driver Driver = &cgroupfs.Driver{}
@@ -43,6 +45,10 @@ func ConcatPodCgroupPath(qosClass, id string) string {
 	return driver.ConcatPodCgroupPath(qosClass, id)
 }
 
-func ConcatContainerCgroupPath(podCgroupPath string, containerScope string) string {
-	return driver.ConcatPodCgroupPath(podCgroupPath, containerScope)
+func GetNRIContainerCgroupPath(nriCgroupPath string) string {
+	return driver.GetNRIContainerCgroupPath(nriCgroupPath)
+}
+
+func ConcatContainerCgroup(podCgroupPath, prefix, containerID string) string {
+	return driver.ConcatContainerCgroup(podCgroupPath, prefix, containerID)
 }
