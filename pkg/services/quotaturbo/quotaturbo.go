@@ -93,7 +93,7 @@ func NewQuotaTurbo(n string) *QuotaTurbo {
 	}
 }
 
-// syncCgroups updates the cgroup in cilent according to the current whitelist pod list
+// syncCgroups updates the cgroup in client according to the current whitelist pod list
 func (qt *QuotaTurbo) syncCgroups(conts map[string]*typedef.ContainerInfo) {
 	var (
 		existedCgroupPaths   = qt.client.AllCgroups()

@@ -15,7 +15,7 @@ $ tree fuzz-test-newconfig
    |-- Fuzz                 # fuzz go file
    |-- path                 # record relative path to put the Fuzz file in the package
 ```
-3. when the above meterials are ready, go to `rubik/tests/src`
+3. when the above materials are ready, go to `rubik/tests/src`
 4. the **ONLY Three Things** you need to do is:
     1. copy `TEMPLATE` file to the name you want(*must start with `fuzz_test`*), for example `fuzz_test_xxx.sh`
     2. change the variable `test_name` in the script you just copy same as the name you just gave(keep same with the folder you create in the first step)

@@ -25,7 +25,7 @@
 我们提供了rubik-daemonset.yaml脚本供用户使用。在执行`make install`命令后，该文件及rubik的二进制文件将会被安装到`/var/lib/rubik`目录下。
 
 1. 构建镜像
-    由于运行darmonset依赖于rubik镜像，因此首先需要构建rubik镜像。我们提供了构建docker镜像的方法：
+    由于运行daemonset依赖于rubik镜像，因此首先需要构建rubik镜像。我们提供了构建docker镜像的方法：
     ```bash
     cd /tmp/rubik
     make image
