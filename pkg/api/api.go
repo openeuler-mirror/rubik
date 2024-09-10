@@ -52,6 +52,5 @@ type EventHandler interface {
 // Informer is an interface for external pod data sources to interact with rubik
 type Informer interface {
 	Publisher
-	Start(ctx context.Context)
-	WaitReady()
+	Start(ctx context.Context) error
 }
