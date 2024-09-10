@@ -16,10 +16,12 @@ package informer
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/containerd/nri/pkg/api"
 	"github.com/containerd/nri/pkg/stub"
+
 	rubikapi "isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef"
@@ -52,13 +54,17 @@ func NewNRIInformer(publisher rubikapi.Publisher) (rubikapi.Informer, error) {
 }
 
 // start nriplugin
-func (plugin NRIInformer) Start(ctx context.Context) {
-	go plugin.stub.Run(ctx)
-}
-
-// wait sync event finish
-func (plugin NRIInformer) WaitReady() {
+func (plugin NRIInformer) Start(ctx context.Context) error {
+	if err := plugin.stub.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start nri informer: %v", err)
+	}
 	<-plugin.finishedSync
+
+	go func() {
+		plugin.stub.Wait()
+		plugin.stub.Stop()
+	}()
+	return nil
 }
 
 // nri sync event

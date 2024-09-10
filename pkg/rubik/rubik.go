@@ -71,7 +71,6 @@ func (a *Agent) Run(ctx context.Context) error {
 	if err := a.startInformer(ctx, informerName); err != nil {
 		return err
 	}
-	a.informer.WaitReady()
 	if err := a.startServiceHandler(ctx); err != nil {
 		return err
 	}
@@ -98,8 +97,7 @@ func (a *Agent) startInformer(ctx context.Context, informerName string) error {
 		return fmt.Errorf("failed to subscribe informer: %v", err)
 	}
 	a.informer = i
-	i.Start(ctx)
-	return nil
+	return i.Start(ctx)
 }
 
 // stopInformer stops the informer

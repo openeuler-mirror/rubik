@@ -78,16 +78,14 @@ func InitKubeClient() (*kubernetes.Clientset, error) {
 	return kubeClient, nil
 }
 
-func (informer *APIServerInformer) WaitReady() {
-}
-
 // Start starts and enables PIServerInformer
-func (informer *APIServerInformer) Start(ctx context.Context) {
+func (informer *APIServerInformer) Start(ctx context.Context) error {
 	const specNodeNameField = "spec.nodeName"
 	// set options to return only pods on the current node.
 	var fieldSelector = fields.OneTermEqualSelector(specNodeNameField, informer.nodeName).String()
 	informer.listFunc(fieldSelector)
 	informer.watchFunc(ctx, fieldSelector)
+	return nil
 }
 
 func (informer *APIServerInformer) listFunc(fieldSelector string) {
