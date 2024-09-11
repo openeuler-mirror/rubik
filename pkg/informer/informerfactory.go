@@ -21,25 +21,22 @@ import (
 )
 
 type (
-	// the definition of informer type
-	informerType int8
 	// informer's factory class
 	informerFactory struct{}
 	informerCreator func(publisher api.Publisher) (api.Informer, error)
 )
 
 const (
-	// APISERVER instructs the informer to interact with the api server of kubernetes to obtain data
-	APISERVER informerType = iota
-	NRI
+	APISERVER = "apiserver" // the informer to interact with the apiserver of kubernetes
+	NRI       = "nri"       // the informer to interact with the NRI interface
 )
 
 // defaultInformerFactory is globally unique informer factory
 var defaultInformerFactory *informerFactory
 
 // GetInformerCreator returns the constructor of the informer of the specified type
-func (factory *informerFactory) GetInformerCreator(iType informerType) informerCreator {
-	switch iType {
+func (factory *informerFactory) GetInformerCreator(informerName string) informerCreator {
+	switch informerName {
 	case APISERVER:
 		return NewAPIServerInformer
 	case NRI:

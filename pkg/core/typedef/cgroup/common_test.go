@@ -24,13 +24,24 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"isula.org/rubik/pkg/common/constant"
+	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 )
 
 // TestReadCgroupFile tests ReadCgroupFile
 func TestReadCgroupFile(t *testing.T) {
-	InitMountDir(constant.TmpTestDir)
-	defer InitMountDir(constant.DefaultCgroupRoot)
+	if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+		log.Infof("failed to create %v: %v", constant.TmpTestDir, err)
+		return
+	}
+	defer os.RemoveAll(constant.TmpTestDir)
+
+	if err := Init(WithRoot(constant.TmpTestDir)); err != nil {
+		log.Infof("failed to init cgroup: %v", err)
+		return
+	}
+	defer Init(WithRoot(constant.DefaultCgroupRoot))
+
 	pathElems := []string{"cpu", "kubepods", "PodXXX", "ContYYY", "cpu.cfs_quota_us"}
 	const value = "-1\n"
 	tests := []struct {
@@ -84,8 +95,17 @@ func TestReadCgroupFile(t *testing.T) {
 
 // TestWriteCgroupFile tests WriteCgroupFile
 func TestWriteCgroupFile(t *testing.T) {
-	InitMountDir(constant.TmpTestDir)
-	defer InitMountDir(constant.DefaultCgroupRoot)
+	if err := os.Mkdir(constant.TmpTestDir, constant.DefaultDirMode); err != nil {
+		log.Infof("failed to create %v: %v", constant.TmpTestDir, err)
+		return
+	}
+	defer os.RemoveAll(constant.TmpTestDir)
+
+	if err := Init(WithRoot(constant.TmpTestDir)); err != nil {
+		log.Infof("failed to init cgroup: %v", err)
+		return
+	}
+	defer Init(WithRoot(constant.DefaultCgroupRoot))
 	pathElems := []string{"cpu", "kubepods", "PodXXX", "ContYYY", "cpu.cfs_quota_us"}
 	const value = "-1\n"
 	type args struct {

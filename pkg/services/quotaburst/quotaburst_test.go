@@ -166,7 +166,7 @@ func TestBurst_AddPod(t *testing.T) {
 			tt.args.pod.CleanPath().OrDie()
 		})
 	}
-	cgroup.InitMountDir(constant.DefaultCgroupRoot)
+	cgroup.Init(cgroup.WithRoot(constant.DefaultCgroupRoot))
 }
 
 // TestOther tests other function

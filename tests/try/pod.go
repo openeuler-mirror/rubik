@@ -15,6 +15,7 @@ package try
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -78,7 +79,12 @@ func (pod *FakePod) genFakePodCgroupPath() Ret {
 	if !util.PathExist(TestRoot) {
 		MkdirAll(TestRoot, constant.DefaultDirMode).OrDie()
 	}
-	cgroup.InitMountDir(pod.CGRoot)
+	if err := os.MkdirAll(pod.CGRoot, constant.DefaultDirMode); err != nil {
+		return newRet(err)
+	}
+	if err := cgroup.Init(cgroup.WithRoot(pod.CGRoot)); err != nil {
+		return newRet(err)
+	}
 	// generate fake cgroup path
 	for key, value := range pod.Keys {
 		// generate pod absolute cgroup path
