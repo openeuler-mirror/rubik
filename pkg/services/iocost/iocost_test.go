@@ -85,9 +85,9 @@ func createIOCostConfigTestItems() {
 
 func TestIOCostSupport(t *testing.T) {
 	assert.Equal(t, ioCostSupport(), true)
-	cgroup.InitMountDir("/var/tmp/rubik")
+	cgroup.Init(cgroup.WithRoot("/var/tmp/rubik"))
 	assert.Equal(t, ioCostSupport(), false)
-	cgroup.InitMountDir(constant.DefaultCgroupRoot)
+	cgroup.Init(cgroup.WithRoot(constant.DefaultCgroupRoot))
 }
 
 func TestIOCostID(t *testing.T) {

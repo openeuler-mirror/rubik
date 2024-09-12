@@ -24,17 +24,50 @@ import (
 	"isula.org/rubik/pkg/common/util"
 )
 
-var rootDir = constant.DefaultCgroupRoot
-var cgroupDriver = constant.CgroupDriverCgroupfs
+// Config is the configuration of cgroup
+type Config struct {
+	RootDir      string
+	CgroupDriver Driver
+}
 
-// GetCgroupDriver is the getter of global cgroup driver
-func GetCgroupDriver() string {
-	return cgroupDriver
+var conf = &Config{
+	RootDir:      constant.DefaultCgroupRoot,
+	CgroupDriver: defaultDriver(),
+}
+
+type option func(c *Config) error
+
+func WithRoot(cgroupRoot string) option {
+	return func(c *Config) error {
+		c.RootDir = cgroupRoot
+		return nil
+	}
+}
+
+func WithDriver(driverType string) option {
+	return func(c *Config) error {
+		d, err := newCgroupDriver(driverType)
+		if err != nil {
+			return err
+		}
+		c.CgroupDriver = d
+		return nil
+	}
+}
+
+// Init sets the mount directory of the cgroup file system & driver
+func Init(opts ...option) error {
+	for _, opt := range opts {
+		if err := opt(conf); err != nil {
+			return fmt.Errorf("failed to init cgroup: %v", err)
+		}
+	}
+	return nil
 }
 
 // AbsoluteCgroupPath returns the absolute path of the cgroup
 func AbsoluteCgroupPath(elem ...string) string {
-	elem = append([]string{rootDir}, elem...)
+	elem = append([]string{conf.RootDir}, elem...)
 	return filepath.Join(elem...)
 }
 
@@ -62,14 +95,9 @@ func writeCgroupFile(cgPath, content string) error {
 	return util.WriteFile(cgPath, content)
 }
 
-// InitMountDir sets the mount directory of the cgroup file system
-func InitMountDir(arg string) {
-	rootDir = arg
-}
-
 // GetMountDir returns the mount point path of the cgroup
 func GetMountDir() string {
-	return rootDir
+	return conf.RootDir
 }
 
 type (
@@ -184,7 +212,7 @@ func (h *Hierarchy) SetCgroupAttr(key *Key, value string) error {
 	if err := validateCgroupKey(key); err != nil {
 		return err
 	}
-	var mountPoint = rootDir
+	var mountPoint = conf.RootDir
 	if len(h.MountPoint) > 0 {
 		mountPoint = h.MountPoint
 	}
@@ -196,7 +224,7 @@ func (h *Hierarchy) GetCgroupAttr(key *Key) *Attr {
 	if err := validateCgroupKey(key); err != nil {
 		return &Attr{Err: err}
 	}
-	var mountPoint = rootDir
+	var mountPoint = conf.RootDir
 	if len(h.MountPoint) > 0 {
 		mountPoint = h.MountPoint
 	}

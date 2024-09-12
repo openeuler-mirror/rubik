@@ -14,10 +14,13 @@
 package cgroup
 
 import (
+	"fmt"
+
 	"isula.org/rubik/pkg/core/typedef/cgroup/cgroupfs"
 	"isula.org/rubik/pkg/core/typedef/cgroup/systemd"
 )
 
+// Driver is the interface of cgroup methods
 type Driver interface {
 	Name() string
 	ConcatPodCgroupPath(qosClass string, id string) string
@@ -25,30 +28,37 @@ type Driver interface {
 	GetNRIContainerCgroupPath(nriCgroupPath string) string
 }
 
-var driver Driver = &cgroupfs.Driver{}
+func defaultDriver() Driver {
+	return &cgroupfs.Driver{}
+}
 
-// SetCgroupDriver is the setter of global cgroup driver
-func SetCgroupDriver(driverTyp string) {
-	cgroupDriver = driverTyp
+// NewCgroupDriver is the setter of global cgroup driver, only support systemd & cgroupfs
+func newCgroupDriver(driverTyp string) (Driver, error) {
 	switch driverTyp {
 	case systemd.Name:
-		driver = &systemd.Driver{}
+		return &systemd.Driver{}, nil
 	case cgroupfs.Name:
-		driver = &cgroupfs.Driver{}
+		return &cgroupfs.Driver{}, nil
 	}
+	return nil, fmt.Errorf("invalid driver type: %v", driverTyp)
 }
 
+// Type returns the driver type
 func Type() string {
-	return driver.Name()
+	return conf.CgroupDriver.Name()
 }
+
+// ConcatPodCgroupPath returns the cgroup path of pod
 func ConcatPodCgroupPath(qosClass, id string) string {
-	return driver.ConcatPodCgroupPath(qosClass, id)
+	return conf.CgroupDriver.ConcatPodCgroupPath(qosClass, id)
 }
 
+// GetNRIContainerCgroupPath returns the cgroup path of nri container
 func GetNRIContainerCgroupPath(nriCgroupPath string) string {
-	return driver.GetNRIContainerCgroupPath(nriCgroupPath)
+	return conf.CgroupDriver.GetNRIContainerCgroupPath(nriCgroupPath)
 }
 
+// ConcatContainerCgroup returns the cgroup path of container from kubernetes apiserver
 func ConcatContainerCgroup(podCgroupPath, prefix, containerID string) string {
-	return driver.ConcatContainerCgroup(podCgroupPath, prefix, containerID)
+	return conf.CgroupDriver.ConcatContainerCgroup(podCgroupPath, prefix, containerID)
 }

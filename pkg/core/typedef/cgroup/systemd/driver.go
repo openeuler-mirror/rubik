@@ -21,16 +21,21 @@ import (
 )
 
 const (
-	Name          = "systemd"
+	// Name is the name of systemd
+	Name = "systemd"
+	// suffix of systemd cgroup file
 	cgroupFileExt = ".scope"
 )
 
+// Driver is the implement of systemd methods
 type Driver struct{}
 
+// Name returns the name of driver
 func (d *Driver) Name() string {
 	return Name
 }
 
+// ConcatPodCgroupPath returns the cgroup path of pod when driver is systemd
 func (d *Driver) ConcatPodCgroupPath(qosClass string, id string) string {
 	// When using systemd as cgroup driver:
 	// 1. The Burstable path looks like: kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podb895995a_e7e5_413e_9bc1_3c3895b3f233.slice
@@ -49,6 +54,7 @@ func (d *Driver) ConcatPodCgroupPath(qosClass string, id string) string {
 		strings.Join([]string{prefix, constant.PodCgroupNamePrefix + strings.Replace(id, "-", "_", -1) + suffix}, "-"))
 }
 
+// GetNRIContainerCgroupPath returns the cgroup path of nri container when driver is systemd
 func (d *Driver) GetNRIContainerCgroupPath(nriCgroupPath string) string {
 	// When using systemd as cgroup driver:
 	// 1. The Burstable path looks like:
@@ -84,6 +90,7 @@ func (d *Driver) GetNRIContainerCgroupPath(nriCgroupPath string) string {
 	return filepath.Join(topDir, upperDir, parent, last)
 }
 
+// ConcatContainerCgroup returns the cgroup path of container from kubernetes apiserver when driver is systemd
 func (d *Driver) ConcatContainerCgroup(podCgroupPath, prefix, containerID string) string {
 	if prefix != "" {
 		prefix = prefix + "-"

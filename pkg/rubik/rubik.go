@@ -63,33 +63,22 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 // Run starts and runs the agent until receiving stop signal
 func (a *Agent) Run(ctx context.Context) error {
 	log.Infof("agent run with config:\n%s", a.config.String())
-	var informerName string
-	informerName = a.config.Agent.InformerType
-	if informerName == "nil" {
-		informerName = constant.APIServerInformer
-	}
-	if err := a.startInformer(ctx, informerName); err != nil {
+	if err := a.startInformer(ctx, a.config.Agent.InformerType); err != nil {
 		return err
 	}
+	defer a.stopInformer()
 	if err := a.startServiceHandler(ctx); err != nil {
 		return err
 	}
+	defer a.stopServiceHandler()
 	<-ctx.Done()
-	a.stopInformer()
-	a.stopServiceHandler()
 	return nil
 }
 
 // startInformer starts informer to obtain external data
 func (a *Agent) startInformer(ctx context.Context, informerName string) error {
-	publisher := publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC)
-	var i api.Informer
-	var err error
-	if informerName == constant.APIServerInformer {
-		i, err = informer.GetInformerFactory().GetInformerCreator(informer.APISERVER)(publisher)
-	} else {
-		i, err = informer.GetInformerFactory().GetInformerCreator(informer.NRI)(publisher)
-	}
+	i, err := informer.GetInformerFactory().GetInformerCreator(informerName)(
+		publisher.GetPublisherFactory().GetPublisher(publisher.GENERIC))
 	if err != nil {
 		return fmt.Errorf("failed to set informer: %v", err)
 	}
@@ -135,9 +124,8 @@ func runAgent(ctx context.Context) error {
 	}
 
 	// 3. enable cgroup system
-	cgroup.InitMountDir(c.Agent.CgroupRoot)
-	if c.Agent.CgroupDriver != "" {
-		cgroup.SetCgroupDriver(c.Agent.CgroupDriver)
+	if err := cgroup.Init(cgroup.WithRoot(c.Agent.CgroupRoot), cgroup.WithDriver(c.Agent.CgroupDriver)); err != nil {
+		return err
 	}
 
 	// 4. init service components

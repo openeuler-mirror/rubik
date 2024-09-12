@@ -27,7 +27,12 @@ import (
 	"isula.org/rubik/pkg/core/typedef"
 )
 
-// NRIInformer interacts with crio server and forward data to the internal
+const (
+	nriPluginName  = "rubik"
+	nriPluginIndex = "10"
+)
+
+// NRIInformer interacts with nri server and forward data to the internal
 type NRIInformer struct {
 	rubikapi.Publisher
 	nodeName     string
@@ -35,25 +40,27 @@ type NRIInformer struct {
 	finishedSync chan struct{}
 }
 
-// register nriplugin
+// NewNRIInformer create an rubik nri plugin
 func NewNRIInformer(publisher rubikapi.Publisher) (rubikapi.Informer, error) {
-	p := &NRIInformer{}
-	p.Publisher = publisher
-	pluginName := "rubik"
-	pluginIndex := "10"
-	nodeName := os.Getenv(constant.NodeNameEnvKey)
-	p.finishedSync = make(chan struct{})
-	p.nodeName = nodeName
-	var err error
-	options := []stub.Option{
-		stub.WithPluginName(pluginName),
-		stub.WithPluginIdx(pluginIndex),
+	p := &NRIInformer{
+		Publisher:    publisher,
+		nodeName:     os.Getenv(constant.NodeNameEnvKey),
+		finishedSync: make(chan struct{}),
 	}
-	p.stub, err = stub.New(p, options...)
+
+	options := []stub.Option{
+		stub.WithPluginName(nriPluginName),
+		stub.WithPluginIdx(nriPluginIndex),
+	}
+	s, err := stub.New(p, options...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stub: %v", err)
+	}
+	p.stub = s
 	return p, err
 }
 
-// start nriplugin
+// Start starts nri informer
 func (plugin NRIInformer) Start(ctx context.Context) error {
 	if err := plugin.stub.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start nri informer: %v", err)
@@ -67,87 +74,77 @@ func (plugin NRIInformer) Start(ctx context.Context) error {
 	return nil
 }
 
-// nri sync event
-func (plugin NRIInformer) Synchronize(ctx context.Context, pods []*api.PodSandbox, containers []*api.Container) ([]*api.ContainerUpdate, error) {
+// Synchronize syncs the nri containers & sandboxes
+func (plugin NRIInformer) Synchronize(ctx context.Context, pods []*api.PodSandbox, containers []*api.Container) (
+	[]*api.ContainerUpdate, error) {
 	plugin.Publish(typedef.NRIPODSYNCALL, pods)
 	plugin.Publish(typedef.NRICONTAINERSYNCALL, containers)
 	// notify service handler to start
 	close(plugin.finishedSync)
-
 	return nil, nil
 }
 
-// nri pod run event
+// RunPodSandbox will be called when sandbox starts.
 func (plugin NRIInformer) RunPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	plugin.Publish(typedef.NRIPODADD, pod)
 	return nil
 }
 
-// nri pod stop event
+// StopPodSandbox will be called when sandbox stops.
 func (plugin NRIInformer) StopPodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	return nil
 }
 
-// nri pod remove event
+// RemovePodSandbox will be called when sandbox is removed.
 func (plugin NRIInformer) RemovePodSandbox(ctx context.Context, pod *api.PodSandbox) error {
 	plugin.Publish(typedef.NRIPODDELETE, pod)
-
 	return nil
 }
 
-// nri container create event
-func (plugin NRIInformer) CreateContainer(context.Context, *api.PodSandbox, *api.Container) (*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
-	var containerAdjustment = &api.ContainerAdjustment{}
-	var containerUpdate = []*api.ContainerUpdate{}
-	return containerAdjustment, containerUpdate, nil
+// CreateContainer will be called when it creates container
+func (plugin NRIInformer) CreateContainer(context.Context, *api.PodSandbox, *api.Container) (
+	*api.ContainerAdjustment, []*api.ContainerUpdate, error) {
+	return nil, nil, nil
 }
 
-// nri container start event
+// StartContainer will be called when container starts
 func (plugin NRIInformer) StartContainer(ctx context.Context, pod *api.PodSandbox, container *api.Container) error {
 	plugin.Publish(typedef.NRICONTAINERSTART, container)
 	return nil
 }
 
-// nri container update event
+// UpdateContainer will be called when container updates
 func (plugin NRIInformer) UpdateContainer(ctx context.Context, pod *api.PodSandbox, container *api.Container, lr *api.LinuxResources) ([]*api.ContainerUpdate, error) {
-	var containerUpdate = []*api.ContainerUpdate{}
-	return containerUpdate, nil
+	return nil, nil
 }
 
-// nri container stop cont
+// StopContainer will be called when container stops
 func (plugin NRIInformer) StopContainer(ctx context.Context, pod *api.PodSandbox, container *api.Container) ([]*api.ContainerUpdate, error) {
 	plugin.Publish(typedef.NRICONTAINERREMOVE, container)
-	var containerUpdate = []*api.ContainerUpdate{}
-	return containerUpdate, nil
+	return nil, nil
 }
 
-// nri container remove event
+// RemoveContainer will be called when it removes container
 func (plugin NRIInformer) RemoveContainer(ctx context.Context, pod *api.PodSandbox, container *api.Container) error {
 	plugin.Publish(typedef.NRICONTAINERREMOVE, container)
 	return nil
 }
 
-// nri configure event
-func (plugin NRIInformer) Configure(context.Context, string, string, string) (api.EventMask, error) {
-	var eventMask api.EventMask
-	return eventMask, nil
-}
-
-// nri post container create event
+// PostCreateContainer will be called after container was created
 func (plugin NRIInformer) PostCreateContainer(context.Context, *api.PodSandbox, *api.Container) error {
 	return nil
 }
 
-// nri post container start event
+// ostStartContainer will be called after container was started
 func (plugin NRIInformer) PostStartContainer(context.Context, *api.PodSandbox, *api.Container) error {
 	return nil
 }
 
-// nri post container update event
+// PostUpdateContainer will be called after container was updated
 func (plugin NRIInformer) PostUpdateContainer(context.Context, *api.PodSandbox, *api.Container) error {
 	return nil
 }
 
-// nri shutdown event
+// Shutdown will be called when nri plugin shutdowns
 func (plugin NRIInformer) Shutdown(context.Context) {
 }
