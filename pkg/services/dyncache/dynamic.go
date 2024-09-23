@@ -26,6 +26,8 @@ import (
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
+var dynamicConf []int = []int{perf.INSTRUCTIONS, perf.CYCLES, perf.CACHEREFERENCES, perf.CACHEMISS, perf.LLCMISS, perf.LLCACCESS}
+
 // startDynamic will continuously run to detect online pod cache miss and
 // limit offline pod cache usage
 func (c *DynCache) startDynamic() {
@@ -66,7 +68,7 @@ func getPodCacheMiss(pod *typedef.PodInfo, perfDu int) (int, int) {
 		return 0, 0
 	}
 
-	stat, err := perf.CgroupStat(cgroupPath, time.Duration(perfDu)*time.Millisecond)
+	stat, err := perf.CgroupStat(cgroupPath, time.Duration(perfDu)*time.Millisecond, dynamicConf)
 	if err != nil {
 		return 0, 0
 	}

@@ -22,13 +22,73 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
-	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
 
+const (
+	INSTRUCTIONS = iota
+	CYCLES
+	CACHEREFERENCES
+	CACHEMISS
+	LLCMISS
+	LLCACCESS
+)
+
 var (
-	hwSupport = false
+	hwSupport                        = false
+	eventConfigs map[int]eventConfig = map[int]eventConfig{
+		INSTRUCTIONS: {
+			eventName: "instructions",
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_INSTRUCTIONS,
+			reader: func(s *Stat, e *cgEvent) {
+				s.Instructions += e.read("instructions")
+			},
+		},
+		CYCLES: {
+			eventName: "cycles",
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CPU_CYCLES,
+			reader: func(s *Stat, e *cgEvent) {
+				s.CPUCycles += e.read("cycles")
+			},
+		},
+		CACHEREFERENCES: {
+			eventName: "cachereferences",
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CACHE_REFERENCES,
+			reader: func(s *Stat, e *cgEvent) {
+				s.CacheReferences += e.read("cachereferences")
+			},
+		},
+		CACHEMISS: {
+			eventName: "cachemiss",
+			eType:     unix.PERF_TYPE_HARDWARE,
+			config:    unix.PERF_COUNT_HW_CACHE_MISSES,
+			reader: func(s *Stat, e *cgEvent) {
+				s.CacheMisses += e.read("cachemiss")
+			},
+		},
+		LLCMISS: {
+			eventName: "llcmiss",
+			eType:     unix.PERF_TYPE_HW_CACHE,
+			config: unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<8 |
+				unix.PERF_COUNT_HW_CACHE_RESULT_MISS<<16,
+			reader: func(s *Stat, e *cgEvent) {
+				s.LLCMiss += e.read("llcmiss")
+			},
+		},
+		LLCACCESS: {
+			eventName: "llcaccess",
+			eType:     unix.PERF_TYPE_HW_CACHE,
+			config: unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<8 |
+				unix.PERF_COUNT_HW_CACHE_RESULT_ACCESS<<16,
+			reader: func(s *Stat, e *cgEvent) {
+				s.LLCAccess += e.read("llcaccess")
+			},
+		},
+	}
 )
 
 // Support tell if the os support perf hw pmu events.
@@ -57,47 +117,22 @@ type eventConfig struct {
 	eventName string
 	eType     uint32
 	config    uint64
+	reader    func(*Stat, *cgEvent)
 }
 
-func getEventConfig() []eventConfig {
-	const eight, sixteen = 8, 16
-	return []eventConfig{
-		{
-			eventName: "instructions",
-			eType:     unix.PERF_TYPE_HARDWARE,
-			config:    unix.PERF_COUNT_HW_INSTRUCTIONS,
-		},
-		{
-			eventName: "cycles",
-			eType:     unix.PERF_TYPE_HARDWARE,
-			config:    unix.PERF_COUNT_HW_CPU_CYCLES,
-		},
-		{
-			eventName: "cachereferences",
-			eType:     unix.PERF_TYPE_HARDWARE,
-			config:    unix.PERF_COUNT_HW_CACHE_REFERENCES,
-		},
-		{
-			eventName: "cachemiss",
-			eType:     unix.PERF_TYPE_HARDWARE,
-			config:    unix.PERF_COUNT_HW_CACHE_MISSES,
-		},
-		{
-			eventName: "llcmiss",
-			eType:     unix.PERF_TYPE_HW_CACHE,
-			config: unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<eight |
-				unix.PERF_COUNT_HW_CACHE_RESULT_MISS<<sixteen,
-		},
-		{
-			eventName: "llcaccess",
-			eType:     unix.PERF_TYPE_HW_CACHE,
-			config: unix.PERF_COUNT_HW_CACHE_LL | unix.PERF_COUNT_HW_CACHE_OP_READ<<eight |
-				unix.PERF_COUNT_HW_CACHE_RESULT_ACCESS<<sixteen,
-		},
+func getEventConfig(conf []int) []eventConfig {
+	var events []eventConfig
+	for _, index := range conf {
+		e, ok := eventConfigs[index]
+		if !ok {
+			continue
+		}
+		events = append(events, e)
 	}
+	return events
 }
 
-func newEvent(cgfd, cpu int) (*cgEvent, error) {
+func newEvent(cgfd, cpu int, conf []int) (*cgEvent, error) {
 	e := cgEvent{
 		cgfd:   cgfd,
 		cpu:    cpu,
@@ -105,7 +140,7 @@ func newEvent(cgfd, cpu int) (*cgEvent, error) {
 		leader: -1,
 	}
 
-	for _, ec := range getEventConfig() {
+	for _, ec := range getEventConfig(conf) {
 		if err := e.openHardware(ec); err != nil {
 			e.destroy()
 			return nil, err
@@ -175,7 +210,7 @@ type perf struct {
 }
 
 // newPerf create the perf manager
-func newPerf(cgpath string) (*perf, error) {
+func newPerf(cgpath string, conf []int) (*perf, error) {
 	cgfd, err := unix.Open(cgpath, unix.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
@@ -187,7 +222,7 @@ func newPerf(cgpath string) (*perf, error) {
 	}
 
 	for cpu := 0; cpu < runtime.NumCPU(); cpu++ {
-		e, err := newEvent(cgfd, cpu)
+		e, err := newEvent(cgfd, cpu, conf)
 		if err != nil {
 			continue
 		}
@@ -226,15 +261,13 @@ func (p *perf) Stop() error {
 }
 
 // Read read perf result
-func (p *perf) Read() Stat {
+func (p *perf) Read(conf []int) Stat {
 	var stat Stat
+	metrics := getEventConfig(conf)
 	for _, e := range p.Events {
-		stat.Instructions += e.read("instructions")
-		stat.CPUCycles += e.read("cycles")
-		stat.CacheReferences += e.read("cachereferences")
-		stat.CacheMisses += e.read("cachemiss")
-		stat.LLCMiss += e.read("llcmiss")
-		stat.LLCAccess += e.read("llcaccess")
+		for _, metric := range metrics {
+			metric.reader(&stat, e)
+		}
 	}
 	return stat
 }
@@ -248,8 +281,8 @@ func (p *perf) Destroy() {
 }
 
 // CgroupStat report perf stat for cgroup
-func CgroupStat(cgpath string, dur time.Duration) (*Stat, error) {
-	p, err := newPerf(cgpath)
+func CgroupStat(cgpath string, dur time.Duration, conf []int) (*Stat, error) {
+	p, err := newPerf(cgpath, conf)
 	if err != nil {
 		return nil, errors.Errorf("perf init failed: %v", err)
 	}
@@ -264,12 +297,13 @@ func CgroupStat(cgpath string, dur time.Duration) (*Stat, error) {
 		return nil, errors.Errorf("perf stop failed: %v", err)
 	}
 
-	stat := p.Read()
+	stat := p.Read(conf)
 	return &stat, nil
 }
 
 func init() {
-	_, err := CgroupStat(cgroup.AbsoluteCgroupPath("perf_event", constant.KubepodsCgroup, ""), time.Millisecond)
+	conf := []int{INSTRUCTIONS, CYCLES, CACHEREFERENCES, CACHEMISS, LLCMISS, LLCACCESS}
+	_, err := CgroupStat(cgroup.AbsoluteCgroupPath("perf_event", "", ""), time.Millisecond, conf)
 	if err == nil {
 		hwSupport = true
 	}

@@ -16,6 +16,7 @@ package services
 
 import (
 	"isula.org/rubik/pkg/feature"
+	"isula.org/rubik/pkg/services/cpi"
 	"isula.org/rubik/pkg/services/dyncache"
 	"isula.org/rubik/pkg/services/dynmemory"
 	"isula.org/rubik/pkg/services/helper"
@@ -40,6 +41,7 @@ var (
 		feature.QuotaBurstFeature: initQuotaBurstFactory,
 		feature.QuotaTurboFeature: initQuotaTurboFactory,
 		feature.PSIFeature:        initPSIFactory,
+		feature.CPIFeature:        initCPIFactory,
 	}
 )
 
@@ -73,4 +75,8 @@ func initPSIFactory(name string) error {
 
 func initDynMemoryFactory(name string) error {
 	return helper.AddFactory(name, dynmemory.DynMemoryFactory{ObjName: name})
+}
+
+func initCPIFactory(name string) error {
+	return helper.AddFactory(name, cpi.CpiFactory{ObjName: name})
 }

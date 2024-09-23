@@ -64,6 +64,8 @@ const (
 	BlkioKey = "volcano.sh/blkio-limit"
 	// QuotaAnnotationKey is annotation key to mark whether to enable the quota turbo
 	QuotaAnnotationKey = "volcano.sh/quota-turbo"
+	// CpiAnnotationKey is annotation key to mark whether to enable the cpi
+	CpiAnnotationKey = "volcano.sh/cpi"
 )
 
 // log config
