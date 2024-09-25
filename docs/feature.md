@@ -117,13 +117,43 @@ metadata:
 - 禁止用户同时使能弹性限流用户态和内核态方案。
 
 ## ioCost 支持iocost对IO权重控制
-为了有效解决由离线业务IO占用过高，导致在线业务QoS下降的问题，rubik容器提供了基于cgroup v1 iocost的IO权重控制功能。
-资料参见：
-[iocost内核相关功能介绍](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#io:~:text=correct%20memory%20ownership.-,IO,-%C2%B6)
+
+### 需求背景
+为了有效解决由离线业务IO占用过高，导致在线业务QoS下降的问题，rubik容器提供了基于cgroup v1 iocost的IO权重控制功能。相关参数和cgroup v2的iocost配置一致，资料参见[iocost内核相关功能介绍](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
+
+### 依赖说明
+- kernel内核支持 cgroup v1 blkcg iocost
+- kernel内核支持 cgroup v1 writeback, 并在内核启动参数需要增加cgroup1_writeback
+
+### 配置使用说明
+在rubik配置文件新增如下参数：
+```json
+"nodeConfig": [
+        {
+            "nodeName": "slaver01", // k8s node name
+            "iocostEnable": true, // Whether to enable
+            "iocostConfig": [
+                {
+                    "dev": "sda",  // which storage device
+                    "enable": false, // whether this dev to enable
+                    "model": "linear", // which iocost model to choice
+                    "param": {
+                        "rbps": 174610612, // max read bps if model is linear
+                        "rseqiops": 41788, // max read sequence iops 
+                        "rrandiops": 371, // max rand read iops
+                        "wbps": 178587889, // max write bps
+                        "wseqiops": 42792, // max write sequence iops
+                        "wrandiops": 379 // max rand write iops
+                    }
+                }
+            ]
+        }
+    ]
+```
 
 ### 约束限制
-- kernel需要支持cgroup v1 iocost
-- 内核启动参数需要增加cgroup1_writeback，可以通过cat /pro/cmdline确认是否有该启动参数
-- rubik容器需要挂载主机的/dev目录，因为rubik会读取硬盘的相关参数。
-- iocost只支持配置到物理块设备，例如/dev/sda硬盘等。
-- iocost生效基于当时IO资源紧张程度是否达到配置的参数。如果达到配置的参数，则会使用iocost配置的权重进行IO资源分配，因此如果要获取比较好的结果可以适当缩小配置值，但是有可能会影响整体IO的资源使用。
+- rubik容器挂载主机的/dev目录，rubik会读取硬盘的相关参数。
+- iocost内核特性只能配置到实际物理块设备，不支持配置逻辑卷等。
+
+### 其他
+iocost linear 模型相关参数可以通过 [iocost_coef_gen.py](https://github.com/torvalds/linux/blob/master/tools/cgroup/iocost_coef_gen.py) 脚本计算生成。
