@@ -52,4 +52,8 @@ var defaultRubikFeature = []services.FeatureSpec{
 		Name:    feature.PSIFeature,
 		Default: true,
 	},
+	{
+		Name:    feature.CPIFeature,
+		Default: true,
+	},
 }

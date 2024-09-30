@@ -26,6 +26,8 @@ import (
 	"isula.org/rubik/tests/try"
 )
 
+var testConf []int = []int{INSTRUCTIONS, CYCLES, CACHEREFERENCES, CACHEMISS, LLCMISS, LLCACCESS}
+
 // TestCgroupStat testcase
 func TestCgroupStat(t *testing.T) {
 	if !Support() {
@@ -60,7 +62,7 @@ func TestCgroupStat(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := CgroupStat(tt.args.cgpath, tt.args.dur)
+			_, err := CgroupStat(tt.args.cgpath, tt.args.dur, testConf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CgroupStat() error = %v, wantErr %v", err, tt.wantErr)
 				return

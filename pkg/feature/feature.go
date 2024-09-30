@@ -29,6 +29,8 @@ const (
 	QuotaBurstFeature = "quotaBurst"
 	// QuotaTurboFeature is the QuotaTurbo feature name
 	QuotaTurboFeature = "quotaTurbo"
-	// PSIFeature is the PSI festure name
+	// PSIFeature is the PSI feasture name
 	PSIFeature = "psi"
+	// CPIFeature is the CPI feature name
+	CPIFeature = "cpi"
 )
