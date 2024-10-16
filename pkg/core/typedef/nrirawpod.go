@@ -9,7 +9,7 @@
 // See the Mulan PSL v2 for more details.
 // Author: weiyuan
 // Create: 2024-05-28
-// Description:  This file defines NRIRawPod and NRIRawContainerwhich encapsulate nri pod and container info
+// Description:  This file defines NRIRawPod and NRIRawContainer which encapsulate nri pod and container info
 
 // Package typedef defines core struct and methods for rubik
 package typedef

@@ -9,7 +9,7 @@
 // See the Mulan PSL v2 for more details.
 // Author: hanchao
 // Create: 2023-03-11
-// Description: This file is used to initilize all components
+// Description: This file is used to initialize all components
 
 // Package services provide services to handle isolate features.
 package services
