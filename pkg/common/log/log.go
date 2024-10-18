@@ -246,7 +246,7 @@ func Warnf(format string, args ...interface{}) {
 	logln(logWarn, format, args...)
 }
 
-// Errorf output warn level logs when then log level of the logger is less than or equal to error level
+// Errorf output error level logs when the log level of the logger is less than or equal to error level
 func Errorf(format string, args ...interface{}) {
 	logln(logError, format, args...)
 }
