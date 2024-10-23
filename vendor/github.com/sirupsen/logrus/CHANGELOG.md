@@ -120,7 +120,7 @@ This new release introduces:
   * an indent configuration for the json formatter
   * output colour support for windows
   * the field sort function is now configurable for text formatter
-  * the CLICOLOR and CLICOLOR\_FORCE environment variable support in text formater
+  * the CLICOLOR and CLICOLOR\_FORCE environment variable support in text formatter
 
 # 1.0.6
 

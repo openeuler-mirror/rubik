@@ -83,14 +83,14 @@ func WriteCgroupFile(content string, elem ...string) error {
 
 func readCgroupFile(cgPath string) ([]byte, error) {
 	if !util.PathExist(cgPath) {
-		return nil, fmt.Errorf("%v: no such file or diretory", cgPath)
+		return nil, fmt.Errorf("%v: no such file or directory", cgPath)
 	}
 	return util.ReadFile(cgPath)
 }
 
 func writeCgroupFile(cgPath, content string) error {
 	if !util.PathExist(cgPath) {
-		return fmt.Errorf("%v: no such file or diretory", cgPath)
+		return fmt.Errorf("%v: no such file or directory", cgPath)
 	}
 	return util.WriteFile(cgPath, content)
 }
