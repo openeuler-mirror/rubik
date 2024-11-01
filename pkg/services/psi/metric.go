@@ -14,11 +14,13 @@
 package psi
 
 import (
+	"context"
+
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/common/util"
 	"isula.org/rubik/pkg/core/metric"
-	"isula.org/rubik/pkg/core/trigger"
+	"isula.org/rubik/pkg/core/trigger/common"
 	"isula.org/rubik/pkg/core/typedef"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
@@ -57,7 +59,7 @@ func (m *BasePSIMetric) Update() error {
 	}
 	for _, typ := range m.resources {
 		if detectPSiMetric(typ, m.conservation, m.avg10Threshold) {
-			if err := alarm(typ, m.Triggers, m.suspicion); err != nil {
+			if err := alarm(typ, m.Triggers[typ], m.suspicion); err != nil {
 				return err
 			}
 		}
@@ -89,14 +91,13 @@ func detectPSiMetric(resTyp string, conservation map[string]*typedef.PodInfo, av
 	return false
 }
 
-func alarm(resTyp string, triggers []trigger.Trigger, suspicion map[string]*typedef.PodInfo) error {
-	var errs error
-	const prefix = "max_"
+func alarm(resTyp string, triggers []common.Trigger, suspicion map[string]*typedef.PodInfo) error {
+	var (
+		errs error
+		ctx  = context.WithValue(context.Background(), common.TARGETPODS, suspicion)
+	)
 	for _, t := range triggers {
-		log.Infof("trigger %v", t.Name())
-		if err := t.Execute(&trigger.FactorImpl{Msg: prefix + resTyp, Pods: suspicion}); err != nil {
-			errs = util.AppendErr(errs, err)
-		}
+		errs = util.AppendErr(errs, t.Activate(ctx))
 	}
 	return errs
 }

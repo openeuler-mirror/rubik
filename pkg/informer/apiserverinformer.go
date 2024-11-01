@@ -23,20 +23,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/typedef"
+	"isula.org/rubik/pkg/lib/kubernetes"
 )
 
 // APIServerInformer interacts with k8s api server and forward data to the internal
 type APIServerInformer struct {
 	api.Publisher
-	client   *kubernetes.Clientset
+	client   *kubernetes.Client
 	nodeName string
 }
 
@@ -47,7 +46,7 @@ func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
 	}
 
 	// create apiserver client
-	client, err := InitKubeClient()
+	client, err := kubernetes.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to init kubenetes client: %v", err)
 	}
@@ -61,21 +60,6 @@ func NewAPIServerInformer(publisher api.Publisher) (api.Informer, error) {
 	informer.nodeName = nodeName
 
 	return informer, nil
-}
-
-// InitKubeClient initializes kubeClient
-func InitKubeClient() (*kubernetes.Clientset, error) {
-	conf, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	kubeClient, err := kubernetes.NewForConfig(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	return kubeClient, nil
 }
 
 // Start starts and enables PIServerInformer
