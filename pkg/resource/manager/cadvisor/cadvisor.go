@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-// Copyright (c) Huawei Technologies Co., Ltd. 2023. All rights reserved.
+// Copyright (c) Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
 // rubik licensed under the Mulan PSL v2.
 // You can use this software according to the terms and conditions of the Mulan PSL v2.
 // You may obtain a copy of Mulan PSL v2 at:
@@ -18,32 +18,24 @@ package cadvisor
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
-	"github.com/google/cadvisor/cache/memory"
 	"github.com/google/cadvisor/container"
-	v2 "github.com/google/cadvisor/info/v2"
 	"github.com/google/cadvisor/manager"
-	"github.com/google/cadvisor/utils/sysfs"
 
 	"isula.org/rubik/pkg/common/log"
+	"isula.org/rubik/pkg/resource/manager/common"
 )
 
 // Manager is the cadvisor manager
 type Manager struct {
 	manager.Manager
+	sync.RWMutex
 }
 
-// StartArgs is a set of parameters that control the startup of cadvisor
-type StartArgs struct {
-	MemCache              *memory.InMemoryCache
-	SysFs                 sysfs.SysFs
-	IncludeMetrics        container.MetricSet
-	MaxHousekeepingConfig manager.HouskeepingConfig
-}
-
-// WithStartArgs creates cadvisor.Manager object
-func WithStartArgs(args StartArgs) *Manager {
+// New creates cadvisor.Manager object
+func New(args *Config) *Manager {
 	const (
 		perfEventsFile = "/sys/kernel/debug/tracing/events/raw_syscalls/sys_enter"
 	)
@@ -69,13 +61,17 @@ func WithStartArgs(args StartArgs) *Manager {
 }
 
 // Start starts cadvisor manager
-func (c *Manager) Start() error {
-	return c.Manager.Start()
+func (m *Manager) Start() error {
+	m.Lock()
+	defer m.Unlock()
+	return m.Manager.Start()
 }
 
 // Stop stops cadvisor and clear existing factory
-func (c *Manager) Stop() error {
-	err := c.Manager.Stop()
+func (m *Manager) Stop() error {
+	m.Lock()
+	defer m.Unlock()
+	err := m.Manager.Stop()
 	if err != nil {
 		return err
 	}
@@ -85,7 +81,18 @@ func (c *Manager) Stop() error {
 }
 
 // ContainerInfo gets container infos v2
-func (c *Manager) ContainerInfoV2(name string,
-	options v2.RequestOptions) (map[string]v2.ContainerInfo, error) {
-	return c.GetContainerInfoV2(name, options)
+func (m *Manager) GetPodStats(name string, options common.GetOption) (map[string]common.PodStat, error) {
+	m.RLock()
+	defer m.RUnlock()
+	contInfo, err := m.GetContainerInfoV2(name, options.CadvisorV2RequestOptions)
+	if err != nil {
+		return nil, err
+	}
+	var podStats = make(map[string]common.PodStat, len(contInfo))
+	for name, info := range contInfo {
+		podStats[name] = common.PodStat{
+			ContainerInfo: info,
+		}
+	}
+	return podStats, nil
 }

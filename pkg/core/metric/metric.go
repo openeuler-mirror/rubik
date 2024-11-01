@@ -14,29 +14,33 @@
 // Package metric define metric interface
 package metric
 
-import "isula.org/rubik/pkg/core/trigger"
+import "isula.org/rubik/pkg/core/trigger/common"
 
 // Metric interface defines a series of rubik observation indicator methods
 type Metric interface {
 	Update() error
-	AddTrigger(...trigger.Trigger) Metric
+	AddTrigger(string, ...common.Trigger) Metric
 }
 
 // BaseMetric is the basic Metric implementation
 type BaseMetric struct {
-	Triggers []trigger.Trigger
+	Triggers map[string][]common.Trigger
 }
 
 // NewBaseMetric returns a BaseMetric object
 func NewBaseMetric() *BaseMetric {
 	return &BaseMetric{
-		Triggers: make([]trigger.Trigger, 0),
+		Triggers: make(map[string][]common.Trigger, 0),
 	}
 }
 
 // AddTrigger adds trigger methods for metric
-func (m *BaseMetric) AddTrigger(triggers ...trigger.Trigger) Metric {
-	m.Triggers = append(m.Triggers, triggers...)
+func (m *BaseMetric) AddTrigger(name string, triggers ...common.Trigger) Metric {
+	if _, ok := m.Triggers[name]; !ok {
+		m.Triggers[name] = make([]common.Trigger, 0)
+	}
+
+	m.Triggers[name] = append(m.Triggers[name], triggers...)
 	return m
 }
 
