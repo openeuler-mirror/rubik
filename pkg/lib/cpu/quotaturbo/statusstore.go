@@ -128,12 +128,12 @@ func (store *StatusStore) updateCPUUtils() error {
 		index   int
 		t       cpuUtil
 	)
-	ps, err := getProcStat()
+	ps, err := GetProcStat()
 	if err != nil {
 		return err
 	}
 	if store.lastProcStat.total >= 0 {
-		curUtil = calculateUtils(store.lastProcStat, ps)
+		curUtil = CalculateUtils(store.lastProcStat, ps)
 	}
 	store.lastProcStat = ps
 	cur := time.Now().UnixNano()

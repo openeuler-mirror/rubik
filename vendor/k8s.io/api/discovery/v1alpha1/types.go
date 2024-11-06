@@ -60,7 +60,7 @@ type AddressType string
 const (
 	// AddressTypeIP represents an IP Address.
 	// This address type has been deprecated and has been replaced by the IPv4
-	// and IPv6 address types. New resources with this address type will be
+	// and IPv6 adddress types. New resources with this address type will be
 	// considered invalid. This will be fully removed in 1.18.
 	// +deprecated
 	AddressTypeIP = AddressType("IP")

@@ -49,9 +49,9 @@ func TestCalculateUtils(t *testing.T) {
 		minimumUtilization float64 = 0
 		maximumUtilization float64 = 100
 	)
-	assert.Equal(t, util, calculateUtils(t1, t2))
+	assert.Equal(t, util, CalculateUtils(t1, t2))
 	// busy errors
-	assert.Equal(t, minimumUtilization, calculateUtils(t2, t1))
+	assert.Equal(t, minimumUtilization, CalculateUtils(t2, t1))
 	// total errors
-	assert.Equal(t, maximumUtilization, calculateUtils(t2, t3))
+	assert.Equal(t, maximumUtilization, CalculateUtils(t2, t3))
 }

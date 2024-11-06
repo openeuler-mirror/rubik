@@ -15,6 +15,8 @@
 package typedef
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/core/typedef/cgroup"
 )
@@ -29,6 +31,7 @@ type PodInfo struct {
 	Annotations         map[string]string         `json:"annotations,omitempty"`
 	Labels              map[string]string         `json:"labels,omitempty"`
 	ID                  string                    `json:"id,omitempty"` // id of the sandbox container in pod
+	StartTime           *metav1.Time              `json:"startTime,omitempty"`
 	nriContainerRequest map[string]ResourceMap
 	nriContainerLimit   map[string]ResourceMap
 }
@@ -43,6 +46,7 @@ func NewPodInfo(pod *RawPod) *PodInfo {
 		IDContainersMap: pod.ExtractContainerInfos(),
 		Annotations:     pod.DeepCopy().Annotations,
 		Labels:          pod.DeepCopy().Labels,
+		StartTime:       pod.Status.StartTime,
 	}
 }
 
@@ -93,6 +97,8 @@ func (pod *PodInfo) DeepCopy() *PodInfo {
 		}
 		copy.nriContainerRequest = requests
 	}
+
+	copy.StartTime = pod.StartTime.DeepCopy()
 	return &copy
 }
 
