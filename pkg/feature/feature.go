@@ -33,4 +33,8 @@ const (
 	PSIFeature = "psi"
 	// CPIFeature is the CPI feature name
 	CPIFeature = "cpi"
+	// CPUEvictFeature is the CPUEvict feature name
+	CPUEvictFeature = "cpuevict"
+	// MemoryEvictFeature is the MemoryEvict feature name
+	MemoryEvictFeature = "memoryevict"
 )

@@ -40,7 +40,7 @@ var haveProgAttach = internal.FeatureTest("BPF_PROG_ATTACH", "4.10", func() erro
 		return internal.ErrNotSupported
 	}
 
-	// BPF_PROG_ATTACH was introduced at the same time as CGroupSKB,
+	// BPF_PROG_ATTACH was introduced at the same time as CGgroupSKB,
 	// so being able to load the program is enough to infer that we
 	// have the syscall.
 	prog.Close()

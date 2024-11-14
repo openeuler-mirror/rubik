@@ -19,6 +19,7 @@ import (
 	"isula.org/rubik/pkg/services/cpi"
 	"isula.org/rubik/pkg/services/dyncache"
 	"isula.org/rubik/pkg/services/dynmemory"
+	"isula.org/rubik/pkg/services/eviction"
 	"isula.org/rubik/pkg/services/helper"
 	"isula.org/rubik/pkg/services/iocost"
 	"isula.org/rubik/pkg/services/iolimit"
@@ -33,15 +34,17 @@ type ServiceComponent func(name string) error
 
 var (
 	serviceComponents = map[string]ServiceComponent{
-		feature.PreemptionFeature: initPreemptionFactory,
-		feature.DynCacheFeature:   initDynCacheFactory,
-		feature.IOLimitFeature:    initIOLimitFactory,
-		feature.IOCostFeature:     initIOCostFactory,
-		feature.DynMemoryFeature:  initDynMemoryFactory,
-		feature.QuotaBurstFeature: initQuotaBurstFactory,
-		feature.QuotaTurboFeature: initQuotaTurboFactory,
-		feature.PSIFeature:        initPSIFactory,
-		feature.CPIFeature:        initCPIFactory,
+		feature.PreemptionFeature:  initPreemptionFactory,
+		feature.DynCacheFeature:    initDynCacheFactory,
+		feature.IOLimitFeature:     initIOLimitFactory,
+		feature.IOCostFeature:      initIOCostFactory,
+		feature.DynMemoryFeature:   initDynMemoryFactory,
+		feature.QuotaBurstFeature:  initQuotaBurstFactory,
+		feature.QuotaTurboFeature:  initQuotaTurboFactory,
+		feature.PSIFeature:         initPSIFactory,
+		feature.CPIFeature:         initCPIFactory,
+		feature.CPUEvictFeature:    initCPUEvictFactory,
+		feature.MemoryEvictFeature: initMemoryEvictFactory,
 	}
 )
 
@@ -79,4 +82,12 @@ func initDynMemoryFactory(name string) error {
 
 func initCPIFactory(name string) error {
 	return helper.AddFactory(name, cpi.CpiFactory{ObjName: name})
+}
+
+func initCPUEvictFactory(name string) error {
+	return helper.AddFactory(name, eviction.Factory{ObjName: name})
+}
+
+func initMemoryEvictFactory(name string) error {
+	return helper.AddFactory(name, eviction.Factory{ObjName: name})
 }

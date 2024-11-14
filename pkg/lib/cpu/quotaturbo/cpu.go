@@ -45,8 +45,8 @@ type ProcStat struct {
 	busy      float64
 }
 
-// getProcStat create a proc stat object
-func getProcStat() (ProcStat, error) {
+// GetProcStat create a proc stat object
+func GetProcStat() (ProcStat, error) {
 	const (
 		procStatFilePath   = "/proc/stat"
 		nameLineNum        = 0
@@ -98,8 +98,8 @@ func getProcStat() (ProcStat, error) {
 	return ps, nil
 }
 
-// calculateUtils calculate the CPU utilization rate based on the two interval /proc/stat
-func calculateUtils(t1, t2 ProcStat) float64 {
+// CalculateUtils calculate the CPU utilization rate based on the two interval /proc/stat
+func CalculateUtils(t1, t2 ProcStat) float64 {
 	if t2.busy <= t1.busy {
 		return minimumUtilization
 	}

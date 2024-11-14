@@ -56,4 +56,12 @@ var defaultRubikFeature = []services.FeatureSpec{
 		Name:    feature.CPIFeature,
 		Default: true,
 	},
+	{
+		Name:    feature.CPUEvictFeature,
+		Default: true,
+	},
+	{
+		Name:    feature.MemoryEvictFeature,
+		Default: true,
+	},
 }

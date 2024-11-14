@@ -16,6 +16,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"isula.org/rubik/pkg/common/log"
 	"isula.org/rubik/pkg/core/trigger/common"
@@ -27,9 +28,10 @@ import (
 // MaxValueTransformer returns a function that conforms to the Transformation format to filter for maximum utilization
 func MaxValueTransformer(cal analyze.Calculator) template.Transformation {
 	return func(ctx context.Context) (context.Context, error) {
+		const epsilon = 1e-9
 		var (
 			chosen   *typedef.PodInfo
-			maxValue float64 = 0
+			maxValue float64 = -1
 		)
 
 		pods, ok := ctx.Value(common.TARGETPODS).(map[string]*typedef.PodInfo)
@@ -39,6 +41,14 @@ func MaxValueTransformer(cal analyze.Calculator) template.Transformation {
 
 		for _, pod := range pods {
 			value := cal(pod)
+			// If the utilization rate is within the error, the two are considered to be the same.
+			if maxValue > 0 && nearlyEqual(maxValue, value, epsilon) {
+				if pod.StartTime.After(chosen.StartTime.Time) {
+					maxValue = value
+					chosen = pod
+				}
+				continue
+			}
 			if maxValue < value {
 				maxValue = value
 				chosen = pod
@@ -51,4 +61,8 @@ func MaxValueTransformer(cal analyze.Calculator) template.Transformation {
 		}
 		return context.Background(), fmt.Errorf("failed to find target pod")
 	}
+}
+
+func nearlyEqual(a, b, epsilon float64) bool {
+	return math.Abs(a-b) < epsilon
 }

@@ -8,8 +8,7 @@ require (
 	github.com/google/cadvisor v0.47.1
 	github.com/google/uuid v1.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.14.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/sys v0.13.0
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
@@ -17,8 +16,6 @@ require (
 )
 
 require (
-	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cilium/ebpf v0.7.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
@@ -28,8 +25,10 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
@@ -37,6 +36,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
-	github.com/prometheus/procfs v0.8.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
@@ -57,14 +57,15 @@ require (
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
-	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
+	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230731190214-cbb8c96f2d6d // indirect
 	google.golang.org/grpc v1.57.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -73,6 +74,11 @@ require (
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.0.2 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
+)
+
+require (
+	github.com/shirou/gopsutil v2.21.11+incompatible
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 )
 
 replace github.com/cyphar/filepath-securejoin => github.com/cyphar/filepath-securejoin v0.2.2
