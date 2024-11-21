@@ -14,6 +14,8 @@
 package analyze
 
 import (
+	"runtime"
+
 	v2 "github.com/google/cadvisor/info/v2"
 
 	"isula.org/rubik/pkg/common/log"
@@ -53,7 +55,7 @@ func (a *Analyzer) CPUCalculatorBuilder(reqOpt *common.GetOption) Calculator {
 			cpuUsageUs  = float64(last.Cpu.Usage.Total-penultimate.Cpu.Usage.Total) / nanoToMicro
 			timeDeltaUs = float64(last.Timestamp.Sub(penultimate.Timestamp).Microseconds())
 		)
-		return util.Div(cpuUsageUs, timeDeltaUs) * percentageRate
+		return util.Div(cpuUsageUs, timeDeltaUs) / float64(runtime.NumCPU()) * percentageRate
 	}
 }
 
@@ -65,7 +67,6 @@ func (a *Analyzer) MemoryCalculatorBuilder(reqOpt *common.GetOption) Calculator 
 		)
 		podStats := a.getPodStats("/"+pi.Path, reqOpt)
 		if len(podStats) < miniNum {
-			log.Errorf("pod %v has no enough memory stats collected, skip it", pi.Name)
 			return -1
 		}
 		return float64(podStats[len(podStats)-1].Memory.Usage) / bytesToMb
@@ -75,12 +76,12 @@ func (a *Analyzer) MemoryCalculatorBuilder(reqOpt *common.GetOption) Calculator 
 func (a *Analyzer) getPodStats(cgroupPath string, reqOpt *common.GetOption) []*v2.ContainerStats {
 	infoMap, err := a.GetPodStats(cgroupPath, *reqOpt)
 	if err != nil {
-		log.Errorf("failed to get cgroup information %v: %v", cgroupPath, err)
+		log.Warnf("failed to get cgroup information %v: %v", cgroupPath, err)
 		return nil
 	}
 	info, existed := infoMap[cgroupPath]
 	if !existed {
-		log.Errorf("failed to get cgroup %v from cadvisor", cgroupPath)
+		log.Warnf("failed to get cgroup %v from cadvisor", cgroupPath)
 		return nil
 	}
 	return info.Stats

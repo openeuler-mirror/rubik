@@ -55,10 +55,6 @@ func transform(ctx context.Context, f Transformation) (context.Context, error) {
 	if f == nil {
 		return nil, fmt.Errorf("podFilter method is not implemented")
 	}
-	// pods, ok := ctx.Value(common.TARGETPODS).(map[string]*typedef.PodInfo)
-	// if !ok {
-	// 	return ctx, fmt.Errorf("failed to get target pods")
-	// }
 	ctx, err := f(ctx)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to transform pod: %v", err)
@@ -70,10 +66,6 @@ func act(ctx context.Context, f Action) error {
 	if f == nil {
 		return fmt.Errorf("podAction method is not implemented")
 	}
-	// pods, ok := ctx.Value(common.TARGETPODS).(map[string]*typedef.PodInfo)
-	// if !ok {
-	// 	return nil
-	// }
 	return f(ctx)
 }
 

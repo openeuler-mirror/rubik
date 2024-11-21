@@ -51,16 +51,13 @@ func fromConfig(name string, f helper.ConfigHandler) (*Controller, error) {
 }
 
 // Start loop collects data and performs eviction
-func (c *Controller) Start(ctx context.Context, evictor func() error) {
+func (c *Controller) Start(ctx context.Context, evictor func(func() bool) error) {
 	wait.Until(
 		func() {
 			if atomic.LoadInt32(&c.block) == 1 {
 				return
 			}
-			if !c.assertWithinLimit() {
-				return
-			}
-			if err := evictor(); err != nil {
+			if err := evictor(c.assertWithinLimit); err != nil {
 				log.Errorf("failed to execute memory evict %v", err)
 				return
 			}
@@ -86,7 +83,11 @@ func (c *Controller) assertWithinLimit() bool {
 		log.Errorf("failed to get memory util at %v: %v", time.Now().Format(format), err)
 		return false
 	}
-	return v.UsedPercent >= float64(c.conf.Threshold)
+	if v.UsedPercent >= float64(c.conf.Threshold) {
+		log.Infof("Memory exceeded: %v%%", v.UsedPercent)
+		return true
+	}
+	return false
 }
 
 // Config returns the configuration

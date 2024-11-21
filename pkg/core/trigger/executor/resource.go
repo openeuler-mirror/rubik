@@ -36,7 +36,7 @@ func MaxValueTransformer(cal analyze.Calculator) template.Transformation {
 
 		pods, ok := ctx.Value(common.TARGETPODS).(map[string]*typedef.PodInfo)
 		if !ok {
-			return ctx, fmt.Errorf("failed to get target pods")
+			return ctx, fmt.Errorf("invalid target pod type")
 		}
 
 		for _, pod := range pods {
@@ -54,12 +54,12 @@ func MaxValueTransformer(cal analyze.Calculator) template.Transformation {
 				chosen = pod
 			}
 		}
-
-		if chosen != nil {
-			log.Infof("find the pod(%v) with the highest utilization(%v)", chosen.Name, maxValue)
-			return context.WithValue(ctx, common.TARGETPODS, map[string]*typedef.PodInfo{chosen.Name: chosen}), nil
+		// If the object is successfully obtained, the object is returned, otherwise an empty object is returned
+		if chosen == nil {
+			return context.WithValue(ctx, common.TARGETPODS, map[string]*typedef.PodInfo{}), nil
 		}
-		return context.Background(), fmt.Errorf("failed to find target pod")
+		log.Infof("find the pod(%v) with the highest utilization(%.2f%%)", chosen.Name, maxValue)
+		return context.WithValue(ctx, common.TARGETPODS, map[string]*typedef.PodInfo{chosen.Name: chosen}), nil
 	}
 }
 

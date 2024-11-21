@@ -22,7 +22,6 @@ type (
 
 const (
 	TARGETPODS Factor = iota
-	DEPORTPOD
 )
 
 // Descriptor defines methods for describing triggers
