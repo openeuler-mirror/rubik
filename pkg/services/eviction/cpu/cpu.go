@@ -62,17 +62,14 @@ func fromConfig(name string, f helper.ConfigHandler) (*Controller, error) {
 }
 
 // Start loop collects data and performs eviction
-func (c *Controller) Start(ctx context.Context, evictor func() error) {
+func (c *Controller) Start(ctx context.Context, evictor func(func() bool) error) {
 	wait.Until(
 		func() {
 			c.collect()
 			if atomic.LoadInt32(&c.block) == 1 {
 				return
 			}
-			if !c.assertWithinLimit() {
-				return
-			}
-			if err := evictor(); err != nil {
+			if err := evictor(c.assertWithinLimit); err != nil {
 				log.Errorf("failed to execute cpuevict %v", err)
 				return
 			}
@@ -128,16 +125,20 @@ func (c *Controller) averageUsage() float64 {
 	c.RLock()
 	defer c.RUnlock()
 	if len(c.usages) < minUsageLen {
-		log.Infof("failed to get node cpu usage at %v", time.Now().Format(format))
-		return 0
+		log.Debugf("failed to get node cpu usage at %v", time.Now().Format(format))
+		return -1
 	}
 	util := quotaturbo.CalculateUtils(c.usages[0].cpuStats, c.usages[len(c.usages)-1].cpuStats)
-	log.Debugf("get node cpu usage %v at %v", util, time.Now().Format(format))
 	return util
 }
 
 func (c *Controller) assertWithinLimit() bool {
-	return c.averageUsage() >= float64(c.conf.Threshold)
+	util := c.averageUsage()
+	if util >= float64(c.conf.Threshold) {
+		log.Infof("CPU exceeded: %v%%", util)
+		return true
+	}
+	return false
 }
 
 // Config returns the configuration

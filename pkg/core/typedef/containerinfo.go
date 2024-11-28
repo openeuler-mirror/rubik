@@ -89,7 +89,7 @@ func NewContainerInfo(opts ...ConfigOpt) *ContainerInfo {
 	}
 
 	if err := fromRawContainer(ci, conf.rawCont); err != nil {
-		fmt.Printf("failed to parse raw container: %v", err)
+		fmt.Printf("failed to parse raw container: %v\n", err)
 	}
 	fromNRIContainer(ci, conf.nriCont)
 	fromPodCgroupPath(ci, conf.podCgroupPath)
@@ -109,17 +109,16 @@ func fromRawContainer(ci *ContainerInfo, rawCont *RawContainer) error {
 	if rawCont == nil {
 		return nil
 	}
-	requests, limits := rawCont.GetResourceMaps()
 	id, err := rawCont.GetRealContainerID()
 	if err != nil {
 		return fmt.Errorf("failed to parse container ID: %v", err)
 	}
-	if id == "" {
-		return fmt.Errorf("empty container id")
+	// Note that the running pod may have containers that are being deleted or created, and their ids are empty.
+	if id != "" {
+		ci.ID = id
 	}
-
 	ci.Name = rawCont.status.Name
-	ci.ID = id
+	requests, limits := rawCont.GetResourceMaps()
 	ci.RequestResources = requests
 	ci.LimitResources = limits
 	return nil

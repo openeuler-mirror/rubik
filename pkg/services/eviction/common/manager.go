@@ -74,7 +74,7 @@ func newCadvisorManager() (resource.Manager, error) {
 
 // Controller is a controller for different resources
 type Controller interface {
-	Start(context.Context, func() error)
+	Start(context.Context, func(func() bool) error)
 	Config() interface{}
 }
 
@@ -213,12 +213,19 @@ func (m *Manager) Terminate(api.Viewer) error {
 	return err
 }
 
-func (m *Manager) alarm(typ string) func() error {
-	return func() error {
+func (m *Manager) alarm(typ string) func(func() bool) error {
+	return func(needEvcit func() bool) error {
+		pods := m.viewer.ListPodsWithOptions(priority(false))
+		if len(pods) == 0 {
+			return nil
+		}
 		var (
 			errs error
-			ctx  = context.WithValue(context.Background(), common.TARGETPODS, m.viewer.ListPodsWithOptions(priority(false)))
+			ctx  = context.WithValue(context.Background(), common.TARGETPODS, pods)
 		)
+		if !needEvcit() {
+			return nil
+		}
 		for _, t := range m.baseMetric.Triggers[typ] {
 			errs = util.AppendErr(errs, t.Activate(ctx))
 		}

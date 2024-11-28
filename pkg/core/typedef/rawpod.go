@@ -147,8 +147,8 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 			WithRawContainer(rawContainer),
 			WithPodCgroup(pod.CgroupPath()),
 		)
+		// The empty ID means that the container is being deleted and no updates are needed.
 		if ci.ID == "" {
-			fmt.Printf("failed to parse id from raw container\n")
 			continue
 		}
 		idContainersMap[ci.ID] = ci
@@ -158,6 +158,10 @@ func (pod *RawPod) ExtractContainerInfos() map[string]*ContainerInfo {
 
 // GetRealContainerID parses the containerID of k8s
 func (cont *RawContainer) GetRealContainerID() (string, error) {
+	// Empty container ID means the container may be in the creation or deletion phase.
+	if cont.status.ContainerID == "" {
+		return "", nil
+	}
 	/*
 		Note:
 		An UNDEFINED container engine was used when the function was executed for the first time
@@ -175,13 +179,7 @@ func (cont *RawContainer) GetRealContainerID() (string, error) {
 	if !currentContainerEngines.Support(cont) {
 		return "", fmt.Errorf("unsupported container engine: %v", cont.status.ContainerID)
 	}
-
-	cid := cont.status.ContainerID[len(currentContainerEngines.Prefix()):]
-	// the container may be in the creation or deletion phase.
-	if len(cid) == 0 {
-		return "", nil
-	}
-	return cid, nil
+	return cont.status.ContainerID[len(currentContainerEngines.Prefix()):], nil
 }
 
 // GetResourceMaps returns the number of requests and limits of CPU and memory resources
