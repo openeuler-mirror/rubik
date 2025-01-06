@@ -76,7 +76,7 @@ type Config struct {
 ```golang
 type Option func(c *Config) error
 ```
-`Option`是设置quotaTubro参数的函数接口。
+`Option`是设置quotaTurbo参数的函数接口。
 
 ### type Client 
 ```golang
