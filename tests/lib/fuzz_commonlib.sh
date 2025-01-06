@@ -77,7 +77,7 @@ function make_fuzz_zip() {
     popd > /dev/null 2>&1 || return 1
 }
 
-# Description: set enviroment for go fuzz test
+# Description: set environment for go fuzz test
 # Usage: set_env "fuzz-test-abc" $top_dir
 # Input: $1: test name
 #        $2: abs path for rubik project

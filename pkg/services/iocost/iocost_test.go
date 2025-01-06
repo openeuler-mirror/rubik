@@ -282,7 +282,7 @@ func TestClearIOcost(t *testing.T) {
 }
 
 func TestSetPodWeight(t *testing.T) {
-	// deploy enviroment
+	// deploy environment
 	const podCgroupPath = "/rubik-podtest"
 	rubikBlkioTestPath := cgroup.AbsoluteCgroupPath(blkcgRootDir, podCgroupPath)
 	rubikMemTestPath := cgroup.AbsoluteCgroupPath(memcgRootDir, podCgroupPath)
