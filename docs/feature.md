@@ -2,7 +2,7 @@
 在rubik中，每一个特性以服务形式运行在后台。rubik根据用户配置（config.json）按需启动对应服务。下文是对各个服务的介绍。
 
 ## preemption 绝对抢占
-rubik支持业务优先级配置，针对在离线业务混合部署的场景，确保在线业务相对离线业务的资源抢占。目前仅支持CPU资源和内存资源。使用该特性，用户需要手动为业务指定业务类型，即在业务pod的yaml文件中增加注解`volcano.sh/preemptable`。业务优先级配置示例如下：
+rubik支持业务优先级配置，针对在离线业务混合部署的场景，确保在线业务相对离线业务的资源抢占。目前仅支持CPU资源，内存资源和网络资源。使用该特性，用户需要手动为业务指定业务类型，即在业务pod的yaml文件中增加注解`volcano.sh/preemptable`。业务优先级配置示例如下：
 
 ```yaml
 annotations:
@@ -23,6 +23,19 @@ annotations:
 #### 前置条件
 -   内核支持针对cgroup的memory优先级配置，memory子系统存在接口`memory.qos_level`。建议使用内核版本openEuler-22.03+。
 -   开启内存优先级支持: `echo 1 > /proc/sys/vm/memcg_qos_enable`
+
+### 网络绝对抢占
+
+针对在离线业务混合部署的场景，确保在线业务相对离线业务的网络带宽资源抢占。
+
+#### 前置条件
+
+-   主机上已安装oncn-bwm并插入了bwm.ko，host上有如下文件：`/proc/qos/net_qos_enable`。
+- ```shell
+  安装oncn-bwm步骤：
+  yum install -y oncn-bwm
+  insmod /lib/modules/bwm/bwm.ko
+  ```
 
 ## dynCache 内存带宽和LLC限制
 rubik支持业务的Pod内存带宽(memory bandwidth)和LLC(Last Level Cache)限制，通过限制离线业务的内存带宽/LLC使用，减少其对在线业务的干扰。

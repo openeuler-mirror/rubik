@@ -60,8 +60,8 @@ func TestPreemptionAddFunc(t *testing.T) {
 			fields: getCommonField([]string{"cpu", "memory"}),
 			args: args{
 				new: try.GenFakeOfflinePod(map[*cgroup.Key]string{
-					supportCgroupTypes["cpu"]:    "0",
-					supportCgroupTypes["memory"]: "0",
+					supportCgroupTypes["cpu"].cgKey:    "0",
+					supportCgroupTypes["memory"].cgKey: "0",
 				}),
 			},
 		},
@@ -70,21 +70,21 @@ func TestPreemptionAddFunc(t *testing.T) {
 			fields: getCommonField([]string{"cpu", "memory"}),
 			args: args{
 				new: try.GenFakeOnlinePod(map[*cgroup.Key]string{
-					supportCgroupTypes["cpu"]:    "0",
-					supportCgroupTypes["memory"]: "0",
+					supportCgroupTypes["cpu"].cgKey:    "0",
+					supportCgroupTypes["memory"].cgKey: "0",
 				}).WithContainers(containerNum),
 			},
 		},
 		{
 			name:    "TC3-empty pod info",
-			fields:  getCommonField([]string{"cpu", "memory"}),
+			fields:  getCommonField([]string{"cpu", "memory", "net"}),
 			wantErr: true,
 		},
 		{
 			name:   "TC4-invalid annotation key",
 			fields: getCommonField([]string{"cpu"}),
 			args: args{
-				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
+				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"].cgKey: "0"}),
 			},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				newPod := pod.DeepCopy()
@@ -96,7 +96,7 @@ func TestPreemptionAddFunc(t *testing.T) {
 			name:   "TC5-invalid annotation value",
 			fields: getCommonField([]string{"cpu"}),
 			args: args{
-				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}),
+				new: try.GenFakeBestEffortPod(map[*cgroup.Key]string{supportCgroupTypes["cpu"].cgKey: "0"}),
 			},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				newPod := pod.DeepCopy()
@@ -134,7 +134,7 @@ func TestPreemptionUpdatePod(t *testing.T) {
 		{
 			name:   "TC1-online to offline",
 			fields: getCommonField([]string{"cpu"}),
-			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"}).WithContainers(3)},
+			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"].cgKey: "0"}).WithContainers(3)},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				newPod := pod.DeepCopy()
 				newAnnotation := make(map[string]string, 0)
@@ -146,7 +146,7 @@ func TestPreemptionUpdatePod(t *testing.T) {
 		{
 			name:   "TC2-offline to online",
 			fields: getCommonField([]string{"cpu"}),
-			args:   args{old: try.GenFakeOfflinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
+			args:   args{old: try.GenFakeOfflinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"].cgKey: "0"})},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				newPod := pod.DeepCopy()
 				newAnnotation := make(map[string]string, 0)
@@ -159,7 +159,7 @@ func TestPreemptionUpdatePod(t *testing.T) {
 		{
 			name:   "TC3-online to online",
 			fields: getCommonField([]string{"cpu"}),
-			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"]: "0"})},
+			args:   args{old: try.GenFakeOnlinePod(map[*cgroup.Key]string{supportCgroupTypes["cpu"].cgKey: "0"})},
 			preHook: func(pod *try.FakePod) *try.FakePod {
 				return pod.DeepCopy()
 			},

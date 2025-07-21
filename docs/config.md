@@ -51,8 +51,14 @@ OS/Arch:       linux/amd64
   "preemption": {
     "resource": [
       "cpu",
-      "memory"
-    ]
+      "memory",
+      "net"
+    ],
+    "net": {
+      "waterline": 20,
+      "bandwidthLow": 10,
+      "bandwidthHigh": 100
+    }
   },
   "quotaTurbo": {
     "highWaterMark": 50,
@@ -140,10 +146,15 @@ spec:
 
 ### preemption
 
-`preemption`字段用于标识绝对抢占特性配置。目前，Preemption特性支持CPU和内存的绝对抢占，用户可以按需配置该字段，单独或组合使用资源的绝对抢占。
+`preemption`字段用于标识绝对抢占特性配置。目前，Preemption特性支持CPU，内存和网络的绝对抢占，用户可以按需配置该字段，单独或组合使用资源的绝对抢占。
+
 | 配置键[=默认值] | 类型       | 描述                             | 可选值      |
 | --------------- | ---------- | -------------------------------- | ----------- |
-| resource=[]     | string数组 | 资源类型，声明何种资源需要被访问 | cpu, memory |
+| resource=[]     | string数组 | 资源类型，声明何种资源需要被访问 | cpu, memory, net |
+| net   | map | 网络带宽抢占配置 |  |
+| .waterline | int | 在线业务的水线（单位：MB） |[20, 9999*1024] |
+| .bandwidthLow | int | 离线业务带宽下限（单位：MB） | [1, bandwidthHigh) |
+| .bandwidthHigh | int | 离线业务带宽上限（单位：MB） | (bandwidthLow, 9999*1024] |
 
 ### dynCache
 

@@ -27,9 +27,30 @@ import (
 	"isula.org/rubik/pkg/services/helper"
 )
 
-var supportCgroupTypes = map[string]*cgroup.Key{
-	"cpu":    {SubSys: "cpu", FileName: constant.CPUCgroupFileName},
-	"memory": {SubSys: "memory", FileName: constant.MemoryCgroupFileName},
+type resOpt struct {
+	cgKey           *cgroup.Key
+	getQosStr       func(int) string
+	validateResConf func(*PreemptionConfig) error
+	initRes         func(*PreemptionConfig) error
+	enableRes       func(*typedef.PodInfo) error
+}
+
+var supportCgroupTypes = map[string]resOpt{
+	"cpu": {
+		cgKey:     &cgroup.Key{SubSys: "cpu", FileName: constant.CPUCgroupFileName},
+		getQosStr: func(qosLevel int) string { return strconv.Itoa(qosLevel) },
+	},
+	"memory": {
+		cgKey:     &cgroup.Key{SubSys: "memory", FileName: constant.MemoryCgroupFileName},
+		getQosStr: func(qosLevel int) string { return strconv.Itoa(qosLevel) },
+	},
+	"net": {
+		cgKey:           &cgroup.Key{SubSys: "net_cls", FileName: constant.NetCgroupFileName},
+		getQosStr:       getNetLevelStr,
+		validateResConf: validateNetResConf,
+		initRes:         initNetRes,
+		enableRes:       enableNetRes,
+	},
 }
 
 // Preemption define service which related to qos level setting
@@ -40,7 +61,8 @@ type Preemption struct {
 
 // PreemptionConfig define which resources need to use the preemption
 type PreemptionConfig struct {
-	Resource []string `json:"resource,omitempty"`
+	Resource []string  `json:"resource,omitempty"`
+	Net      NetConfig `json:"net,omitempty"`
 }
 
 // PreemptionFactory is the factory os Preemption.
@@ -80,6 +102,16 @@ func (q *Preemption) PreStart(viewer api.Viewer) error {
 	if viewer == nil {
 		return fmt.Errorf("invalid pods viewer")
 	}
+
+	for _, r := range q.config.Resource {
+		if supportCgroupTypes[r].initRes == nil {
+			continue
+		}
+		if err := supportCgroupTypes[r].initRes(&q.config); err != nil {
+			return err
+		}
+	}
+
 	for _, pod := range viewer.ListPodsWithOptions() {
 		if err := q.SetQoSLevel(pod); err != nil {
 			log.Errorf("failed to set the qos level for the previously started pod %v: %v", pod.Name, err)
@@ -124,11 +156,12 @@ func (q *Preemption) DeletePod(_ *typedef.PodInfo) error {
 func (q *Preemption) validateConfig(pod *typedef.PodInfo) error {
 	targetLevel := getQoSLevel(pod)
 	for _, r := range q.config.Resource {
-		if err := pod.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
+		resOpt := supportCgroupTypes[r]
+		if err := pod.GetCgroupAttr(resOpt.cgKey).Expect(resOpt.getQosStr(targetLevel)); err != nil {
 			return fmt.Errorf("failed to validate the qos level configuration of pod %s: %v", pod.Name, err)
 		}
 		for _, container := range pod.IDContainersMap {
-			if err := container.GetCgroupAttr(supportCgroupTypes[r]).Expect(targetLevel); err != nil {
+			if err := container.GetCgroupAttr(resOpt.cgKey).Expect(resOpt.getQosStr(targetLevel)); err != nil {
 				return fmt.Errorf("failed to validate the qos level configuration of container %s: %v", pod.Name, err)
 			}
 		}
@@ -141,6 +174,16 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 	if pod == nil {
 		return fmt.Errorf("empty pod info")
 	}
+
+	for _, r := range q.config.Resource {
+		resOpt := supportCgroupTypes[r]
+		if resOpt.enableRes != nil {
+			if err := resOpt.enableRes(pod); err != nil {
+				return err
+			}
+		}
+	}
+
 	qosLevel := getQoSLevel(pod)
 	if qosLevel == constant.Online {
 		log.Infof("pod %s(%s) has already been set to online(%d)", pod.Name, pod.UID, qosLevel)
@@ -149,12 +192,13 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 
 	var errs error
 	for _, r := range q.config.Resource {
-		if err := pod.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
+		resOpt := supportCgroupTypes[r]
+		if err := pod.SetCgroupAttr(resOpt.cgKey, resOpt.getQosStr(qosLevel)); err != nil {
 			log.Warnf("failed to set %s-qos-level for pod %s: %v", r, pod.Name, err)
 			errs = util.AppendErr(errs, err)
 		}
 		for _, container := range pod.IDContainersMap {
-			if err := container.SetCgroupAttr(supportCgroupTypes[r], strconv.Itoa(qosLevel)); err != nil {
+			if err := container.SetCgroupAttr(resOpt.cgKey, resOpt.getQosStr(qosLevel)); err != nil {
 				log.Warnf("failed to set %s-qos-level for container %s: %v", r, container.Name, err)
 				errs = util.AppendErr(errs, err)
 			}
@@ -184,9 +228,17 @@ func (conf *PreemptionConfig) Validate() error {
 		return fmt.Errorf("empty resource preemption configuration")
 	}
 	for _, r := range conf.Resource {
-		if _, ok := supportCgroupTypes[r]; !ok {
+		resOpt, ok := supportCgroupTypes[r]
+		if !ok {
 			return fmt.Errorf("does not support setting the %s subsystem", r)
 		}
+		if resOpt.validateResConf == nil {
+			continue
+		}
+		if err := resOpt.validateResConf(conf); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
