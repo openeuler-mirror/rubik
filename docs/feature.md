@@ -37,6 +37,11 @@ annotations:
   insmod /lib/modules/bwm/bwm.ko
   ```
 
+#### 约束限制
+  - 网络绝对抢占不支持统计主机网络命名空间内的网络带宽。包括：
+    -  忽略主机进程所使用的网络带宽；
+    -  忽略与主机共享网络命名空间的容器内部进程所使用的网络带宽（包括kube-proxy容器等）；
+
 ## dynCache 内存带宽和LLC限制
 rubik支持业务的Pod内存带宽(memory bandwidth)和LLC(Last Level Cache)限制，通过限制离线业务的内存带宽/LLC使用，减少其对在线业务的干扰。
 

@@ -32,7 +32,7 @@ type resOpt struct {
 	getQosStr       func(int) string
 	validateResConf func(*PreemptionConfig) error
 	initRes         func(*PreemptionConfig) error
-	enableRes       func(*typedef.PodInfo) error
+	enableRes       func(*typedef.PodInfo) (bool, error) // Return true to indicate that the res needs to enable qos
 }
 
 var supportCgroupTypes = map[string]resOpt{
@@ -178,7 +178,12 @@ func (q *Preemption) SetQoSLevel(pod *typedef.PodInfo) error {
 	for _, r := range q.config.Resource {
 		resOpt := supportCgroupTypes[r]
 		if resOpt.enableRes != nil {
-			if err := resOpt.enableRes(pod); err != nil {
+			needQos, err := resOpt.enableRes(pod)
+			if !needQos {
+				log.Infof("ignore pod %s(%s) %s-qos", pod.Name, pod.UID, r)
+				continue
+			}
+			if err != nil {
 				return err
 			}
 		}

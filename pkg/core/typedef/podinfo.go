@@ -32,6 +32,7 @@ type PodInfo struct {
 	Labels              map[string]string         `json:"labels,omitempty"`
 	ID                  string                    `json:"id,omitempty"` // id of the sandbox container in pod
 	StartTime           *metav1.Time              `json:"startTime,omitempty"`
+	HostNetwork         bool                      `json:"hostNetwork,omitempty"`
 	nriContainerRequest map[string]ResourceMap
 	nriContainerLimit   map[string]ResourceMap
 }
@@ -47,6 +48,7 @@ func NewPodInfo(pod *RawPod) *PodInfo {
 		Annotations:     pod.DeepCopy().Annotations,
 		Labels:          pod.DeepCopy().Labels,
 		StartTime:       pod.Status.StartTime,
+		HostNetwork:     pod.Spec.HostNetwork,
 	}
 }
 
