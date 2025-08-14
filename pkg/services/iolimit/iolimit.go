@@ -23,6 +23,7 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/sys/unix"
 	"isula.org/rubik/pkg/api"
 	"isula.org/rubik/pkg/common/constant"
 	"isula.org/rubik/pkg/common/log"
@@ -350,8 +351,8 @@ func convertToMajorMinorImpl(deviceName string) (string, error) {
 		if stat.Mode()&os.ModeDevice != 0 {
 			sys := stat.Sys()
 			if sysstat, ok := sys.(*syscall.Stat_t); ok {
-				major := (sysstat.Rdev >> 8) & 0xff
-				minor := sysstat.Rdev & 0xff
+				major := unix.Major(sysstat.Rdev)
+				minor := unix.Minor(sysstat.Rdev)
 				return fmt.Sprintf("%d:%d", major, minor), nil
 			}
 		}
