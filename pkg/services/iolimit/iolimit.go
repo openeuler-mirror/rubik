@@ -142,8 +142,11 @@ func (i *IOLimit) configIOLimit(podInfo *typedef.PodInfo) error {
 	}
 
 	// firstly clear all config
-	if err := clearAllBlkioThrottleFiles(podInfo.Path); err != nil {
-		return fmt.Errorf("failed to clear blkio throttle files for pod %s: %v", podInfo.Name, err)
+	// blkio cgroup hierarchical is not enabled default, only set container cgroups
+	for _, container := range podInfo.IDContainersMap {
+		if err := clearAllBlkioThrottleFiles(container.Path); err != nil {
+			return fmt.Errorf("failed to clear blkio throttle files for container %s of pod %s: %v", container.Name, podInfo.Name, err)
+		}
 	}
 
 	// secondly parse the config
@@ -153,8 +156,10 @@ func (i *IOLimit) configIOLimit(podInfo *typedef.PodInfo) error {
 	}
 
 	// thirdly apply the config to cgroup files
-	if err := applyIOLimitConfig(podInfo.Path, cfg); err != nil {
-		return fmt.Errorf("failed to apply blkio config for pod %s: %v", podInfo.Name, err)
+	for _, container := range podInfo.IDContainersMap {
+		if err := applyIOLimitConfig(container.Path, cfg); err != nil {
+			return fmt.Errorf("failed to apply blkio config for container %s of pod %s: %v", container.Name, podInfo.Name, err)
+		}
 	}
 
 	return nil

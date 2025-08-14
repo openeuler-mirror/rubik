@@ -840,8 +840,12 @@ func TestConfigIOLimit(t *testing.T) {
 	// Test 1: Empty config (should just clear files)
 	podInfo := &typedef.PodInfo{
 		Name:        "test-pod",
-		Hierarchy:   cgroup.Hierarchy{Path: testPodPath},
 		Annotations: map[string]string{},
+		IDContainersMap: map[string]*typedef.ContainerInfo{
+			"test-container": {
+				Hierarchy: cgroup.Hierarchy{Path: testPodPath},
+			},
+		},
 	}
 	err = iolimit.configIOLimit(podInfo)
 	if err != nil {
@@ -947,7 +951,7 @@ func TestConfigIOLimit(t *testing.T) {
 	}
 
 	// Test 4: Valid JSON config but invalid cgroup path
-	podInfo.Hierarchy.Path = "/invalid/path"
+	podInfo.IDContainersMap["test-container"].Hierarchy.Path = "/invalid/path"
 	err = iolimit.configIOLimit(podInfo)
 	if err == nil {
 		t.Error("Expected error with invalid cgroup path")
@@ -1372,10 +1376,14 @@ func TestConfigIOLimit_EdgeCases(t *testing.T) {
 
 	// Test with valid JSON but applying config fails (no cgroup files)
 	podInfo := &typedef.PodInfo{
-		Name:      "test-pod",
-		Hierarchy: cgroup.Hierarchy{Path: "nonexistent-pod"},
+		Name: "test-pod",
 		Annotations: map[string]string{
 			constant.BlkioKey: `{"device_read_bps":[{"device":"/dev/sda","value":"1048576"}]}`,
+		},
+		IDContainersMap: map[string]*typedef.ContainerInfo{
+			"test-container": {
+				Hierarchy: cgroup.Hierarchy{Path: "nonexistent-container"},
+			},
 		},
 	}
 
