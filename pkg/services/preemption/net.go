@@ -65,20 +65,24 @@ func validateNetResConf(conf *PreemptionConfig) error {
 	return nil
 }
 
-func enableNetRes(pod *typedef.PodInfo) error {
+func enableNetRes(pod *typedef.PodInfo) (bool, error) {
 	var err error
 	var pid string
 
 	if pid, err = getPodProcID(pod); err != nil {
-		return fmt.Errorf("failed to get Pod procID %s: %v", pid, err)
+		return true, fmt.Errorf("failed to get Pod procID %s: %v", pid, err)
+	}
+
+	if pod.HostNetwork {
+		return false, nil
 	}
 
 	if err = enablePodNetqos(pid); err != nil {
 		disablePodNetqos(pid)
-		return err
+		return true, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func initNetRes(conf *PreemptionConfig) error {
